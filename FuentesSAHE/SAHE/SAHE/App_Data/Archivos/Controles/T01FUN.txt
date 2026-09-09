@@ -54,8 +54,23 @@
 # una cuenta que se arma con lo que hay a la vista miente en cuanto algo queda
 # fuera de la vista.
 #
-# Consultar declara 'devuelve=todo' porque el resumen tiene que cambiar con el
-# periodo: la respuesta de la consulta trae los mismos cinco segmentos.
+# ----------------------------------------------------------------------------
+# LO QUE DEVUELVE CONSULTAR:
+#
+#     <datosGrilla> ~ <datosResumen>
+#
+# es decir, las filas del periodo que se pidió y detrás su resumen. Sin
+# combos, sin ayuda y sin valores por omisión: eso ya quedó puesto en la carga
+# y volver a pisarlo con cada consulta le movería al usuario los filtros que
+# acaba de elegir. Eso es lo que dice 'devuelve=grilla' del botón; con
+# 'devuelve=todo' la pantalla esperaría los cinco segmentos de una carga y
+# leería las filas como si fueran las listas de los combos.
+#
+# El resumen es obligatorio y viaja con las filas porque es DE ESE periodo:
+# cambiar el periodo sin cambiar la tarjeta dejaría a la vista unas filas de
+# agosto con la cuenta de setiembre. Los dos segmentos llegan en un solo
+# viaje; si el resumen no viene, la tarjeta se queda con la cifra vieja -que
+# ya no es cierta- y solo queda anotado en la consola.
 #
 # ----------------------------------------------------------------------------
 # LO QUE DEVUELVE GESTIONAR -grabar, modificar y eliminar-:
@@ -69,10 +84,10 @@
 # el resumen no viene, la tarjeta se queda con la cifra vieja -que ya no es
 # cierta- y solo queda anotado en la consola.
 #
-# Ojo con los índices: aquí el resumen es el segmento [2] y en la carga es el
-# [4], porque en un grabado el [0] es el mensaje y en una carga son los
-# combos. La pantalla no lo adivina contando: se le dice de dónde viene la
-# respuesta.
+# Ojo con los índices: el resumen es el segmento [2] en un grabado, el [1] en
+# una consulta y el [4] en la carga, porque delante de las filas no siempre va
+# lo mismo -el mensaje, nada, o los combos-. La pantalla no lo adivina
+# contando: se le dice de dónde viene la respuesta.
 # ============================================================================
 
 pantalla|tabla=T01FUN|titulo=Distribución de Cuotas|subtitulo=Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.
@@ -91,9 +106,16 @@ accion|id=Consultar|etiqueta=Consultar|estilo=primario|accion=consultar|ubicacio
 
 # ---------------------------------------------------------------------------
 # El resumen de la cuota. Una sección sin campos: el txt dice DÓNDE va -entre
-# el filtro y la grilla- y Sistema.js la pinta con el segmento [4], porque las
-# tres cifras no son controles que el usuario llene sino el estado de su
-# cuota.
+# el filtro y la grilla- y Sistema.js la pinta con el segmento del resumen -el
+# [4] al cargar, el [1] al consultar-, porque las tres cifras no son controles
+# que el usuario llene sino el estado de su cuota.
+#
+# Va a la DERECHA del filtro y no debajo: a la izquierda se elige el periodo y
+# al lado se lee la cuenta de ESE periodo. Apiladas, las dos secciones se
+# llevaban media pantalla y la grilla empezaba más abajo del pliegue. Quien
+# las empareja es Sistema.js -les pone la clase que la hoja de estilos
+# espera-, porque el id 'busqueda' lo usa también T01, que sí quiere su filtro
+# entero.
 # ---------------------------------------------------------------------------
 seccion|id=resumen
 
