@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Aplicativo para el Proceso de Horas Extras">
+    <title>SAHE - Escritorio</title>
+    <link rel="shortcut icon" href="~/Imagenes/Login/favicon.ico" />
+    <link href="~/Estilos/Escritorio.css?v=@ViewBag.VersionCss" rel="stylesheet" />
+    <link href="~/Estilos/Mensaje.css?v=@ViewBag.VersionCss" rel="stylesheet" />
+</head>
+<body>
+    <div id="divLoading" class="wrap_loading hide">
+        <div class="lds-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div class="loading_text">Procesando ...</div>
+    </div>
+    <div class="js-sn side-nav">
+        <div class="js-snc side-nav__container">
+            <div class="side-nav__header">
+                <div class="side-nav__brand">
+                    <span class="side-nav__brand-logo">BN</span>
+                    <span class="side-nav__brand-texto">Banco de la Nación</span>
+                </div>
+                <button id="btnO" class="side-nav__hide" title="Cerrar menú">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <ul id="divMenu" class="side-nav__content menu-list"></ul>
+            <div class="sidebar-footer">
+                SAHE v2.0 &middot; Horas Extra
+            </div>
+        </div>
+    </div>
+    <div id="datosEmpleado" class="datosbody">
+        <span id="btnT" class="boton-menu btn-opciones" title="Menu de opciones">
+            <span>Menu de Opciones</span>
+            <svg class="pointer-event-none" width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                <path d='M4 6H20M4 12H20M4 18H20' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' />
+            </svg>
+        </span>
+        <div id="spnNombreEmpleado"></div>
+        <div class="cnt-usuario">
+            <div class="boton-menu js_btnCerrarSesion" title="Cerrar Sesión">
+                <svg class="pointer-event-none" width='18px' height='18px' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'>
+                    <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'></path>
+                    <polyline points='16 17 21 12 16 7'></polyline>
+                    <line x1='21' y1='12' x2='9' y2='12'></line>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div id="divFrame" class="divFrame">
+        <iframe title="Ventanas" id="ifrPagina" name="frmPagina" class="frmFrame"></iframe>
+    </div>
+    @* Diálogo de mensajes y confirmaciones. Vive aquí, en la ventana que
+       contiene al marco, para que el velo cubra toda la pantalla y no solo
+       el rectángulo del iframe. Las pantallas de Sistema lo piden al padre. *@
+    <div id="divPantMensaje" class="popupMensaje-overlay">
+        <div id="divPMW" class="popupMensaje-window">
+            <div id="popupHeader" class="popupMensaje-header confirmacion">
+                <span id="popupTitle" class="popupMensaje-title">
+                    <span id="popupTitleIcon" class="popupMensaje-title-icon">✓</span>
+                    <span id="popupTitleText">Título del Mensaje</span>
+                </span>
+                <button id="popupCloseBtn" class="popupMensaje-close" type="button">&times;</button>
+            </div>
+            <div class="popupMensaje-body">
+                <p id="popupMessage" class="popupMensaje-message">
+                    <span id="popupMessageIcon" class="popupMensaje-message-icon">ℹ</span>
+                    <span id="popupMessageText"></span>
+                </p>
+            </div>
+            <div class="popupMensaje-footer">
+                <button id="popupCancelBtn" class="btnMensaje btnMensaje-cancel" type="button">Cancelar</button>
+                <button id="popupOkBtn" class="btnMensaje btnMensaje-ok" type="button">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <input id="hdfRaiz" type="hidden" value="@Url.Content("~")" />
+    <script src="~/Scripts/General.js?v=@ViewBag.VersionJs" defer></script>
+    <script src="~/Scripts/Escritorio.js?v=@ViewBag.VersionJs" defer></script>
+</body>
+</html>

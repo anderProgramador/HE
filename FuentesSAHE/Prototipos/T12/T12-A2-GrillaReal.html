@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Tipo de Compensación (Opción 1 con GUI.Grilla)</title>
+<!-- Usa el módulo GUI.Grilla REAL de General.js y los estilos que se despliegan.
+     Si mueve esta carpeta, corrija estas tres rutas. -->
+<link href="../../SAHE/SAHE/Estilos/Sistema.css" rel="stylesheet" />
+<link href="../../SAHE/SAHE/Estilos/Grilla.css" rel="stylesheet" />
+<link href="../../SAHE/SAHE/Estilos/Mensaje.css" rel="stylesheet" />
+<style>
+/* Lo propio de esta pantalla; el resto sale de las hojas del aplicativo. */
+.pantalla { max-width: 1180px; }
+
+/* Ventana de mantenimiento. Cuando se apruebe pasa a Sistema.css con el
+   marcado que arme Ventana. */
+.velo {
+    display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(20,18,18,.5); z-index: 1000;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.velo.abierto { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.ventana {
+    width: 100%; max-width: 640px; max-height: 92%; margin: 0 16px;
+    background: #FFFFFF; border-radius: 8px; overflow: auto;
+    -webkit-box-shadow: 0 18px 44px rgba(0,0,0,.3); box-shadow: 0 18px 44px rgba(0,0,0,.3);
+}
+.ventana__barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    padding: 12px 18px; background: #C8102E; color: #FFFFFF;
+}
+.ventana__titulo { font-size: 14.5px; font-weight: 700; }
+.ventana__cerrar {
+    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%;
+    background: rgba(255,255,255,.16); color: #FFFFFF; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.ventana__cerrar:hover { background: rgba(255,255,255,.3); }
+.ventana__cuerpo { padding: 18px 18px 4px; }
+.ventana__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding: 14px 18px; border-top: 1px solid #EDEAE5; background: #FBFAF9;
+}
+.ventana__pie .boton { margin-left: 10px; }
+
+/* El código de justificación lleva la lupa pegada y el nombre al costado */
+.campo__buscador {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    width: 100%;
+}
+.campo__buscador .control--codigo { -ms-flex-negative: 0; flex-shrink: 0; width: 210px; border-radius: 5px 0 0 5px; }
+.btn-lupa {
+    -ms-flex-negative: 0; flex-shrink: 0; width: 34px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.btn-lupa:hover { background: #FCEBEB; color: #C8102E; }
+.campo__buscador .control--nombre { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<div class="pantalla">
+    <div class="pantalla__cabecera">
+        <h1 class="pantalla__titulo">Tipo de Solicitud de Compensación</h1>
+        <p class="pantalla__subtitulo">Equivalencias entre las horas extra acumuladas y el descanso compensatorio.</p>
+    </div>
+
+    <!-- GUI.Grilla arma aquí adentro su barra de herramientas, la tabla,
+         la fila de filtros y la paginación. -->
+    <div id="gPriT12" class="gPrincipal" data-Ind="0"></div>
+</div>
+
+<!-- ====================== ventana de mantenimiento ======================= -->
+<div class="velo" id="velo">
+    <div class="ventana" role="dialog" aria-labelledby="tituloVentana">
+        <div class="ventana__barra">
+            <span class="ventana__titulo" id="tituloVentana">Nuevo</span>
+            <button type="button" class="ventana__cerrar" id="btnCerrar" title="Cerrar">&times;</button>
+        </div>
+        <div class="ventana__cuerpo">
+            <div class="seccion__campos">
+
+                <!-- Fila propia: el código con su lupa y, al costado, el nombre
+                     que devuelve la búsqueda. -->
+                <div class="campo campo--total">
+                    <label class="campo__etiqueta" for="txtCodigo">
+                        Código de justificación <span class="campo__obligatorio">*</span>
+                    </label>
+                    <div class="campo__buscador">
+                        <input type="text" id="txtCodigo" class="control control--codigo" maxlength="60" placeholder="COMPENSA_HORA" />
+                        <button type="button" class="btn-lupa" id="btnBuscar" title="Buscar justificación">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+                        </button>
+                        <input type="text" id="txtJustificacion" class="control control--nombre" readonly placeholder="La justificación se completa al elegir el código" />
+                    </div>
+                </div>
+
+                <!-- Fila propia: la descripción puede ser larga -->
+                <div class="campo campo--total">
+                    <label class="campo__etiqueta" for="txaDescripcion">
+                        Descripción del tipo de solicitud <span class="campo__obligatorio">*</span>
+                    </label>
+                    <div class="campo__control">
+                        <textarea id="txaDescripcion" class="control" rows="2" maxlength="250" placeholder="Compensación por 4 horas"></textarea>
+                    </div>
+                    <p class="campo__ayuda">Es el texto que verá el trabajador al pedir su compensación. Hasta 250 caracteres.</p>
+                </div>
+
+                <div class="campo campo--medio">
+                    <label class="campo__etiqueta" for="cboDuracion">Tipo de duración <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <select id="cboDuracion" class="control">
+                            <option value="">Seleccione</option>
+                            <option value="HORA">Por hora</option>
+                            <option value="DIA">Por día</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="campo campo--medio">
+                    <label class="campo__etiqueta" for="numHoras">Compensa <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="number" id="numHoras" class="control" min="1" max="24" step="1" />
+                        <span class="campo__unidad">horas</span>
+                    </div>
+                    <p class="campo__ayuda" id="ayudaHoras">La base guarda minutos.</p>
+                    <p class="campo__error" id="errHoras"></p>
+                </div>
+
+                <div class="campo campo--medio">
+                    <label class="campo__etiqueta" for="cboEstado">Estado <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <select id="cboEstado" class="control">
+                            <option value="A">Activo</option>
+                            <option value="I">Inactivo</option>
+                        </select>
+                    </div>
+                    <p class="campo__ayuda">Inactivo deja de ofrecerse a los trabajadores.</p>
+                </div>
+
+            </div>
+        </div>
+        <div class="ventana__pie">
+            <button type="button" class="boton boton--secundario" id="btnCancelar">Cancelar</button>
+            <button type="button" class="boton" id="btnGrabar">Grabar</button>
+        </div>
+    </div>
+</div>
+
+<input id="hdfRaiz" type="hidden" value="/" />
+
+<script src="../../SAHE/SAHE/Scripts/General.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var TABLA = "T12";
+
+    /* ------------------------------------------------------------ datos ---
+       Cabecera de la grilla, con el formato que espera GUI.Grilla:
+           títulos ¬ anchos ¬ tipos
+       El prefijo PK marca la columna llave; ancho 0 oculta la columna.       */
+    var CABECERA = [
+        "PKId|Código|Justificación|Tipo de duración|Descripción|Compensa|Estado",
+        "0|150|110|210|280|90|90",
+        "Int32|String|String|String|String|Int32|String"
+    ].join("¬");
+
+    /* Configuración:
+         combos de filtro ¬ índices del mensaje de eliminar ¬
+         registros por página | páginas por bloque | selección múltiple |
+         con filtros | y las acciones: nuevo, eliminar múltiple, excel,
+         editar, eliminar, ver                                               */
+    var CONFIGURACION = "¬1¬10|5|false|true|S|N|S|S|S|N|";
+
+    /* Las cinco filas activas de DVSAHET12_TIPOCOMPENSACION.
+       La base guarda minutos; la columna Compensa muestra horas.            */
+    var FILAS = [
+        "191|COMPENSA_DIA|Por día|COMPENSACION POR DIA SDxD|Compensación por día|8|Activo",
+        "193|COMPENSA_HORA|Por hora|COMPENSACION POR HORAS SDxH|Compensación por 5 horas|5|Activo",
+        "203|COMPENSA_HORA|Por hora|COMPENSACION POR HORAS SDxH|Compensación por 6 horas|6|Activo",
+        "210|COMPENSA_HORA|Por hora|COMPENSACION POR HORAS SDxH|Compensación por 4 horas|4|Activo",
+        "213|COMPENSA_HORA|Por hora|COMPENSACION POR HORAS SDxH|Compensación por 7 horas|7|Inactivo"
+    ].join("¬");
+
+    /* Lista para el combo de la columna Estado (índice 6 según CONFIGURACION) */
+    var COMBOS = [];
+
+    /* ---------------------------------------------------------- ventana ---
+       GUI.Grilla llama a Ventana.mostrar y a Ventana.setearDatos del formato
+       heredado. Aquí se enganchan a la ventana de este prototipo para poder
+       ver el conjunto funcionando sin el marcado del popup antiguo.         */
+    var velo = document.getElementById("velo");
+
+    function abrir(titulo) {
+        document.getElementById("tituloVentana").innerHTML = titulo || "Nuevo";
+        document.getElementById("errHoras").innerHTML = "";
+        velo.className = "velo abierto";
+        document.getElementById("txtCodigo").focus();
+    }
+
+    function cerrar() { velo.className = "velo"; }
+
+    function limpiar() {
+        document.getElementById("txtCodigo").value = "";
+        document.getElementById("txtJustificacion").value = "";
+        document.getElementById("txaDescripcion").value = "";
+        document.getElementById("cboDuracion").value = "";
+        document.getElementById("numHoras").value = "";
+        document.getElementById("cboEstado").value = "A";
+        document.getElementById("ayudaHoras").innerHTML = "La base guarda minutos.";
+    }
+
+    Ventana.mostrar = function (visible, tabla, titulo) {
+        if (visible) abrir(titulo); else cerrar();
+    };
+    Ventana.limpiarDatos = function () { limpiar(); };
+    Ventana.setearDatosAuditoria = function () { };
+    Ventana.deshabilitarControles = function () { };
+    Ventana.ocultarControles = function () { };
+
+    /* Editar: la grilla entrega la fila completa separada por | */
+    Ventana.setearDatos = function (tabla, datos) {
+        var campos = String(datos).split("|");
+        limpiar();
+        document.getElementById("txtCodigo").value = campos[1] || "";
+        document.getElementById("txtJustificacion").value = campos[2] || "";
+        document.getElementById("txaDescripcion").value = campos[4] || "";
+        document.getElementById("cboDuracion").value = (campos[3] || "").indexOf("DIA") !== -1 ? "DIA" : "HORA";
+        document.getElementById("numHoras").value = campos[5] || "";
+        document.getElementById("cboEstado").value = (campos[6] === "Inactivo") ? "I" : "A";
+        abrir("Modificar");
+    };
+
+    document.getElementById("btnCerrar").onclick = cerrar;
+    document.getElementById("btnCancelar").onclick = cerrar;
+    velo.onclick = function (e) { if ((e.target || e.srcElement) === velo) cerrar(); };
+    document.onkeydown = function (e) {
+        e = e || window.event;
+        if ((e.keyCode || e.which) === 27) cerrar();
+    };
+
+    document.getElementById("numHoras").oninput = function () {
+        var valor = Number(this.value);
+        var ayuda = document.getElementById("ayudaHoras");
+        if (isNaN(valor) || valor <= 0) { ayuda.innerHTML = "La base guarda minutos."; return; }
+        ayuda.innerHTML = "Se guardarán " + (valor * 60) + " minutos.";
+    };
+
+    document.getElementById("btnGrabar").onclick = function () {
+        var valor = Number(document.getElementById("numHoras").value);
+        var error = document.getElementById("errHoras");
+        if (isNaN(valor) || valor <= 0 || valor > 24) {
+            error.innerHTML = "Ingrese entre 1 y 24 horas.";
+            document.getElementById("numHoras").focus();
+            return;
+        }
+        error.innerHTML = "";
+        cerrar();
+    };
+
+    /* ----------------------------------------------------------- grilla ---
+       GUI.Grilla usa dentro de sus manejadores una variable 'tabla' que NO es
+       parámetro suyo: la toma del ámbito global, donde la declaraba el archivo
+       de cada pantalla (en EDDO, el 'var tabla' de Configuracion.js). Sin ella,
+       el botón Nuevo muere con ReferenceError antes de llamar a Ventana.mostrar
+       y no pasa nada al pulsarlo. Se declara aquí hasta que el módulo reciba la
+       tabla por parámetro. */
+    window.tabla = TABLA;
+
+    /* Sin servidor detrás: el lápiz de la fila pide el registro a
+       SAHE/obtener y coloca la respuesta con Ventana.setearDatos. Aquí se
+       responde con la misma fila para poder ver la ventana en modo
+       Modificar. Es también el contrato que deberá cumplir esa acción. */
+    Descomprimir.Deflate = function (bytes) { return bytes; };
+    Http.postBytes = function (url, callback, frm) {
+        var clave = (frm && frm.get) ? frm.get("data") : "";
+        var i, campos;
+        if (url.toLowerCase().indexOf("obtener") === -1) return;
+        for (i = 0; i < FILAS.split("¬").length; i++) {
+            campos = FILAS.split("¬")[i].split("|");
+            if (campos[0] === String(clave)) { callback(FILAS.split("¬")[i]); return; }
+        }
+        callback("");
+    };
+
+    var contenedor = document.getElementById("gPriT12");
+    var grilla = new GUI.Grilla(contenedor, CABECERA, CONFIGURACION, TABLA, "SAHE", COMBOS);
+    grilla.esPrincipal = true;
+    grilla.id = TABLA;
+    grilla.actualizarDatosGrilla(FILAS);
+
+    window.grillaT12 = grilla;
+})();
+</script>
+</body>
+</html>

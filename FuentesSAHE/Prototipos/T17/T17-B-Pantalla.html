@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE · T17 · Prototipo B — Pantalla completa</title>
+<style>
+@charset "utf-8";
+/* ============================================================================
+   SAHE - T17  Estilos comunes a los tres prototipos.
+   Misma paleta que Sistema.css y Grilla.css.
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin clamp, sin sticky.
+   ========================================================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #F1EFEC; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.oculto { display: none !important; }
+
+/* ------------------------------------------------------------- estructura */
+.marco { padding: 22px 26px 30px; background: #FFFFFF; min-height: 100%; }
+.cabecera { padding-bottom: 14px; margin-bottom: 20px; border-bottom: 2px solid #C8102E; }
+.cabecera h1 { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.cabecera p { margin-top: 3px; font-size: 13.5px; color: #5F5C58; max-width: 78em; }
+
+/* ---------------------------------------------------------------- campos */
+.fila { display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -8px; }
+.campo { padding: 0 8px; margin-bottom: 14px; }
+.campo--corto { width: 210px; }
+.campo--medio { width: 50%; }
+.campo--largo { width: 100%; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.campo__etiqueta { display: block; margin-bottom: 4px; font-size: 12.5px; font-weight: 600; color: #5F5C58; }
+.campo__obligatorio { margin-left: 3px; color: #C8102E; font-weight: 700; }
+.campo__control { display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; }
+.control {
+    width: 100%; min-width: 0; height: 34px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    font-family: inherit; font-size: 13.5px; color: #221F1F; outline: 0;
+}
+.control:focus { border-color: #C8102E; -webkit-box-shadow: 0 0 0 2px rgba(200,16,46,.13); box-shadow: 0 0 0 2px rgba(200,16,46,.13); }
+.control[readonly] { background: #F7F6F3; color: #5F5C58; }
+.control[disabled] { background: #F1EFEC; color: #A9A6A0; }
+.campo__ayuda { margin-top: 3px; font-size: 12px; color: #8A8781; }
+.campo__error { margin-top: 3px; font-size: 12px; font-weight: 600; color: #B3261E; min-height: 15px; }
+
+/* lupa pegada a su caja */
+.control--conLupa { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.lupa {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-box-flex: 0; -ms-flex: none; flex: none;
+    width: 36px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.lupa:hover { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.lupa svg { width: 16px; height: 16px; }
+
+/* --------------------------------------------------------------- botones */
+.boton {
+    height: 34px; padding: 0 18px; border: 1px solid transparent; border-radius: 5px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.boton--primario { background: #C8102E; color: #FFFFFF; }
+.boton--primario:hover { background: #A32D2D; }
+.boton--secundario { background: #FFFFFF; border-color: #D5D0C9; color: #5F5C58; }
+.boton--secundario:hover { background: #F7F6F3; color: #C8102E; }
+.boton[disabled] { background: #F1EFEC; border-color: #E4E1DC; color: #A9A6A0; cursor: default; }
+.boton--icono {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 0 12px;
+}
+.boton--icono svg { width: 15px; height: 15px; margin-right: 6px; }
+
+/* --------------------------------------------------------------- rejilla */
+.rejilla { border: 1px solid #EDEAE5; border-radius: 8px; background: #FFFFFF; overflow-x: auto; }
+table.tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tabla th, table.tabla td { padding: 8px 10px; text-align: left; }
+table.tabla thead th {
+    background: #C8102E; color: #FFFFFF; font-size: 11px; font-weight: 700;
+    letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
+    border-right: 1px solid #A32D2D; vertical-align: middle;
+}
+table.tabla thead th:last-child { border-right: 0; }
+table.tabla tbody td { border-bottom: 1px solid #EDEAE5; }
+table.tabla tbody tr:nth-child(even) td { background: #FBFAF9; }
+table.tabla tbody tr:hover td { background: #FCEBEB; }
+table.tabla tfoot td {
+    background: #F7F6F3; border-top: 2px solid #EDEAE5;
+    font-weight: 700; font-size: 13.5px;
+}
+.der { text-align: right; -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.cen { text-align: center; }
+.tenue { color: #8A8781; }
+
+/* controles dentro de la rejilla */
+table.tabla .control { height: 30px; font-size: 13px; }
+table.tabla input[type="number"] { text-align: right; }
+.celda-importe { width: 130px; }
+.celda-fecha { width: 165px; }
+.celda-accion { width: 70px; }
+.control--cambiado { border-color: #C8102E; background: #FFF7F7; font-weight: 600; }
+
+.boton-fila {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    width: 28px; height: 28px; border: 1px solid transparent; border-radius: 5px;
+    background: transparent; color: #78756F; cursor: pointer;
+}
+.boton-fila:hover { background: #FCEBEB; color: #B3261E; }
+.boton-fila svg { width: 15px; height: 15px; }
+
+.sin-datos td { padding: 26px; text-align: center; color: #8A8781; background: #FFFFFF; }
+
+/* --------------------------------------------------------------- barras */
+.barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    margin-bottom: 10px;
+}
+.barra__titulo { font-size: 15px; font-weight: 700; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.barra__cuenta { font-size: 13px; color: #5F5C58; margin-right: 12px; }
+.barra__cuenta b { color: #221F1F; }
+.barra .boton { margin-left: 8px; }
+
+.pie-acciones {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding-top: 16px; margin-top: 18px; border-top: 1px solid #EDEAE5;
+}
+.pie-acciones .boton { margin-left: 10px; }
+
+/* ------------------------------------------------------------------ velo */
+.velo {
+    display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(20,18,18,.5); z-index: 1000;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.velo.abierto { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.ventana {
+    width: 100%; max-width: 640px; max-height: 92%; margin: 0 16px;
+    background: #FFFFFF; border-radius: 8px; overflow: auto;
+    -webkit-box-shadow: 0 18px 44px rgba(0,0,0,.3); box-shadow: 0 18px 44px rgba(0,0,0,.3);
+}
+.ventana--ancha { max-width: 900px; }
+.ventana__barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 11px 16px; background: #C8102E; color: #FFFFFF;
+}
+.ventana__titulo { font-size: 14.5px; font-weight: 700; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.ventana__cerrar {
+    width: 26px; height: 26px; border: 0; border-radius: 4px;
+    background: rgba(255,255,255,.18); color: #FFFFFF; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.ventana__cerrar:hover { background: rgba(255,255,255,.32); }
+.ventana__cuerpo { padding: 18px; }
+.ventana__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding: 14px 18px; background: #F7F6F3; border-top: 1px solid #EDEAE5;
+}
+.ventana__pie .boton { margin-left: 10px; }
+
+/* ------------------------------------------------------------- avisos */
+.aviso {
+    padding: 9px 12px; margin-bottom: 14px; border-radius: 6px;
+    font-size: 13px; border-left: 4px solid;
+}
+.aviso--ok { background: #EAF6EF; border-color: #1F7A4D; color: #1B5E3C; }
+.aviso--alerta { background: #FFF6E5; border-color: #C77700; color: #8A5300; }
+.aviso--error { background: #FCEBEB; border-color: #B3261E; color: #8E1F19; }
+
+</style>
+<style>
+/* Propio del prototipo B ------------------------------------------------- */
+/* Sin ventana modal: el maestro-detalle ocupa la pantalla. La cabecera del
+   trabajador queda arriba, fija en la lectura, y el detalle abajo con todo el
+   ancho, que es lo que una grilla de seis columnas editables necesita. */
+.tarjeta {
+    padding: 16px 18px 4px; margin-bottom: 18px;
+    background: #F7F6F3; border: 1px solid #EDEAE5; border-radius: 8px;
+}
+.tarjeta__titulo { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #5F5C58; margin-bottom: 12px; }
+.control--error { border-color: #B3261E; background: #FCEBEB; }
+.resumen {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 12px 16px; margin-top: 14px;
+    background: #FFFFFF; border: 1px solid #EDEAE5; border-radius: 8px;
+}
+.resumen__dato { padding-right: 30px; }
+.resumen__rotulo { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: #8A8781; }
+.resumen__valor { font-size: 19px; font-weight: 700; -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.resumen__valor--nuevo { color: #C8102E; }
+.resumen__dif { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; text-align: right; font-size: 13.5px; color: #5F5C58; }
+.resumen__dif b { font-size: 16px; }
+.sube { color: #1F7A4D; }
+.baja { color: #B3261E; }
+</style>
+</head>
+<body>
+
+<div class="marco">
+    <div class="cabecera">
+        <h1>Configuración de Importes</h1>
+        <p>Prototipo B — sin ventana modal. El trabajador y su detalle ocupan la pantalla, que es lo que una grilla editable de seis columnas necesita.</p>
+    </div>
+
+    <div id="avisoMod" class="aviso aviso--alerta oculto"></div>
+
+    <!-- ------------------------------------------------------- el maestro -->
+    <div class="tarjeta">
+        <div class="tarjeta__titulo">Trabajador</div>
+        <div class="fila">
+            <div class="campo campo--corto">
+                <label class="campo__etiqueta" for="txtTrabajador">Código<span class="campo__obligatorio">*</span></label>
+                <div class="campo__control">
+                    <input type="text" id="txtTrabajador" class="control control--conLupa" maxlength="10" value="90485193">
+                    <button type="button" class="lupa" id="btnLupa" title="Buscar trabajador"></button>
+                </div>
+            </div>
+            <div class="campo campo--largo">
+                <label class="campo__etiqueta" for="txtNombre">Apellidos y Nombres</label>
+                <input type="text" id="txtNombre" class="control" readonly value="TAPIA RIVERA HEIDY JEANETTE">
+            </div>
+            <div class="campo campo--corto">
+                <label class="campo__etiqueta" for="txtFechaCambio">Fecha de Cambio<span class="campo__obligatorio">*</span></label>
+                <input type="date" id="txtFechaCambio" class="control">
+                <p class="campo__error" id="errFechaCambio"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------- el detalle -->
+    <div class="barra">
+        <span class="barra__titulo">Detalle de Conceptos</span>
+        <span class="barra__cuenta">Registros: <b id="spnCuenta">0</b></span>
+        <button type="button" class="boton boton--secundario boton--icono" id="btnFecha">Aplicar la fecha de cambio a todos</button>
+        <button type="button" class="boton boton--primario boton--icono" id="btnAgregar"></button>
+    </div>
+
+    <div class="rejilla">
+        <table class="tabla" id="tblDetalle">
+            <thead>
+                <tr>
+                    <th style="width:110px">Código</th>
+                    <th>Concepto</th>
+                    <th class="der" style="width:120px">Importe anterior</th>
+                    <th class="der celda-importe">Importe nuevo</th>
+                    <th class="der" style="width:110px">Diferencia</th>
+                    <th class="cen celda-fecha">Fecha de modificación</th>
+                    <th class="cen celda-accion">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoDetalle"></tbody>
+        </table>
+    </div>
+
+    <!-- Los totales salen de la tabla y se vuelven un resumen: así se leen sin
+         tener que recorrer la grilla hasta el final. -->
+    <div class="resumen">
+        <div class="resumen__dato">
+            <span class="resumen__rotulo">Importe ROM anterior</span>
+            <span class="resumen__valor" id="totAnterior">0.00</span>
+        </div>
+        <div class="resumen__dato">
+            <span class="resumen__rotulo">Importe ROM nuevo</span>
+            <span class="resumen__valor resumen__valor--nuevo" id="totNuevo">0.00</span>
+        </div>
+        <div class="resumen__dif">Diferencia <b id="totDif">0.00</b></div>
+    </div>
+
+    <div class="pie-acciones">
+        <button type="button" class="boton boton--secundario" id="btnCancelar">Cancelar</button>
+        <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+    </div>
+</div>
+
+<!-- ============================================================ ventana lupa -->
+<div class="velo" id="veloLupa">
+  <div class="ventana">
+    <div class="ventana__barra">
+        <span class="ventana__titulo">Búsqueda de trabajadores</span>
+        <button type="button" class="ventana__cerrar" id="btnCerrarLupa" title="Cerrar">&#215;</button>
+    </div>
+    <div class="ventana__cuerpo">
+        <div class="campo campo--largo" style="padding:0">
+            <label class="campo__etiqueta" for="txtBuscaTrab">Código o nombre</label>
+            <input type="text" id="txtBuscaTrab" class="control" placeholder="Escriba para filtrar">
+            <p class="campo__ayuda">Doble clic sobre la fila para elegirla.</p>
+        </div>
+        <div class="rejilla">
+            <table class="tabla">
+                <thead><tr><th style="width:130px">Código</th><th>Apellidos y Nombres</th></tr></thead>
+                <tbody id="cuerpoLupa"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="ventana__pie">
+        <button type="button" class="boton boton--secundario" id="btnCancelarLupa">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ ventana agregar concepto ---->
+<div class="velo" id="veloAgregar">
+  <div class="ventana">
+    <div class="ventana__barra">
+        <span class="ventana__titulo">Agregar concepto</span>
+        <button type="button" class="ventana__cerrar" id="btnCerrarAgregar" title="Cerrar">&#215;</button>
+    </div>
+    <div class="ventana__cuerpo">
+        <div class="campo campo--largo" style="padding:0">
+            <label class="campo__etiqueta" for="cboNuevoConcepto">Concepto<span class="campo__obligatorio">*</span></label>
+            <select id="cboNuevoConcepto" class="control"></select>
+            <p class="campo__ayuda">Solo los conceptos vigentes que el trabajador todavía no tiene.</p>
+        </div>
+        <div class="campo campo--corto" style="padding:0">
+            <label class="campo__etiqueta" for="numNuevoImporte">Importe<span class="campo__obligatorio">*</span></label>
+            <input type="number" id="numNuevoImporte" class="control" min="0" step="0.01" value="0.00">
+        </div>
+    </div>
+    <div class="ventana__pie">
+        <button type="button" class="boton boton--primario" id="btnConfirmarAgregar">Agregar</button>
+        <button type="button" class="boton boton--secundario" id="btnCancelarAgregar">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   SAHE - T17  Datos de demostración compartidos por los tres prototipos.
+   JavaScript nativo, ES5, compatible con Chrome 49.
+   ========================================================================== */
+var Demo = (function () {
+    "use strict";
+
+    /* Los 8 conceptos vigentes de DVSAHET16_CONCEPTOS. El valor es el T16_ID,
+       que es lo que se graba desde que T17 referencia por llave foránea. */
+    var conceptos = [
+        { id: "11", codigo: "C001", nombre: "Asignación Familiar" },
+        { id: "36", codigo: "C002", nombre: "Remuneración Básica" },
+        { id: "37", codigo: "C003", nombre: "Diferencia por Categoría anterior al DU 09/94" },
+        { id: "15", codigo: "C004", nombre: "Remuneración por Contrato" },
+        { id: "16", codigo: "C005", nombre: "Bonificación Tiempo de Servicio" },
+        { id: "17", codigo: "C006", nombre: "Asignación Casado" },
+        { id: "27", codigo: "C007", nombre: "Asignación Hijo" },
+        { id: "28", codigo: "C008", nombre: "Asignación Madre Viuda" }
+    ];
+
+    /* Lo que devolvería dvpkg_spT17.listar para el trabajador consultado. */
+    var detalle = [
+        { t17: "9001", t16: "28", anterior: 0,       nuevo: 0 },
+        { t17: "9002", t16: "27", anterior: 113,     nuevo: 113 },
+        { t17: "9003", t16: "17", anterior: 0,       nuevo: 0 },
+        { t17: "9004", t16: "16", anterior: 51,      nuevo: 51 },
+        { t17: "9005", t16: "15", anterior: 0,       nuevo: 0 },
+        { t17: "9006", t16: "37", anterior: 0,       nuevo: 0 },
+        { t17: "9007", t16: "36", anterior: 2855,    nuevo: 2855 },
+        { t17: "9008", t16: "11", anterior: 0,       nuevo: 0 }
+    ];
+
+    var trabajador = { codigo: "90485193", nombre: "TAPIA RIVERA HEIDY JEANETTE" };
+
+    /* La ayuda de la lupa. En el aplicativo llega en el segmento 2. */
+    var trabajadores = [
+        { codigo: "90485193", nombre: "TAPIA RIVERA HEIDY JEANETTE" },
+        { codigo: "0137014",  nombre: "QUISPE MAMANI ROSA ELENA" },
+        { codigo: "0142034",  nombre: "GARCIA LOPEZ JUAN CARLOS" },
+        { codigo: "0332933",  nombre: "RAMIREZ SOTO MIGUEL ANGEL" },
+        { codigo: "0333042",  nombre: "VARGAS DIAZ ANA LUCIA" }
+    ];
+
+    function conceptoDe(id) {
+        var i;
+        for (i = 0; i < conceptos.length; i++) {
+            if (conceptos[i].id === id) return conceptos[i];
+        }
+        return { id: id, codigo: "?", nombre: "(concepto no vigente)" };
+    }
+
+    /* dd/mm/aaaa a aaaa-mm-dd, que es lo que entiende <input type="date">. */
+    function hoyISO() {
+        var d = new Date();
+        var m = d.getMonth() + 1;
+        var dia = d.getDate();
+        return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (dia < 10 ? "0" + dia : dia);
+    }
+
+    function importe(valor) {
+        var n = Number(valor);
+        if (isNaN(n)) n = 0;
+        return n.toFixed(2);
+    }
+
+    /* Suma pura: recibe datos y devuelve datos, se prueba sin navegador. */
+    function totales(filas) {
+        var suma = { anterior: 0, nuevo: 0 }, i;
+        for (i = 0; i < filas.length; i++) {
+            suma.anterior += Number(filas[i].anterior) || 0;
+            suma.nuevo += Number(filas[i].nuevo) || 0;
+        }
+        return suma;
+    }
+
+    function copiaDetalle() {
+        var salida = [], i;
+        for (i = 0; i < detalle.length; i++) {
+            salida.push({
+                t17: detalle[i].t17, t16: detalle[i].t16,
+                anterior: detalle[i].anterior, nuevo: detalle[i].nuevo,
+                fecha: hoyISO()
+            });
+        }
+        return salida;
+    }
+
+    return {
+        conceptos: conceptos,
+        trabajador: trabajador,
+        trabajadores: trabajadores,
+        conceptoDe: conceptoDe,
+        hoyISO: hoyISO,
+        importe: importe,
+        totales: totales,
+        copiaDetalle: copiaDetalle
+    };
+})();
+
+</script>
+<script>
+/* ============================================================================
+   SAHE - T17  Lo que comparten los tres prototipos: la lupa, el cálculo de
+   totales y el control de la fecha.
+   JavaScript nativo, ES5, compatible con Chrome 49. Sin librerías.
+   ========================================================================== */
+var Comun = (function () {
+    "use strict";
+
+    var ICONO = {
+        buscar: "<circle cx='11' cy='11' r='7'></circle><line x1='16.5' y1='16.5' x2='21' y2='21'></line>",
+        mas: "<line x1='12' y1='5' x2='12' y2='19'></line><line x1='5' y1='12' x2='19' y2='12'></line>",
+        quitar: "<polyline points='3 6 5 6 21 6'></polyline><path d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'></path><line x1='10' y1='11' x2='10' y2='17'></line><line x1='14' y1='11' x2='14' y2='17'></line>"
+    };
+
+    function svg(nombre, ancho) {
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='" + ancho + "' height='" + ancho +
+               "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' " +
+               "stroke-linecap='round' stroke-linejoin='round'>" + ICONO[nombre] + "</svg>";
+    }
+
+    function el(id) { return document.getElementById(id); }
+
+    /* ------------------------------------------------------------- fechas */
+
+    /* La fecha de un cambio no puede ser futura: se registra algo que ya pasó.
+       Se pone el tope en el propio control -así el calendario del navegador ya
+       no ofrece los días de adelante- y se vuelve a comprobar al escribir,
+       porque el usuario puede teclear la fecha sin abrir el calendario. */
+    function limitarAHoy(entrada) {
+        entrada.setAttribute("max", Demo.hoyISO());
+    }
+
+    function esFuturo(valor) {
+        return valor !== "" && valor > Demo.hoyISO();
+    }
+
+    /* Devuelve el mensaje del problema, o "" si la fecha sirve. */
+    function revisarFecha(valor) {
+        if (valor === "") return "Indique la fecha.";
+        if (esFuturo(valor)) return "La fecha no puede ser posterior a hoy.";
+        return "";
+    }
+
+    function marcarFecha(entrada, mensaje) {
+        entrada.className = mensaje === ""
+            ? entrada.className.replace(/\s*control--error/, "")
+            : (entrada.className.indexOf("control--error") === -1
+               ? entrada.className + " control--error" : entrada.className);
+        entrada.title = mensaje;
+    }
+
+    /* ------------------------------------------------------------ importes */
+
+    function aNumero(valor) {
+        var n = Number(String(valor).replace(/,/g, ""));
+        return isNaN(n) ? 0 : n;
+    }
+
+    /* --------------------------------------------------------------- lupa */
+
+    /* Una sola ventana de ayuda para todo el prototipo. Se arma la primera vez
+       que se abre y después solo se refresca. */
+    var alElegir = null;
+
+    function abrirLupa(destino) {
+        var velo = el("veloLupa");
+        alElegir = destino;
+        el("txtBuscaTrab").value = "";
+        pintarLupa("");
+        velo.className = "velo abierto";
+        el("txtBuscaTrab").focus();
+    }
+
+    function cerrarLupa() {
+        el("veloLupa").className = "velo";
+    }
+
+    function pintarLupa(filtro) {
+        var cuerpo = el("cuerpoLupa");
+        var lista = Demo.trabajadores, i, t, html = "";
+        var buscado = String(filtro || "").toLowerCase();
+
+        for (i = 0; i < lista.length; i++) {
+            t = lista[i];
+            if (buscado !== "" &&
+                t.codigo.toLowerCase().indexOf(buscado) === -1 &&
+                t.nombre.toLowerCase().indexOf(buscado) === -1) continue;
+            html += "<tr data-codigo='" + t.codigo + "' data-nombre='" + t.nombre + "'>" +
+                    "<td>" + t.codigo + "</td><td>" + t.nombre + "</td></tr>";
+        }
+        if (html === "") html = "<tr class='sin-datos'><td colspan='2'>Ningún trabajador coincide.</td></tr>";
+        cuerpo.innerHTML = html;
+    }
+
+    function armarLupa() {
+        var velo = el("veloLupa");
+        var cuerpo = el("cuerpoLupa");
+
+        el("txtBuscaTrab").oninput = function () { pintarLupa(this.value); };
+        el("btnCerrarLupa").onclick = cerrarLupa;
+        el("btnCancelarLupa").onclick = cerrarLupa;
+
+        /* Doble clic para elegir: en una lista larga, un clic simple se dispara
+           mientras el usuario todavía está recorriendo con el mouse. */
+        cuerpo.ondblclick = function (e) {
+            var fila = (e.target || e.srcElement);
+            while (fila && fila.tagName !== "TR") fila = fila.parentNode;
+            if (!fila || !fila.getAttribute("data-codigo")) return;
+            if (alElegir) alElegir(fila.getAttribute("data-codigo"), fila.getAttribute("data-nombre"));
+            cerrarLupa();
+        };
+
+        velo.onclick = function (e) {
+            if ((e.target || e.srcElement) === velo) cerrarLupa();
+        };
+    }
+
+    return {
+        svg: svg, el: el,
+        limitarAHoy: limitarAHoy, esFuturo: esFuturo,
+        revisarFecha: revisarFecha, marcarFecha: marcarFecha,
+        aNumero: aNumero,
+        armarLupa: armarLupa, abrirLupa: abrirLupa, cerrarLupa: cerrarLupa
+    };
+})();
+
+</script>
+<script>
+(function () {
+    "use strict";
+
+    var filas = [];
+    var el = Comun.el;
+
+    function pintarDetalle() {
+        var cuerpo = el("cuerpoDetalle"), html = "", i, f, c, dif;
+
+        for (i = 0; i < filas.length; i++) {
+            f = filas[i];
+            c = Demo.conceptoDe(f.t16);
+            dif = Number(f.nuevo) - Number(f.anterior);
+            html += "<tr data-fila='" + i + "'>" +
+                "<td>" + c.codigo + "</td>" +
+                "<td>" + c.nombre + "</td>" +
+                "<td class='der tenue'>" + Demo.importe(f.anterior) + "</td>" +
+                "<td class='der'><input type='number' class='control' min='0' step='0.01' " +
+                    "data-importe='" + i + "' value='" + Demo.importe(f.nuevo) + "'></td>" +
+                "<td class='der " + (dif > 0 ? "sube" : (dif < 0 ? "baja" : "tenue")) + "' data-dif='" + i + "'>" +
+                    (dif > 0 ? "+" : "") + Demo.importe(dif) + "</td>" +
+                "<td class='cen'><input type='date' class='control' data-fecha='" + i + "' " +
+                    "max='" + Demo.hoyISO() + "' value='" + f.fecha + "'></td>" +
+                "<td class='cen'><button type='button' class='boton-fila' data-quitar='" + i +
+                    "' title='Quitar'>" + Comun.svg("quitar", 15) + "</button></td>" +
+                "</tr>";
+        }
+        if (filas.length === 0) {
+            html = "<tr class='sin-datos'><td colspan='7'>El trabajador no tiene conceptos asignados.</td></tr>";
+        }
+        cuerpo.innerHTML = html;
+        el("spnCuenta").innerHTML = String(filas.length);
+        pintarTotales();
+    }
+
+    function pintarTotales() {
+        var suma = Demo.totales(filas);
+        var dif = suma.nuevo - suma.anterior;
+        el("totAnterior").innerHTML = Demo.importe(suma.anterior);
+        el("totNuevo").innerHTML = Demo.importe(suma.nuevo);
+        el("totDif").innerHTML = (dif > 0 ? "+" : "") + Demo.importe(dif);
+        el("totDif").className = dif > 0 ? "sube" : (dif < 0 ? "baja" : "");
+    }
+
+    function refrescarFila(i) {
+        var celda = el("cuerpoDetalle").querySelector("[data-dif='" + i + "']");
+        var dif = Number(filas[i].nuevo) - Number(filas[i].anterior);
+        if (!celda) return;
+        celda.innerHTML = (dif > 0 ? "+" : "") + Demo.importe(dif);
+        celda.className = "der " + (dif > 0 ? "sube" : (dif < 0 ? "baja" : "tenue"));
+    }
+
+    function alEscribir(evento) {
+        var e = evento || window.event;
+        var origen = e.target || e.srcElement;
+        var indice, mensaje;
+
+        if (!origen || !origen.getAttribute) return;
+
+        indice = origen.getAttribute("data-importe");
+        if (indice !== null) {
+            filas[+indice].nuevo = Comun.aNumero(origen.value);
+            refrescarFila(+indice);
+            pintarTotales();
+            return;
+        }
+
+        indice = origen.getAttribute("data-fecha");
+        if (indice !== null) {
+            /* El valor se guarda aunque esté mal: si solo se guardara el
+               bueno, la fila conservaría la fecha vieja, Grabar la daría por
+               válida y se registraría una fecha que el usuario ya cambió. Lo
+               que decide es la revisión, no el guardado. */
+            filas[+indice].fecha = origen.value;
+            mensaje = Comun.revisarFecha(origen.value);
+            Comun.marcarFecha(origen, mensaje);
+        }
+    }
+
+    function alPulsar(evento) {
+        var e = evento || window.event;
+        var nodo = e.target || e.srcElement, indice;
+
+        while (nodo && nodo.getAttribute && nodo.getAttribute("data-quitar") === null) nodo = nodo.parentNode;
+        if (!nodo || !nodo.getAttribute) return;
+        indice = Number(nodo.getAttribute("data-quitar"));
+        if (window.confirm("¿Quita el concepto " + Demo.conceptoDe(filas[indice].t16).nombre + "?")) {
+            filas.splice(indice, 1);
+            pintarDetalle();
+        }
+    }
+
+    function conceptosDisponibles() {
+        var usados = {}, salida = [], i;
+        for (i = 0; i < filas.length; i++) usados[filas[i].t16] = true;
+        for (i = 0; i < Demo.conceptos.length; i++) {
+            if (!usados[Demo.conceptos[i].id]) salida.push(Demo.conceptos[i]);
+        }
+        return salida;
+    }
+
+    function abrirAgregar() {
+        var lista = conceptosDisponibles(), cbo = el("cboNuevoConcepto"), i, op;
+        if (lista.length === 0) { avisar("El trabajador ya tiene todos los conceptos vigentes.", "alerta"); return; }
+        cbo.innerHTML = "";
+        for (i = 0; i < lista.length; i++) {
+            op = document.createElement("option");
+            op.value = lista[i].id;
+            op.appendChild(document.createTextNode(lista[i].codigo + " - " + lista[i].nombre));
+            cbo.appendChild(op);
+        }
+        el("numNuevoImporte").value = "0.00";
+        el("veloAgregar").className = "velo abierto";
+    }
+
+    function confirmarAgregar() {
+        filas.push({
+            t17: "0", t16: el("cboNuevoConcepto").value, anterior: 0,
+            nuevo: Comun.aNumero(el("numNuevoImporte").value),
+            fecha: el("txtFechaCambio").value || Demo.hoyISO()
+        });
+        el("veloAgregar").className = "velo";
+        pintarDetalle();
+        avisar("", "");
+    }
+
+    /* Comodidad real: la fecha de cambio suele ser la misma para todo el
+       movimiento; escribirla ocho veces no le sirve a nadie. */
+    function aplicarFechaATodos() {
+        var fecha = el("txtFechaCambio").value;
+        var mensaje = Comun.revisarFecha(fecha), i;
+
+        el("errFechaCambio").innerHTML = mensaje;
+        if (mensaje !== "") { el("txtFechaCambio").focus(); return; }
+        for (i = 0; i < filas.length; i++) filas[i].fecha = fecha;
+        pintarDetalle();
+        avisar("La fecha " + fecha + " quedó en los " + filas.length + " conceptos.", "ok");
+    }
+
+    function avisar(texto, tipo) {
+        var caja = el("avisoMod");
+        if (!texto) { caja.className = "aviso oculto"; return; }
+        caja.className = "aviso aviso--" + tipo;
+        caja.innerHTML = texto;
+    }
+
+    function grabar() {
+        var mensaje = Comun.revisarFecha(el("txtFechaCambio").value), i, problema;
+
+        el("errFechaCambio").innerHTML = mensaje;
+        if (mensaje !== "") { el("txtFechaCambio").focus(); return; }
+        for (i = 0; i < filas.length; i++) {
+            problema = Comun.revisarFecha(filas[i].fecha);
+            if (problema !== "") { avisar("Fila " + (i + 1) + ": " + problema, "error"); return; }
+        }
+        if (filas.length === 0) { avisar("Agregue al menos un concepto.", "alerta"); return; }
+        avisar("Se grabarían " + filas.length + " conceptos. (Prototipo: no toca la base.)", "ok");
+    }
+
+    function iniciar() {
+        el("btnLupa").innerHTML = Comun.svg("buscar", 16);
+        el("btnAgregar").innerHTML = Comun.svg("mas", 15) + "Agregar concepto";
+
+        el("txtFechaCambio").value = Demo.hoyISO();
+        Comun.limitarAHoy(el("txtFechaCambio"));
+        el("txtFechaCambio").oninput = function () {
+            el("errFechaCambio").innerHTML = Comun.revisarFecha(this.value);
+        };
+
+        filas = Demo.copiaDetalle();
+        pintarDetalle();
+
+        el("cuerpoDetalle").oninput = alEscribir;
+        el("cuerpoDetalle").onchange = alEscribir;
+        el("cuerpoDetalle").onclick = alPulsar;
+
+        el("btnAgregar").onclick = abrirAgregar;
+        el("btnFecha").onclick = aplicarFechaATodos;
+        el("btnConfirmarAgregar").onclick = confirmarAgregar;
+        el("btnCancelarAgregar").onclick = function () { el("veloAgregar").className = "velo"; };
+        el("btnCerrarAgregar").onclick = function () { el("veloAgregar").className = "velo"; };
+        el("btnGrabar").onclick = grabar;
+        el("btnCancelar").onclick = function () { filas = Demo.copiaDetalle(); pintarDetalle(); avisar("", ""); };
+
+        Comun.armarLupa();
+        el("btnLupa").onclick = function () {
+            Comun.abrirLupa(function (codigo, nombre) {
+                el("txtTrabajador").value = codigo;
+                el("txtNombre").value = nombre;
+                filas = Demo.copiaDetalle();
+                pintarDetalle();
+            });
+        };
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", iniciar, false);
+    } else {
+        iniciar();
+    }
+})();
+</script>
+</body>
+</html>

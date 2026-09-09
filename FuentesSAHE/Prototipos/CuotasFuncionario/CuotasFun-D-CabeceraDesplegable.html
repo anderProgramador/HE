@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - D - Oficina desde la cabecera</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+<link rel="stylesheet" href="_cabecera.css">
+</head>
+<body style="background:#F1EFEC">
+
+<!-- ------------------------------------------------- barra del sistema -->
+<!-- La misma de siempre. Lo único que cambia: donde decía "Oficina: A/B"
+     ahora hay un botón. El funcionario con una sola oficina ve el mismo
+     rótulo de antes, sin botón: no se le inventa una decisión que no tiene. -->
+<div class="app">
+    <button type="button" class="app__menu">Menu de Opciones <span>&#9776;</span></button>
+    <button type="button" class="app__salir" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+    </button>
+    <div class="app__datos">
+        Código: <b id="hCodigo"></b><span class="app__sep"></span>
+        Nombres: <b id="hNombre"></b><span class="app__sep"></span>
+        Oficina: <button type="button" class="oficina-boton" id="hOficina"></button>
+    </div>
+
+    <!-- El desplegable de cambio. Cada opción trae su saldo: se elige
+         sabiendo cuál es la que necesita atención. -->
+    <div class="menu-oficinas" id="hMenu">
+        <div class="menu-oficinas__titulo">Oficinas a su cargo</div>
+        <div id="hLista"></div>
+        <div class="menu-oficinas__pie">Al cambiar de oficina, la pantalla se recarga con la cuota de esa oficina.</div>
+    </div>
+</div>
+
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.</p>
+    </div>
+
+    <div class="aviso oculto" id="aviso"></div>
+
+    <div id="area"></div>
+
+    <div class="nota">
+        <b>Alternativa D — la oficina se cambia en la cabecera, como el perfil.</b>
+        <ul>
+            <li>La pantalla queda <b>igual que la de un funcionario con una sola oficina</b>: sin selector,
+                sin resumen doble, sin nada que explicar. Lo que cambia es el contexto de la sesión.</li>
+            <li>El mismo gesto sirve para todas las pantallas del sistema —consultas, reportes, autorizaciones—,
+                no solo para esta. Se resuelve una vez y vale para todo.</li>
+            <li>Cada opción del desplegable muestra su pendiente, así que el cambio se decide con el dato a
+                la vista y no de memoria.</li>
+            <li>El costo: la oficina activa <b>no está a la vista mientras se trabaja</b>, solo en la cabecera.
+                Por eso el cintillo de la grilla repite de qué cuota se está hablando.</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="_fun.js"></script>
+<script src="_cuerpo.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    Fun.porId("hCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("hNombre").textContent = Fun.funcionario.nombre;
+
+    Cuerpo.montar("area");
+
+    /* La cabecera se entera de cada cambio y se repinta: el rótulo del botón
+       y los saldos del desplegable tienen que decir la verdad después de
+       cada grabado. */
+    Cuerpo.alCambiar = function (bolsa) {
+        Fun.porId("hOficina").textContent = bolsa.nombre;
+        pintarMenu();
+    };
+
+    function pintarMenu() {
+        var caja = Fun.porId("hLista"), i, bolsa, s, boton;
+        var activa = Cuerpo.activa();
+        caja.innerHTML = "";
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            bolsa = Fun.bolsas[i];
+            s = Fun.saldo(bolsa);
+            boton = Fun.crear("button", "menu-oficinas__item" +
+                (bolsa.codigo === activa.codigo ? " menu-oficinas__item--activo" : ""));
+            boton.type = "button";
+            boton.innerHTML =
+                '<span class="menu-oficinas__nombre">' + bolsa.nombre + "</span>" +
+                '<span class="menu-oficinas__saldo">Código ' + bolsa.codigo +
+                " · asignada <b>" + Fun.formatear(s.asignada) +
+                "</b> · pendiente <b>" + Fun.conSigno(s.pendiente) + "</b></span>";
+            boton.onclick = (function (codigo, nombre) {
+                return function () {
+                    cerrarMenu();
+                    if (codigo === Cuerpo.activa().codigo) return;
+                    Cuerpo.ir(codigo);
+                    avisar("Ahora está trabajando sobre " + nombre + ".");
+                };
+            })(bolsa.codigo, bolsa.nombre);
+            caja.appendChild(boton);
+        }
+    }
+
+    function abrirMenu() {
+        Fun.porId("hMenu").className = "menu-oficinas abierto";
+        Fun.porId("hOficina").className = "oficina-boton oficina-boton--abierto";
+    }
+
+    function cerrarMenu() {
+        Fun.porId("hMenu").className = "menu-oficinas";
+        Fun.porId("hOficina").className = "oficina-boton";
+    }
+
+    function avisar(texto) {
+        var a = Fun.porId("aviso");
+        a.className = "aviso aviso--bien";
+        a.textContent = texto;
+        window.setTimeout(function () { a.className = "aviso oculto"; }, 3500);
+    }
+
+    Fun.porId("hOficina").onclick = function (e) {
+        if (Fun.porId("hMenu").className.indexOf("abierto") !== -1) cerrarMenu();
+        else abrirMenu();
+        e.stopPropagation();
+    };
+    /* Un clic en cualquier otro lado lo cierra: es lo que el usuario espera
+       de un desplegable de la cabecera. */
+    document.onclick = function () { cerrarMenu(); };
+    Fun.porId("hMenu").onclick = function (e) { e.stopPropagation(); };
+
+    Cuerpo.ir(Fun.bolsas[0].codigo);
+})();
+</script>
+</body>
+</html>

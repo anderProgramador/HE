@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Error</title>
+<!-- Mismo marcado de Views/SAHE/Error.cshtml y los MISMOS archivos que se
+     despliegan: lo que se ve aquí es lo que corre en el aplicativo.
+     Si mueve esta carpeta, corrija estas dos rutas. -->
+<link href="../../SAHE/SAHE/Estilos/Error.css" rel="stylesheet" />
+<style>
+/* Barra de la demostración: NO forma parte del diseño ni del CSS desplegado. */
+.demo {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 8px 14px; background: #221F1F; color: #C4C1BA;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 11.5px; text-align: center;
+}
+.demo button {
+    margin: 0 3px; padding: 4px 10px; border: 1px solid #4A4643; border-radius: 4px;
+    background: #2F2B29; color: #EDEAE5; font-family: inherit; font-size: 11.5px; cursor: pointer;
+}
+.demo button:hover { background: #3D3835; }
+</style>
+</head>
+<body>
+    <div class="franja"></div>
+
+    <div class="hoja">
+        <div class="membrete">
+            <span class="logo">BN</span>
+            <span class="rotulo">
+                Banco de la Nación
+                <span>SAHE · Horas Extra</span>
+            </span>
+        </div>
+
+        <div class="centro">
+            <div class="bloque">
+                <div class="codigo" id="codigo">500</div>
+                <span class="rotulo-codigo" id="rotulo">Error del sistema</span>
+
+                <h1 id="titulo">No pudimos completar su solicitud</h1>
+                <p class="explicacion" id="explicacion">
+                    Ocurrió un problema al procesar la operación.
+                </p>
+
+                <div class="acciones" id="acciones"></div>
+
+                <p class="referencia">
+                    Referencia de la incidencia: <b id="referencia">20260903-172735</b>
+                </p>
+            </div>
+        </div>
+
+        <div class="pie">Sistema Administrativo de Horas Extra · Banco de la Nación</div>
+    </div>
+
+    <input id="hdfRaiz" type="hidden" value="" />
+    <input id="hdfCodigo" type="hidden" value="" />
+    <input id="hdfReferencia" type="hidden" value="20260903-172735" />
+    <input id="hdfOrigen" type="hidden" value="" />
+
+<div class="demo">
+    Demostración —
+    <button type="button" data-codigo="404">404</button>
+    <button type="button" data-codigo="500">500</button>
+    <button type="button" data-codigo="403">403</button>
+    <button type="button" data-codigo="401">401</button>
+</div>
+
+<script>
+/* Semilla solo para ver la pantalla fuera del aplicativo. En producción los
+   valores llegan en los campos ocultos desde ViewBag y este bloque no existe.
+   Su presencia también evita que los botones naveguen de verdad. */
+window.SAHE_ERROR_DEMO = { codigo: "500" };
+</script>
+<script src="../../SAHE/SAHE/Scripts/Error.js"></script>
+<script>
+(function () {
+    var botones = document.querySelectorAll(".demo button");
+    for (var i = 0; i < botones.length; i++) {
+        botones[i].onclick = function () { PaginaError.pintar(this.getAttribute("data-codigo")); };
+    }
+})();
+</script>
+</body>
+</html>

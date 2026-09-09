@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Error (Prototipo B)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO B - Tarjeta dentro del marco
+   Pensada para cargarse en #ifrPagina: la cabecera y el menú del escritorio
+   ya están arriba, así que aquí no se repiten. Si la página se abre suelta
+   (fuera del marco), el guión muestra el membrete para que no quede huérfana.
+   El número de error se reduce a una etiqueta: dentro del marco lo que
+   importa es qué hacer, no el código.
+   CSS nativo, Chrome 49.
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #FFFFFF;
+    color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -ms-flex-direction: column; flex-direction: column;
+}
+
+/* Solo aparece cuando la página NO está dentro del marco */
+.membrete {
+    display: none; -ms-flex-negative: 0; flex-shrink: 0;
+    padding: 14px 22px; border-bottom: 3px solid #C8102E; background: #FFFFFF;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+body.suelta { background: #f5f5f5; }
+body.suelta .membrete { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.membrete .logo {
+    width: 30px; height: 30px; margin-right: 10px; border-radius: 7px;
+    background: #C8102E; color: #FFFFFF; font-weight: 800; font-size: 12px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.membrete span { font-size: 11.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: #78756F; }
+
+.centro {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+    padding: 24px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+
+.tarjeta {
+    width: 100%; max-width: 540px;
+    padding: 26px 28px;
+    border: 1px solid #EDEAE5; border-left: 4px solid #C8102E; border-radius: 8px;
+    background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+body.suelta .tarjeta { box-shadow: 0 6px 20px rgba(0, 0, 0, .09); }
+
+.encabezado {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: start; -ms-flex-align: start; align-items: flex-start;
+}
+.simbolo {
+    -ms-flex-negative: 0; flex-shrink: 0;
+    width: 42px; height: 42px; margin-right: 16px; border-radius: 50%;
+    background: #FCEBEB; color: #C8102E;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.textos { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; min-width: 0; }
+.etiqueta {
+    display: inline-block; margin-bottom: 6px; padding: 2px 8px; border-radius: 10px;
+    background: #F7F6F3; color: #78756F;
+    font-family: Consolas, "Courier New", monospace; font-size: 10.5px; letter-spacing: .6px;
+}
+h1 { font-size: 18px; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
+.explicacion { color: #5F5C58; font-size: 14px; }
+
+/* Qué puede hacer el trabajador, en pasos, cuando el error tiene salida */
+ul.pasos { list-style: none; margin: 16px 0 0 58px; }
+ul.pasos li { position: relative; padding-left: 16px; margin-bottom: 5px; font-size: 13.5px; color: #5F5C58; }
+ul.pasos li::before {
+    content: ''; position: absolute; left: 0; top: 8px;
+    width: 5px; height: 5px; border-radius: 50%; background: #C8102E;
+}
+
+.acciones {
+    margin: 20px 0 0 58px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 36px; margin-right: 10px; padding: 0 16px;
+    border: 1px solid #C8102E; border-radius: 8px;
+    background: #C8102E; color: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    -webkit-transition: background-color .15s ease; transition: background-color .15s ease;
+}
+.boton:hover { background: #A32D2D; border-color: #A32D2D; }
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton.secundario { background: #FFFFFF; color: #C8102E; }
+.boton.secundario:hover { background: #FCEBEB; }
+.boton svg { margin-right: 7px; }
+
+.referencia {
+    margin: 18px 0 0 58px; padding-top: 14px; border-top: 1px solid #EDEAE5;
+    font-size: 11.5px; color: #8A8781;
+}
+.referencia b {
+    font-family: Consolas, "Courier New", monospace; font-weight: normal; color: #221F1F;
+}
+
+@media screen and (max-width: 560px) {
+    .centro { padding: 16px; }
+    .tarjeta { padding: 20px 18px; }
+    .encabezado { display: block; }
+    .simbolo { margin: 0 0 12px 0; }
+    ul.pasos, .acciones, .referencia { margin-left: 0; }
+    .boton { width: 100%; margin: 0 0 8px 0; -ms-flex-pack: center; justify-content: center; }
+}
+
+/* ---- barra de la demostración: no forma parte del diseño ---- */
+.demo {
+    -ms-flex-negative: 0; flex-shrink: 0;
+    padding: 8px 14px; background: #221F1F; color: #C4C1BA;
+    font-size: 11.5px; text-align: center;
+}
+.demo button {
+    margin: 0 3px; padding: 4px 10px; border: 1px solid #4A4643; border-radius: 4px;
+    background: #2F2B29; color: #EDEAE5; font-family: inherit; font-size: 11.5px; cursor: pointer;
+}
+.demo button:hover { background: #3D3835; }
+</style>
+</head>
+<body>
+
+<div class="membrete">
+    <span class="logo">BN</span>
+    <span>Banco de la Nación · SAHE</span>
+</div>
+
+<div class="centro">
+    <div class="tarjeta">
+        <div class="encabezado">
+            <div class="simbolo" id="simbolo"></div>
+            <div class="textos">
+                <span class="etiqueta" id="etiqueta">HTTP 500</span>
+                <h1 id="titulo">No pudimos completar su solicitud</h1>
+                <p class="explicacion" id="explicacion">
+                    Ocurrió un problema al procesar la operación. Sus datos no se perdieron.
+                </p>
+            </div>
+        </div>
+
+        <ul class="pasos" id="pasos"></ul>
+        <div class="acciones" id="acciones"></div>
+
+        <p class="referencia">
+            Si necesita reportarlo, indique la referencia <b id="referencia">20260903-172735</b>
+        </p>
+    </div>
+</div>
+
+<div class="demo">
+    Demostración —
+    <button type="button" data-codigo="404">404</button>
+    <button type="button" data-codigo="500">500</button>
+    <button type="button" data-codigo="403">403</button>
+    <button type="button" data-codigo="401">401</button>
+    <button type="button" data-marco="1">Ver suelta / en marco</button>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var ICONO_ALERTA = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+    var ICONO_BUSCAR = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+    var ICONO_CANDADO = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+    var ICONO_RELOJ = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>';
+    var ICONO_VOLVER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>';
+    var ICONO_REINTENTAR = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path><polyline points="21 3 21 9 15 9"></polyline></svg>';
+
+    var CASOS = {
+        "404": {
+            simbolo: ICONO_BUSCAR, etiqueta: "HTTP 404",
+            titulo: "Esta opción no existe",
+            texto: "La dirección solicitada no corresponde a ninguna pantalla del aplicativo.",
+            pasos: ["Elija la opción desde el menú, no escribiendo la dirección.",
+                    "Si llegó por un enlace guardado, vuelva a crearlo desde el menú."],
+            acciones: ["inicio"]
+        },
+        "500": {
+            simbolo: ICONO_ALERTA, etiqueta: "HTTP 500",
+            titulo: "No pudimos completar su solicitud",
+            texto: "Ocurrió un problema al procesar la operación. Sus datos no se perdieron.",
+            pasos: ["Espere un momento y vuelva a intentarlo.",
+                    "Si el mensaje se repite, avise a Soporte de Informática con la referencia."],
+            acciones: ["reintentar", "inicio"]
+        },
+        "403": {
+            simbolo: ICONO_CANDADO, etiqueta: "HTTP 403",
+            titulo: "Su perfil no tiene acceso a esta opción",
+            texto: "Los permisos del aplicativo los asigna la jefatura de su unidad.",
+            pasos: ["Verifique que eligió la opción correcta del menú.",
+                    "Si necesita esta pantalla, solicite la ampliación de su perfil."],
+            acciones: ["inicio"]
+        },
+        "401": {
+            simbolo: ICONO_RELOJ, etiqueta: "HTTP 401",
+            titulo: "Su sesión expiró por inactividad",
+            texto: "Por seguridad la sesión se cierra tras un tiempo sin actividad.",
+            pasos: ["Ingrese otra vez con su usuario y su clave host.",
+                    "Lo que estaba llenando en pantalla no se guardó."],
+            acciones: ["ingresar"]
+        }
+    };
+
+    var BOTONES = {
+        inicio: "<a class='boton' href='#' data-ir='inicio'>" + ICONO_VOLVER + "Ir al inicio</a>",
+        reintentar: "<a class='boton secundario' href='#' data-ir='reintentar'>" + ICONO_REINTENTAR + "Reintentar</a>",
+        ingresar: "<a class='boton' href='#' data-ir='login'>" + ICONO_VOLVER + "Ingresar nuevamente</a>"
+    };
+
+    function pintar(codigo) {
+        var caso = CASOS[codigo] || CASOS["500"], i, html;
+        document.getElementById("simbolo").innerHTML = caso.simbolo;
+        document.getElementById("etiqueta").innerHTML = caso.etiqueta;
+        document.getElementById("titulo").innerHTML = caso.titulo;
+        document.getElementById("explicacion").innerHTML = caso.texto;
+        document.title = "SAHE - " + caso.titulo;
+
+        html = "";
+        for (i = 0; i < caso.pasos.length; i++) html += "<li>" + caso.pasos[i] + "</li>";
+        document.getElementById("pasos").innerHTML = html;
+
+        html = "";
+        for (i = 0; i < caso.acciones.length; i++) html += BOTONES[caso.acciones[i]];
+        document.getElementById("acciones").innerHTML = html;
+    }
+
+    /* Fuera del marco la página necesita su propio membrete. */
+    function ajustarContexto(forzarSuelta) {
+        var suelta = (forzarSuelta === true) || (window.top === window.self);
+        document.body.className = suelta ? "suelta" : "";
+    }
+
+    document.getElementById("acciones").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        while (destino && !destino.getAttribute) destino = destino.parentNode;
+        var ir = destino ? destino.getAttribute("data-ir") : null;
+        if (!ir) return;
+        if (e.preventDefault) e.preventDefault(); else e.returnValue = false;
+        /* En la vista:
+             inicio     -> window.location = hdfRaiz.value + "SAHE/Inicio";
+             login      -> window.top.location = hdfRaiz.value + "SAHE/Login";
+             reintentar -> window.location.reload();                          */
+        alert("Ir a: " + ir + " (demostración)");
+    };
+
+    var botones = document.querySelectorAll(".demo button");
+    var sueltaDemo = false;
+    for (var i = 0; i < botones.length; i++) {
+        botones[i].onclick = function () {
+            var codigo = this.getAttribute("data-codigo");
+            if (codigo) { pintar(codigo); return; }
+            sueltaDemo = !sueltaDemo;
+            ajustarContexto(sueltaDemo);
+        };
+    }
+
+    ajustarContexto();
+    pintar("500");
+})();
+</script>
+</body>
+</html>

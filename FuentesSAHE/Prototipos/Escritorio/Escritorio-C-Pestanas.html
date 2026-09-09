@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Sistema Administrativo de Horas Extra" />
+<title>SAHE - Escritorio (Prototipo C)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO C - Escritorio con pestañas
+   Cabecera y menu deslizante de EDDO sin cambios; lo que cambia es el area
+   de trabajo: cada opcion abierta queda como pestaña con SU PROPIO iframe.
+   Al volver a una pestaña, la pantalla sigue tal cual se dejo: filtros,
+   pagina de la grilla y datos a medio llenar. Es lo unico que el iframe
+   permite hacer barato y que una recarga de pagina no puede.
+
+   CSS nativo, sin Grid ni gap en flexbox (Chrome 49).
+   ========================================================================== */
+
+:root { --gold-accent: #D4AF37; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 1rem; line-height: 1.5; color: #333; background: #f5f5f5;
+    -webkit-font-smoothing: antialiased; overflow: hidden;
+
+    --rojo: #C8102E;
+    --rojo-oscuro: #7A0E1F;
+    --rojo-hover: #A32D2D;
+    --rojo-suave: #FCEBEB;
+    --texto: #221F1F;
+    --texto-mute: #8A8781;
+    --texto-sub: #78756F;
+    --icono: #A9A6A0;
+    --borde: #EDEAE5;
+    --bg-hover: #F7F6F3;
+}
+
+/* ------------------------------------------------------ capa de espera --- */
+.wrap_loading {
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(11, 60, 93, 0.9); z-index: 9999;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -ms-flex-direction: column; flex-direction: column;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.lds-ring { display: inline-block; position: relative; width: 64px; height: 64px; }
+.lds-ring div {
+    box-sizing: border-box; display: block; position: absolute;
+    width: 51px; height: 51px; margin: 6px; border: 6px solid var(--gold-accent);
+    border-color: var(--gold-accent) transparent transparent transparent; border-radius: 50%;
+    -webkit-animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+.lds-ring div:nth-child(1) { -webkit-animation-delay: -0.45s; animation-delay: -0.45s; }
+.lds-ring div:nth-child(2) { -webkit-animation-delay: -0.30s; animation-delay: -0.30s; }
+.lds-ring div:nth-child(3) { -webkit-animation-delay: -0.15s; animation-delay: -0.15s; }
+@-webkit-keyframes lds-ring { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+@keyframes lds-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading_text { color: #FFFFFF; margin-top: 15px; font-size: 16px; }
+.hide { display: none !important; }
+.pointer-event-none { pointer-events: none !important; }
+
+/* ------------------------------------------------------------ cabecera --- */
+#datosEmpleado {
+    position: fixed; left: 0; top: 0; width: 100%; height: 64px; padding: 0 24px;
+    background: #FFFFFF; border-bottom: 3px solid var(--rojo);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .06); z-index: 100;
+    color: var(--texto); font-size: 14px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.boton-menu {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 38px; padding: 8px 16px; border: none; border-radius: 8px;
+    background-color: var(--rojo); color: #FFFFFF;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13.5px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+    -webkit-transition: all .2s ease; transition: all .2s ease;
+}
+.boton-menu span { margin-right: 8px; }
+.boton-menu:hover {
+    background-color: var(--rojo-hover);
+    -webkit-transform: translateY(-1px); transform: translateY(-1px);
+}
+.boton-menu:focus { outline: 2px solid var(--rojo-oscuro); outline-offset: 2px; }
+#btnT { min-width: 160px; }
+#spnNombreEmpleado {
+    -webkit-box-flex: 1; -ms-flex-positive: 1; flex-grow: 1; margin: 0 20px; min-width: 0;
+}
+.contenedordatos {
+    width: 100%; text-align: right; font-size: 13px; font-weight: 600; color: var(--texto);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+}
+.datoslabel, #lblcodigoEmpleado, .datoslabeloficina {
+    font-weight: 700; font-size: 10.5px; letter-spacing: .5px; text-transform: uppercase;
+    margin-left: 18px; margin-right: 5px; color: var(--texto-mute);
+}
+#lblcodigoEmpleado { margin-left: 0; color: var(--rojo); }
+.cnt-usuario {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex: 0 0 auto; flex: 0 0 auto;
+    padding-left: 16px; border-left: 1px solid var(--borde);
+}
+.js_btnCerrarSesion {
+    padding: 8px 12px; background-color: transparent; color: var(--rojo); box-shadow: none;
+}
+.js_btnCerrarSesion:hover {
+    background-color: var(--rojo-suave); -webkit-transform: none; transform: none;
+}
+
+/* --------------------------------------------------------- menu lateral --- */
+.side-nav {
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    overflow: hidden; pointer-events: none; z-index: 1000;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+.side-nav::before {
+    content: ''; display: block; position: absolute; left: 0; top: 0;
+    width: 100%; height: 100%; background: rgba(20, 18, 18, .5); opacity: 0;
+    -webkit-transition: opacity .3s cubic-bezier(.4, 0, .2, 1);
+    transition: opacity .3s cubic-bezier(.4, 0, .2, 1);
+}
+.side-nav__container {
+    position: relative; width: 280px; max-width: 280px; height: 100%;
+    background-color: #FFFFFF; box-shadow: 4px 0 24px rgba(0, 0, 0, .18);
+    -webkit-transform: translateX(-102%); transform: translateX(-102%);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -ms-flex-direction: column; flex-direction: column;
+    overflow: hidden;
+}
+.side-nav--visible { pointer-events: auto; }
+.side-nav--animatable .side-nav__container {
+    -webkit-transition: -webkit-transform .25s cubic-bezier(.4, 0, .2, 1);
+    transition: transform .25s cubic-bezier(.4, 0, .2, 1);
+}
+.side-nav--visible::before { opacity: 1; }
+.side-nav--visible .side-nav__container { -webkit-transform: none; transform: none; }
+.side-nav__header {
+    height: 64px; padding: 0 20px; position: relative; border-bottom: 1px solid var(--borde);
+    -ms-flex-negative: 0; flex-shrink: 0; overflow: hidden;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.side-nav__brand { display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-align: center; align-items: center; }
+.side-nav__brand-logo {
+    width: 32px; height: 32px; margin-right: 11px; border-radius: 8px;
+    background: var(--rojo); color: #FFFFFF; font-weight: 800; font-size: 13px;
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-align: center; align-items: center; -ms-flex-pack: center; justify-content: center;
+}
+.side-nav__brand-texto { font-weight: 700; font-size: 13px; color: var(--texto); }
+.side-nav__hide {
+    position: absolute; right: 14px; top: 50%;
+    -webkit-transform: translateY(-50%); transform: translateY(-50%);
+    width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%;
+    background: var(--bg-hover); color: var(--texto-sub); cursor: pointer; z-index: 9;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-align: center; align-items: center; -ms-flex-pack: center; justify-content: center;
+}
+.side-nav__hide:hover { background: var(--rojo-suave); color: var(--rojo); }
+.side-nav__hide svg { width: 16px; height: 16px; }
+.side-nav__content {
+    padding: 10px 0; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; list-style: none; margin: 0;
+    overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.menu-grupo { margin: 1px 10px; border-radius: 8px; overflow: hidden; }
+.menu-grupo > .title {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-align: center; align-items: center;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--texto);
+    -webkit-user-select: none; user-select: none;
+    -webkit-transition: background-color .2s ease; transition: background-color .2s ease;
+}
+.menu-grupo > .title:hover { background-color: var(--bg-hover); }
+.menu-grupo--abierto > .title { background-color: var(--rojo-suave); color: var(--rojo-hover); }
+.menu-grupo--abierto > .title .menu-icono { color: var(--rojo); }
+.menu-grupo--simple { margin-bottom: 6px; padding-bottom: 6px; border-radius: 0; border-bottom: 1px solid var(--borde); }
+.menu-icono {
+    width: 20px; height: 20px; margin-right: 12px; color: var(--icono);
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-align: center; align-items: center; -ms-flex-pack: center; justify-content: center;
+}
+.menu-icono svg { width: 19px; height: 19px; }
+.hide-menu { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-flecha {
+    margin-left: 8px; color: #C4C1BA; -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-align: center; align-items: center;
+    -webkit-transition: -webkit-transform .25s ease; transition: transform .25s ease;
+}
+.menu-flecha svg { width: 15px; height: 15px; }
+.menu-grupo--abierto > .title .menu-flecha { -webkit-transform: rotate(90deg); transform: rotate(90deg); color: var(--rojo); }
+.sub-menu {
+    max-height: 0; list-style: none; overflow: hidden; padding: 0; margin: 0;
+    -webkit-transition: max-height .35s cubic-bezier(.4, 0, .2, 1);
+    transition: max-height .35s cubic-bezier(.4, 0, .2, 1);
+}
+.menu-grupo--abierto > .sub-menu { max-height: 640px; padding: 2px 0 4px; }
+.sub-menu li > .title {
+    display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-align: center; align-items: center;
+    position: relative; margin: 0 4px; padding: 8px 12px 8px 44px; border-radius: 7px; cursor: pointer;
+    font-size: 12.5px; font-weight: 500; color: var(--texto-sub);
+    -webkit-transition: background-color .2s ease, color .2s ease; transition: background-color .2s ease, color .2s ease;
+}
+.sub-menu li > .title::before {
+    content: ''; position: absolute; left: 22px; top: 50%; width: 4px; height: 4px;
+    border-radius: 50%; background: #C4C1BA;
+    -webkit-transform: translateY(-50%); transform: translateY(-50%);
+}
+.sub-menu li > .title:hover { background-color: var(--rojo-suave); color: var(--rojo-hover); }
+.sub-menu li > .title:hover::before { background: var(--rojo); }
+.sub-menu li > .title.abierta { color: var(--rojo-hover); }
+.sub-menu li > .title.abierta::before { background: var(--rojo); }
+.sidebar-footer {
+    -ms-flex-negative: 0; flex-shrink: 0; padding: 12px 20px; text-align: center;
+    font-size: 11px; color: var(--texto-sub); border-top: 1px solid var(--borde); background: var(--bg-hover);
+}
+
+/* ------------------------------------------------------------ pestañas --- */
+.divFrame {
+    position: relative; width: 100%; margin-top: 67px; height: calc(100vh - 67px);
+    padding: 0 20px 20px; overflow: hidden;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -ms-flex-direction: column; flex-direction: column;
+}
+.barra-pestanas {
+    -ms-flex-negative: 0; flex-shrink: 0; height: 42px; overflow: hidden;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-align: end; align-items: flex-end;
+    border-bottom: 1px solid #ddd;
+}
+.tira-pestanas {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1; min-width: 0; height: 42px;
+    overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+}
+.pestana {
+    display: inline-block; vertical-align: bottom; position: relative;
+    height: 34px; margin-right: 3px; padding: 0 30px 0 14px;
+    border: 1px solid #ddd; border-bottom: 0; border-radius: 5px 5px 0 0;
+    background: #EFEDEA; color: var(--texto-sub);
+    font-size: 12.5px; font-weight: 600; line-height: 33px;
+    cursor: pointer; max-width: 230px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+    -webkit-transition: background-color .15s ease, color .15s ease;
+    transition: background-color .15s ease, color .15s ease;
+}
+.pestana:hover { background: #F7F6F3; color: var(--texto); }
+.pestana.activa {
+    background: #FFFFFF; color: var(--rojo-hover);
+    border-top: 2px solid var(--rojo); height: 36px; line-height: 33px;
+}
+.pestana.activa::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: #FFFFFF;
+}
+.pestana .cerrar {
+    position: absolute; right: 8px; top: 50%; margin-top: -9px;
+    width: 18px; height: 18px; line-height: 17px; text-align: center;
+    border-radius: 50%; color: var(--texto-mute); font-size: 15px; font-weight: 400;
+}
+.pestana .cerrar:hover { background: var(--rojo-suave); color: var(--rojo); }
+.pestana.fija { padding-right: 14px; }
+.pestana.fija .cerrar { display: none; }
+
+.marcos {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1; position: relative;
+    border: 1px solid #ddd; border-top: 0; border-radius: 0 0 4px 4px;
+    background: #FFFFFF; overflow: hidden;
+}
+.marcos iframe {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    border: 0; background: #FFFFFF; visibility: hidden;
+}
+/* Se ocultan con visibility, no con display:none: asi el marco conserva su
+   posicion de desplazamiento y no vuelve a pedir la pagina al servidor.   */
+.marcos iframe.activo { visibility: visible; }
+
+.aviso-limite {
+    display: none; position: absolute; right: 24px; bottom: 26px; z-index: 60;
+    padding: 9px 14px; border-radius: 6px; border-left: 3px solid var(--rojo);
+    background: #FFFFFF; box-shadow: 0 4px 14px rgba(0, 0, 0, .16);
+    font-size: 12.5px; color: var(--texto);
+}
+.aviso-limite.visible { display: block; }
+
+@media screen and (max-width: 1024px) { #datosEmpleado { padding: 0 16px; } }
+@media screen and (max-width: 768px) {
+    .side-nav__container { width: 100%; max-width: 100%; }
+    #datosEmpleado { padding: 0 14px; }
+    #btnT { min-width: auto; }
+    .datoslabel, .datoslabeloficina { display: none; }
+    .divFrame { padding: 0 12px 12px; }
+    .pestana { max-width: 150px; }
+}
+@media screen and (max-width: 480px) {
+    html { font-size: 13px; }
+    .boton-menu span { display: none; }
+    .contenedordatos { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<div id="divLoading" class="wrap_loading hide">
+    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+    <div class="loading_text">Procesando ...</div>
+</div>
+
+<div class="js-sn side-nav">
+    <div class="js-snc side-nav__container">
+        <div class="side-nav__header">
+            <div class="side-nav__brand">
+                <span class="side-nav__brand-logo">BN</span>
+                <span class="side-nav__brand-texto">Banco de la Nación</span>
+            </div>
+            <button id="btnO" class="side-nav__hide" title="Cerrar menú" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <ul id="divMenu" class="side-nav__content menu-list"></ul>
+        <div class="sidebar-footer">SAHE v1.0.3 &middot; Horas Extra</div>
+    </div>
+</div>
+
+<div id="datosEmpleado" class="datosbody">
+    <span id="btnT" class="boton-menu btn-opciones" title="Menú de opciones">
+        <span>Menú de Opciones</span>
+        <svg class="pointer-event-none" width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </span>
+    <div id="spnNombreEmpleado"></div>
+    <div class="cnt-usuario">
+        <div class="boton-menu js_btnCerrarSesion" title="Cerrar sesión">
+            <svg class="pointer-event-none" width="18px" height="18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div id="divFrame" class="divFrame">
+    <div class="barra-pestanas">
+        <div class="tira-pestanas" id="tiraPestanas"></div>
+    </div>
+    <div class="marcos" id="marcos"></div>
+    <div class="aviso-limite" id="avisoLimite">Puede tener hasta 6 pantallas abiertas. Cierre una para abrir otra.</div>
+</div>
+
+<input id="hdfRaiz" type="hidden" value="" />
+
+<script>
+(function () {
+    "use strict";
+
+    var MAXIMO_PESTANAS = 6;
+
+    var DATOS_USUARIO = "44402809|GONZALES CORREA, PEDRO ENRIQUE|1|069|0349836|REMUNERACIONES PENSIONES Y SUBSIDIOS";
+    var DATOS_MENU = [
+        "01|Inicio|SAHE/Inicio|0|MN|00000000",
+        "02|Procesos||||00000000",
+        "0201|Registro de horas extra|SAHE/Registro|1|SM|02",
+        "0202|Autorización de solicitudes|SAHE/Autorizacion|2|SM|02",
+        "0203|Cierre de solicitudes|SAHE/Cierre|3|SM|02",
+        "03|Consultas||||00000000",
+        "0301|Consolidado de pago|SAHE/Consolidado|4|SM|03",
+        "0302|Reportes|SAHE/Reportes|5|SM|03",
+        "04|Configuración||||00000000",
+        "0401|Parámetros|SAHE/Configuracion|6|SM|04",
+        "0402|Usuarios y perfiles|SAHE/Usuarios|7|SM|04"
+    ].join("¬");
+
+    var ICONOS = {
+        dashboard: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
+        configuracion: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+        proceso: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path><polyline points="21 3 21 9 15 9"></polyline></svg>',
+        consulta: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        defecto: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>'
+    };
+    var FLECHA = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+
+    function icono(t) {
+        t = (t || "").toLowerCase();
+        if (t.indexOf("inicio") !== -1) return ICONOS.dashboard;
+        if (t.indexOf("config") !== -1) return ICONOS.configuracion;
+        if (t.indexOf("proceso") !== -1) return ICONOS.proceso;
+        if (t.indexOf("consulta") !== -1) return ICONOS.consulta;
+        return ICONOS.defecto;
+    }
+    function esc(t) {
+        return String(t === undefined || t === null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    /* ------------------------------------------------------------- menu */
+    function crearMenu(dataMenu) {
+        var registros = dataMenu.split("¬"), n = registros.length, i, campos, html = "";
+        for (i = 0; i < n; i++) {
+            campos = registros[i].split("|");
+            if (campos[5] !== "00000000") continue;
+            var sub = crearSubMenu(registros, campos[0]);
+            var tieneSub = sub !== "";
+            html += "<li class='menu-grupo" + (tieneSub ? "" : " menu-grupo--simple") + "' data-id-menu='" + esc(campos[0]) + "'>";
+            html += "<span class='title'" + (campos[2] ?
+                " data-navegarmenu='" + esc(campos[2] + "?data=" + campos[3]) + "' data-titulo='" + esc(campos[1]) + "' data-id='" + esc(campos[0]) + "'" : "") + ">";
+            html += "<span class='menu-icono'>" + icono(campos[1]) + "</span>";
+            html += "<span class='hide-menu'>" + esc(campos[1]) + "</span>";
+            if (tieneSub) html += "<span class='menu-flecha'>" + FLECHA + "</span>";
+            html += "</span>" + sub + "</li>";
+        }
+        document.getElementById("divMenu").innerHTML = html;
+    }
+    function crearSubMenu(registros, idPadre) {
+        var n = registros.length, i, campos, html = "";
+        for (i = 0; i < n; i++) {
+            campos = registros[i].split("|");
+            if (campos[5] === idPadre && campos[4] === "SM") {
+                html += "<li><span class='title navegarMenu' data-navegarmenu='" +
+                    esc(campos[2] + "?data=" + campos[3]) + "' data-titulo='" + esc(campos[1]) +
+                    "' data-id='" + esc(campos[0]) + "'><span>" + esc(campos[1]) + "</span></span></li>";
+            }
+        }
+        return html === "" ? "" : "<ul class='sub-menu'>" + html + "</ul>";
+    }
+
+    function mostrarDatosUsuario(datos) {
+        var c = datos.split("|");
+        document.getElementById("spnNombreEmpleado").innerHTML =
+            "<div class='contenedordatos'>" +
+            "<label id='lblcodigoEmpleado'>Código: </label>" + esc(c[0] || "") +
+            "<label class='datoslabel'> Nombres: </label>" + esc(c[1] || "") +
+            "<label class='datoslabeloficina'> Oficina: </label>" + esc(c[5] || "") +
+            "</div>";
+    }
+
+    function rutaSegura(url) {
+        var u = String(url || "");
+        if (u.indexOf("../") !== -1 || u.indexOf("..\\") !== -1) return false;
+        if (u.indexOf("//") === 0) return false;
+        if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return false;
+        return true;
+    }
+
+    /* --------------------------------------------------------- pestañas */
+    var abiertas = [];   /* { id, titulo, url, fija } */
+    var activa = null;
+    var tira = document.getElementById("tiraPestanas");
+    var marcos = document.getElementById("marcos");
+
+    function buscar(id) {
+        for (var i = 0; i < abiertas.length; i++) { if (abiertas[i].id === id) return abiertas[i]; }
+        return null;
+    }
+
+    function abrir(id, titulo, url, fija) {
+        if (!rutaSegura(url)) return;
+
+        if (buscar(id)) { activar(id); return; }
+
+        if (abiertas.length >= MAXIMO_PESTANAS) {
+            var aviso = document.getElementById("avisoLimite");
+            aviso.className = "aviso-limite visible";
+            setTimeout(function () { aviso.className = "aviso-limite"; }, 3200);
+            return;
+        }
+
+        abiertas.push({ id: id, titulo: titulo, url: url, fija: fija === true });
+
+        var marco = document.createElement("iframe");
+        marco.id = "ifrPagina_" + id;
+        marco.name = "frmPagina_" + id;
+        marco.title = titulo;
+        marco.className = "frmFrame";
+        /* En el aplicativo: marco.src = hdfRaiz.value + url; */
+        marco.src = "contenido-demo.html?op=" + encodeURIComponent(titulo);
+        marcos.appendChild(marco);
+
+        pintarPestanas();
+        activar(id);
+    }
+
+    function activar(id) {
+        activa = id;
+        var i, marco;
+        for (i = 0; i < abiertas.length; i++) {
+            marco = document.getElementById("ifrPagina_" + abiertas[i].id);
+            if (marco) marco.className = "frmFrame" + (abiertas[i].id === id ? " activo" : "");
+        }
+        pintarPestanas();
+        marcarMenu(id);
+    }
+
+    function cerrar(id) {
+        var i, indice = -1;
+        for (i = 0; i < abiertas.length; i++) { if (abiertas[i].id === id) { indice = i; break; } }
+        if (indice === -1 || abiertas[indice].fija) return;
+
+        var marco = document.getElementById("ifrPagina_" + id);
+        if (marco && marco.parentNode) marco.parentNode.removeChild(marco);
+        abiertas.splice(indice, 1);
+
+        if (activa === id) {
+            var siguiente = abiertas[indice] || abiertas[indice - 1] || abiertas[0];
+            if (siguiente) activar(siguiente.id); else { activa = null; pintarPestanas(); }
+        } else {
+            pintarPestanas();
+        }
+    }
+
+    function pintarPestanas() {
+        var html = "", i, p;
+        for (i = 0; i < abiertas.length; i++) {
+            p = abiertas[i];
+            html += "<span class='pestana" + (p.id === activa ? " activa" : "") + (p.fija ? " fija" : "") +
+                    "' data-id='" + esc(p.id) + "' title='" + esc(p.titulo) + "'>" + esc(p.titulo);
+            if (!p.fija) html += "<span class='cerrar' data-cerrar='" + esc(p.id) + "' title='Cerrar'>&times;</span>";
+            html += "</span>";
+        }
+        tira.innerHTML = html;
+    }
+
+    function marcarMenu(id) {
+        var previos = document.querySelectorAll("#divMenu .title.abierta");
+        for (var i = 0; i < previos.length; i++) {
+            previos[i].className = previos[i].className.replace(" abierta", "");
+        }
+        var actual = document.querySelector("#divMenu .title[data-id='" + id + "']");
+        if (actual) actual.className += " abierta";
+    }
+
+    tira.onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        var idCerrar = destino.getAttribute ? destino.getAttribute("data-cerrar") : null;
+        if (idCerrar) { cerrar(idCerrar); return; }
+        var pestana = destino.closest ? destino.closest(".pestana") : null;
+        if (pestana) activar(pestana.getAttribute("data-id"));
+    };
+
+    /* ---------------------------------------------------- menu lateral */
+    var lateral = document.querySelector(".js-sn");
+    function abrirMenu() { lateral.className = "js-sn side-nav side-nav--animatable side-nav--visible"; }
+    function cerrarMenu() { lateral.className = "js-sn side-nav side-nav--animatable"; }
+
+    document.getElementById("btnT").onclick = abrirMenu;
+    document.getElementById("btnO").onclick = cerrarMenu;
+    lateral.onclick = function (e) { if (e.target === lateral) cerrarMenu(); };
+    document.onkeydown = function (e) {
+        e = e || window.event;
+        if ((e.keyCode || e.which) === 27) cerrarMenu();
+    };
+
+    document.getElementById("divMenu").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        var titulo = destino.closest ? destino.closest(".title") : null;
+        if (!titulo) return;
+
+        var url = titulo.getAttribute("data-navegarmenu");
+        if (url) {
+            abrir(titulo.getAttribute("data-id"), titulo.getAttribute("data-titulo"), url, false);
+            cerrarMenu();
+            return;
+        }
+
+        var li = titulo.parentElement;
+        var abierto = li.className.indexOf("menu-grupo--abierto") !== -1;
+        var todos = document.getElementById("divMenu").children;
+        for (var i = 0; i < todos.length; i++) {
+            todos[i].className = todos[i].className.replace(" menu-grupo--abierto", "");
+        }
+        if (!abierto) li.className += " menu-grupo--abierto";
+    };
+
+    document.querySelector(".js_btnCerrarSesion").onclick = function () {
+        alert("Cerrar sesión (demostración)");
+    };
+
+    crearMenu(DATOS_MENU);
+    mostrarDatosUsuario(DATOS_USUARIO);
+    /* La pestaña de Inicio queda fija: siempre hay algo en pantalla. */
+    abrir("01", "Inicio", "SAHE/Inicio?data=0", true);
+})();
+</script>
+</body>
+</html>

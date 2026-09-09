@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>T01FUN - popup B - un solo campo</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+<style>
+.pizarra { padding: 20px 26px; }
+.pizarra h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.pizarra p { font-size: 13.5px; color: #5F5C58; max-width: 62em; }
+.mando { margin: 16px 0; padding: 12px 14px; border: 1px dashed #D5D0C9; border-radius: 8px; background: #FBFAF9; }
+.mando__titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #8A8781; margin-bottom: 8px; }
+.mando .boton { margin-right: 8px; }
+.velo--fijo { position: static; display: block; background: none; padding: 0; }
+.velo--fijo .ventana { margin: 0; }
+
+/* La marca que dice de qué clase es la cuota que se está escribiendo. Va
+   pegada al rótulo del campo, que es donde se mira antes de escribir. */
+.clase {
+    display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 10px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+}
+.clase--global { background: #FCEBEB; color: #8A1F2B; }
+.clase--individual { background: #E8F1F7; color: #1E5F8A; }
+.clase--sin { background: #F1EFEC; color: #8A8781; }
+</style>
+</head>
+<body style="background:#F1EFEC">
+
+<div class="pizarra">
+    <h1>Ventana de mantenimiento · alternativa B</h1>
+    <p>Un solo campo de horas. Como las dos cuotas nunca conviven, se pregunta una vez y es el
+       <b>rótulo</b> el que dice de cuál se trata. La trama sigue llevando las dos, con la que no aplica en 0.</p>
+
+    <div class="mando">
+        <div class="mando__titulo">Para probar</div>
+        <button type="button" class="boton boton--secundario" id="btnAlta">Abrir como Nuevo</button>
+        <button type="button" class="boton boton--secundario" id="btnEditar">Abrir como Modificar</button>
+        <span class="tenue" id="estado"></span>
+    </div>
+
+    <div class="velo velo--fijo">
+        <div class="ventana">
+            <div class="ventana__barra">
+                <div class="ventana__titulo" id="titulo">Reparto de cuota</div>
+                <button type="button" class="ventana__cerrar" title="Cerrar">&times;</button>
+            </div>
+            <div class="ventana__cuerpo">
+
+                <div class="cintillo" id="cintillo"></div>
+
+                <div class="fila">
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mPeriodo">Periodo</label>
+                        <input type="text" class="control" id="mPeriodo" readonly>
+                    </div>
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mCodigo">Código Oficina<span class="campo__obligatorio">*</span></label>
+                        <div class="campo__control">
+                            <input type="text" class="control control--conLupa" id="mCodigo" maxlength="4" placeholder="0000">
+                            <button type="button" class="lupa" id="btnLupa" title="Buscar oficina">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.7" y2="16.7"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="campo" style="width:calc(100% - 380px)">
+                        <label class="campo__etiqueta" for="mNombre">Oficina</label>
+                        <input type="text" class="control" id="mNombre" readonly placeholder="Se completa al elegir el código">
+                    </div>
+                </div>
+
+                <div class="fila">
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mPendiente">Cuota Pendiente</label>
+                        <input type="text" class="control control--numero" id="mPendiente" readonly>
+                        <div class="campo__ayuda">Lo que queda por repartir.</div>
+                    </div>
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mHoras">
+                            Cantidad de Horas<span class="campo__obligatorio">*</span>
+                            <span class="clase clase--sin" id="clase">—</span>
+                        </label>
+                        <input type="text" class="control control--numero" id="mHoras" maxlength="8" placeholder="hh:mm">
+                        <div class="campo__ayuda" id="ayudaHoras">Elija primero la oficina.</div>
+                    </div>
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mReplicar">¿Desea replicar?</label>
+                        <select class="control" id="mReplicar">
+                            <option value="N">No</option>
+                            <option value="S">Sí</option>
+                        </select>
+                    </div>
+                    <div class="campo campo--corto">
+                        <label class="campo__etiqueta" for="mMeses">Meses a replicar</label>
+                        <input type="text" class="control control--numero" id="mMeses" maxlength="2" value="0">
+                        <div class="campo__ayuda" id="ayudaMeses">Se habilita al elegir Sí.</div>
+                    </div>
+                </div>
+
+                <div class="fila" id="bloqueMotivo">
+                    <div class="campo campo--largo">
+                        <label class="campo__etiqueta" for="mMotivo">Motivo del cambio<span class="campo__obligatorio">*</span></label>
+                        <textarea class="control" id="mMotivo" rows="3" maxlength="250" placeholder="Por qué cambia el reparto"></textarea>
+                    </div>
+                </div>
+
+                <div class="campo__error" id="error"></div>
+
+            </div>
+            <div class="pie-acciones">
+                <div class="pie-acciones__nota" id="trama"></div>
+                <button type="button" class="boton boton--secundario">Cancelar</button>
+                <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nota">
+        <b>Alternativa B — un campo, el rótulo dice cuál es.</b>
+        <ul>
+            <li>La ventana <b>no cambia de forma</b> al elegir la oficina: siempre las mismas cajas en el
+                mismo sitio. Lo único que cambia es una marca y la ayuda de abajo.</li>
+            <li>El usuario no tiene que entender que existen dos campos: escribe las horas y el aplicativo
+                decide en cuál de los dos van. La trama llega igual que en las otras dos alternativas.</li>
+            <li>A cambio, la distinción es más discreta: si alguien no lee la marca, no se entera de que
+                asignarse horas a sí mismo se guarda aparte.</li>
+        </ul>
+    </div>
+</div>
+
+<script src="_fun.js"></script>
+<script src="_popup.js"></script>
+<script>
+document.write(Pop.marcadoLupa);
+</script>
+<script>
+(function () {
+    "use strict";
+
+    var accion = "I";
+
+    function refrescar() {
+        var codigo = Fun.porId("mCodigo").value;
+        var oficina = Pop.oficinaDe(codigo);
+        var propia = oficina !== null && Pop.esPropia(codigo);
+        var marca = Fun.porId("clase");
+
+        Fun.porId("mNombre").value = oficina ? oficina.nombre : "";
+        Fun.porId("mHoras").disabled = oficina === null;
+
+        if (!oficina) {
+            marca.className = "clase clase--sin";
+            marca.textContent = "—";
+            Fun.porId("ayudaHoras").textContent = "Elija primero la oficina.";
+        } else if (propia) {
+            marca.className = "clase clase--individual";
+            marca.textContent = "Cuota individual";
+            Fun.porId("ayudaHoras").textContent = "Es su propia oficina: se guarda como asignación individual.";
+        } else {
+            marca.className = "clase clase--global";
+            marca.textContent = "Cuota global";
+            Fun.porId("ayudaHoras").textContent = "Oficina dependiente: se guarda como cuota global.";
+        }
+
+        Fun.porId("cintillo").innerHTML =
+            "Cuota de <b>" + Pop.propia.nombre + "</b> · periodo " + Pop.periodo +
+            '<div class="cintillo__pie">Pendiente por repartir: <b>' + Pop.pendiente + "</b></div>";
+        refrescarMeses();
+        pintarTrama();
+    }
+
+    function refrescarMeses() {
+        var quiere = Fun.porId("mReplicar").value === "S";
+        var tope = Pop.mesesQueQuedan(Pop.periodo);
+        var meses = Fun.porId("mMeses");
+
+        meses.disabled = !quiere || tope === 0;
+        if (!quiere) { meses.value = "0"; Fun.porId("ayudaMeses").textContent = "Se habilita al elegir Sí."; return; }
+        if (tope === 0) { meses.value = "0"; Fun.porId("ayudaMeses").textContent = "Es el último periodo del año."; return; }
+        if (meses.value === "0" || meses.value === "") meses.value = String(tope);
+        Fun.porId("ayudaMeses").textContent = "Quedan " + tope + (tope === 1 ? " mes" : " meses") + " en el año.";
+    }
+
+    /* El único sitio donde se reparte lo escrito entre los dos campos de la
+       trama. Al haber un solo control, la regla vive en un solo lugar. */
+    function pintarTrama() {
+        var propia = Pop.esPropia(Fun.porId("mCodigo").value);
+        var escrito = Fun.porId("mHoras").value || "0:00";
+
+        Fun.porId("trama").textContent = [accion, "0", Pop.periodo,
+            Fun.porId("mCodigo").value || "", "0",
+            propia ? "0:00" : escrito, propia ? escrito : "0:00",
+            Fun.porId("mReplicar").value, Fun.porId("mMeses").value || "0",
+            accion === "U" ? (Fun.porId("mMotivo").value || "S/M") : "S/M"].join("|");
+    }
+
+    function abrir(comoAccion) {
+        accion = comoAccion;
+        Fun.porId("titulo").textContent = comoAccion === "I" ? "Nuevo reparto" : "Modificar reparto";
+        Fun.porId("mPeriodo").value = Pop.periodo;
+        Fun.porId("mPendiente").value = Pop.pendiente;
+        Fun.porId("bloqueMotivo").className = comoAccion === "U" ? "fila" : "fila oculto";
+        Fun.porId("mCodigo").disabled = comoAccion === "U";
+        Fun.porId("btnLupa").disabled = comoAccion === "U";
+        if (comoAccion === "U") {
+            Fun.porId("mCodigo").value = "7800";
+            Fun.porId("mHoras").value = "80:00";
+        } else {
+            Fun.porId("mCodigo").value = "";
+            Fun.porId("mHoras").value = "";
+            Fun.porId("mMotivo").value = "";
+        }
+        Fun.porId("error").textContent = "";
+        Fun.porId("estado").textContent = comoAccion === "I"
+            ? "Alta: elija una oficina y mire cómo cambia la marca del campo de horas."
+            : "Modificación sobre su propia oficina: la marca dice cuota individual.";
+        refrescar();
+    }
+
+    function grabar() {
+        var codigo = Fun.porId("mCodigo").value;
+        var minutos = Fun.aMinutos(Fun.porId("mHoras").value);
+        var tope = Fun.aMinutos(Pop.pendiente);
+
+        if (!Pop.oficinaDe(codigo)) { Fun.porId("error").textContent = "Indique la oficina."; return; }
+        if (minutos === 0) { Fun.porId("error").textContent = "Indique las horas en hh:mm."; return; }
+        if (minutos > tope) {
+            Fun.porId("error").textContent = "Solo quedan " + Pop.pendiente + " por repartir.";
+            return;
+        }
+        if (accion === "U" && Fun.porId("mMotivo").value === "") {
+            Fun.porId("error").textContent = "El motivo es obligatorio al modificar.";
+            return;
+        }
+        Fun.porId("error").textContent = "";
+        window.alert("Se grabaría:\n\n" + Fun.porId("trama").textContent);
+    }
+
+    Fun.porId("btnLupa").onclick = function () {
+        Pop.abrirLupa(function (oficina) {
+            Fun.porId("mCodigo").value = oficina.codigo;
+            refrescar();
+        });
+    };
+    Fun.porId("btnCerrarLupa").onclick = Pop.cerrarLupa;
+    Fun.porId("mCodigo").oninput = refrescar;
+    Fun.porId("mReplicar").onchange = function () { refrescarMeses(); pintarTrama(); };
+    Fun.porId("mHoras").oninput = function () { Fun.limpiarHora(this); pintarTrama(); };
+    Fun.porId("mMotivo").oninput = pintarTrama;
+    Fun.porId("btnGrabar").onclick = grabar;
+    Fun.porId("btnAlta").onclick = function () { abrir("I"); };
+    Fun.porId("btnEditar").onclick = function () { abrir("U"); };
+
+    abrir("I");
+})();
+</script>
+</body>
+</html>

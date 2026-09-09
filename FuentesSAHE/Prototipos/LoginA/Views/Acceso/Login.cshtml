@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Aplicativo para el Proceso de Horas Extras" />
+    <link href="~/Estilos/Login.css?v=@ViewBag.VersionCSS" rel="stylesheet" />
+    <link rel="shortcut icon" href="~/Imagenes/Login/favicon.ico" />
+    <title>SAHE - Ingreso</title>
+</head>
+<body>
+    <div id="divLoading" class="wrap_loading hide">
+        <div class="lds-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div class="loading_text">Procesando ...</div>
+    </div>
+
+    <div class="franja"></div>
+
+    <div class="layout">
+        <!-- ================================================= columna izquierda -->
+        <div class="panel-form" id="primera_columna">
+            <div class="membrete">
+                <img src="~/Imagenes/Login/LOGOBN_PLOMO.png" alt="Banco de la Nación" />
+                <div class="nombre">
+                    Banco de la Nación
+                    <span>Gestión de Recursos Humanos</span>
+                </div>
+            </div>
+
+            <div class="wrap-form" id="box-form">
+                <h1>Sistema Administrativo de Horas Extra</h1>
+                <p class="bajada">Ingrese con su usuario de red y su clave host institucional.</p>
+
+                <span id="spnValida" class="MensajeError"></span>
+
+                <div class="campo">
+                    <label class="etiqueta" for="txtUsuario">
+                        <span>Usuario</span>
+                        <span class="pista">4 letras</span>
+                    </label>
+                    <div class="caja" id="cajaUsuario">
+                        <img class="icono user-icon" src="~/Imagenes/Login/user_icon.png" alt="" />
+                        <input id="txtUsuario" name="txtUsuario" class="R1 G1" type="text" maxlength="4"
+                               placeholder="ABCD" autocomplete="off" spellcheck="false" />
+                        <span class="contador" id="spnContUsuario">0/4</span>
+                    </div>
+                </div>
+
+                <div class="campo">
+                    <label class="etiqueta" for="txtClave">
+                        <span>Clave host</span>
+                        <span class="pista">8 alfanuméricos</span>
+                    </label>
+                    <div class="caja" id="cajaClave">
+                        <img class="icono password-icon" src="~/Imagenes/Login/PASSWORD_ICON.png" alt="" />
+                        <input id="txtClave" name="txtClave" class="R1 G1" type="password" maxlength="8"
+                               placeholder="********" autocomplete="off" spellcheck="false" />
+                        <span class="contador" id="spnContClave">0/8</span>
+                        <button type="button" class="btn-ver" id="btnVerClave">Ver</button>
+                    </div>
+                </div>
+
+                <p class="aviso-mayus" id="lblMayus">Bloq Mayús está activado.</p>
+
+                <button type="button" id="btnIngresar" class="button-standar" disabled="disabled">
+                    <span class="aro-btn"></span><span id="lblBtnIngresar">Iniciar sesión</span>
+                </button>
+            </div>
+
+            <div class="pie">
+                <span>Autenticación por Sistema de Claves Host · acrónimo <b>NSAH00</b></span>
+                <span>SAHE <b>v@ViewBag.Version</b></span>
+            </div>
+        </div>
+
+        <!-- ================================================== columna derecha -->
+        <div class="panel-marca" id="segunda_columna">
+            <img class="img-fondo-login" src="~/Imagenes/Login/FONDO_LOGIN.png" alt="" />
+            <span class="velo"></span>
+            <div class="reloj">
+                <strong id="lblHora">--:--</strong>
+                <span id="lblFecha">&nbsp;</span>
+            </div>
+            <h2>Cada hora extra, registrada y sustentada.</h2>
+            <p>
+                Registro, autorización y consolidado de pago de horas extra y trabajos en día de
+                descanso, conforme a la Directiva BN-DIR-7500-006-04.
+            </p>
+            <div class="hitos">
+                <div>Registro<b>Del trabajador</b></div>
+                <div>Autorización<b>Jefatura y RA</b></div>
+                <div>Consolidado<b>Planilla mensual</b></div>
+            </div>
+        </div>
+
+        <input id="hdfRaiz" type="hidden" value="@Url.Content("~")" />
+        <input id="hdfToken" type="hidden" value="@ViewBag.Token" />
+    </div>
+
+    <script src="~/Scripts/General.js?v=@ViewBag.Version"></script>
+    <script src="~/Scripts/Login.js?v=@ViewBag.Version"></script>
+</body>
+</html>

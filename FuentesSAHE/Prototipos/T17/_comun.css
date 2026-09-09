@@ -1,0 +1,173 @@
+@charset "utf-8";
+/* ============================================================================
+   SAHE - T17  Estilos comunes a los tres prototipos.
+   Misma paleta que Sistema.css y Grilla.css.
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin clamp, sin sticky.
+   ========================================================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #F1EFEC; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.oculto { display: none !important; }
+
+/* ------------------------------------------------------------- estructura */
+.marco { padding: 22px 26px 30px; background: #FFFFFF; min-height: 100%; }
+.cabecera { padding-bottom: 14px; margin-bottom: 20px; border-bottom: 2px solid #C8102E; }
+.cabecera h1 { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.cabecera p { margin-top: 3px; font-size: 13.5px; color: #5F5C58; max-width: 78em; }
+
+/* ---------------------------------------------------------------- campos */
+.fila { display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -8px; }
+.campo { padding: 0 8px; margin-bottom: 14px; }
+.campo--corto { width: 210px; }
+.campo--medio { width: 50%; }
+.campo--largo { width: 100%; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.campo__etiqueta { display: block; margin-bottom: 4px; font-size: 12.5px; font-weight: 600; color: #5F5C58; }
+.campo__obligatorio { margin-left: 3px; color: #C8102E; font-weight: 700; }
+.campo__control { display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; }
+.control {
+    width: 100%; min-width: 0; height: 34px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    font-family: inherit; font-size: 13.5px; color: #221F1F; outline: 0;
+}
+.control:focus { border-color: #C8102E; -webkit-box-shadow: 0 0 0 2px rgba(200,16,46,.13); box-shadow: 0 0 0 2px rgba(200,16,46,.13); }
+.control[readonly] { background: #F7F6F3; color: #5F5C58; }
+.control[disabled] { background: #F1EFEC; color: #A9A6A0; }
+.campo__ayuda { margin-top: 3px; font-size: 12px; color: #8A8781; }
+.campo__error { margin-top: 3px; font-size: 12px; font-weight: 600; color: #B3261E; min-height: 15px; }
+
+/* lupa pegada a su caja */
+.control--conLupa { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.lupa {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-box-flex: 0; -ms-flex: none; flex: none;
+    width: 36px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.lupa:hover { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.lupa svg { width: 16px; height: 16px; }
+
+/* --------------------------------------------------------------- botones */
+.boton {
+    height: 34px; padding: 0 18px; border: 1px solid transparent; border-radius: 5px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.boton--primario { background: #C8102E; color: #FFFFFF; }
+.boton--primario:hover { background: #A32D2D; }
+.boton--secundario { background: #FFFFFF; border-color: #D5D0C9; color: #5F5C58; }
+.boton--secundario:hover { background: #F7F6F3; color: #C8102E; }
+.boton[disabled] { background: #F1EFEC; border-color: #E4E1DC; color: #A9A6A0; cursor: default; }
+.boton--icono {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 0 12px;
+}
+.boton--icono svg { width: 15px; height: 15px; margin-right: 6px; }
+
+/* --------------------------------------------------------------- rejilla */
+.rejilla { border: 1px solid #EDEAE5; border-radius: 8px; background: #FFFFFF; overflow-x: auto; }
+table.tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tabla th, table.tabla td { padding: 8px 10px; text-align: left; }
+table.tabla thead th {
+    background: #C8102E; color: #FFFFFF; font-size: 11px; font-weight: 700;
+    letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
+    border-right: 1px solid #A32D2D; vertical-align: middle;
+}
+table.tabla thead th:last-child { border-right: 0; }
+table.tabla tbody td { border-bottom: 1px solid #EDEAE5; }
+table.tabla tbody tr:nth-child(even) td { background: #FBFAF9; }
+table.tabla tbody tr:hover td { background: #FCEBEB; }
+table.tabla tfoot td {
+    background: #F7F6F3; border-top: 2px solid #EDEAE5;
+    font-weight: 700; font-size: 13.5px;
+}
+.der { text-align: right; -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.cen { text-align: center; }
+.tenue { color: #8A8781; }
+
+/* controles dentro de la rejilla */
+table.tabla .control { height: 30px; font-size: 13px; }
+table.tabla input[type="number"] { text-align: right; }
+.celda-importe { width: 130px; }
+.celda-fecha { width: 165px; }
+.celda-accion { width: 70px; }
+.control--cambiado { border-color: #C8102E; background: #FFF7F7; font-weight: 600; }
+
+.boton-fila {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    width: 28px; height: 28px; border: 1px solid transparent; border-radius: 5px;
+    background: transparent; color: #78756F; cursor: pointer;
+}
+.boton-fila:hover { background: #FCEBEB; color: #B3261E; }
+.boton-fila svg { width: 15px; height: 15px; }
+
+.sin-datos td { padding: 26px; text-align: center; color: #8A8781; background: #FFFFFF; }
+
+/* --------------------------------------------------------------- barras */
+.barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    margin-bottom: 10px;
+}
+.barra__titulo { font-size: 15px; font-weight: 700; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.barra__cuenta { font-size: 13px; color: #5F5C58; margin-right: 12px; }
+.barra__cuenta b { color: #221F1F; }
+.barra .boton { margin-left: 8px; }
+
+.pie-acciones {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding-top: 16px; margin-top: 18px; border-top: 1px solid #EDEAE5;
+}
+.pie-acciones .boton { margin-left: 10px; }
+
+/* ------------------------------------------------------------------ velo */
+.velo {
+    display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(20,18,18,.5); z-index: 1000;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.velo.abierto { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.ventana {
+    width: 100%; max-width: 640px; max-height: 92%; margin: 0 16px;
+    background: #FFFFFF; border-radius: 8px; overflow: auto;
+    -webkit-box-shadow: 0 18px 44px rgba(0,0,0,.3); box-shadow: 0 18px 44px rgba(0,0,0,.3);
+}
+.ventana--ancha { max-width: 900px; }
+.ventana__barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 11px 16px; background: #C8102E; color: #FFFFFF;
+}
+.ventana__titulo { font-size: 14.5px; font-weight: 700; -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.ventana__cerrar {
+    width: 26px; height: 26px; border: 0; border-radius: 4px;
+    background: rgba(255,255,255,.18); color: #FFFFFF; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.ventana__cerrar:hover { background: rgba(255,255,255,.32); }
+.ventana__cuerpo { padding: 18px; }
+.ventana__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding: 14px 18px; background: #F7F6F3; border-top: 1px solid #EDEAE5;
+}
+.ventana__pie .boton { margin-left: 10px; }
+
+/* ------------------------------------------------------------- avisos */
+.aviso {
+    padding: 9px 12px; margin-bottom: 14px; border-radius: 6px;
+    font-size: 13px; border-left: 4px solid;
+}
+.aviso--ok { background: #EAF6EF; border-color: #1F7A4D; color: #1B5E3C; }
+.aviso--alerta { background: #FFF6E5; border-color: #C77700; color: #8A5300; }
+.aviso--error { background: #FCEBEB; border-color: #B3261E; color: #8E1F19; }

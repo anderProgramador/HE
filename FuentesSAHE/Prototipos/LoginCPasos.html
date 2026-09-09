@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE · Ingreso (Prototipo C)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+:root{
+  --rojo-bn:#cf2528;
+  --rojo-vivo:#e63a3c;
+  --carbon:#181315;
+  --linea-oscura:rgba(255,255,255,.14);
+  --papel:#faf8f7;
+  --tinta:#1c1517;
+  --plomo:#6f6663;
+  --plomo-claro:#a29a97;
+  --borde:#ded6d2;
+  --error:#b3261e;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--papel);color:var(--tinta);
+  font-family:"Barlow",system-ui,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.45;
+}
+.layout{display:grid;grid-template-columns:340px 1fr;min-height:100%}
+
+/* ---------- riel institucional ---------- */
+.riel{
+  background:var(--carbon);color:#fff;padding:36px 32px;display:flex;flex-direction:column;gap:34px;
+  border-right:4px solid var(--rojo-bn);
+}
+.riel .marca{display:flex;align-items:center;gap:12px}
+.riel .marca img{width:40px;height:auto;display:block;filter:brightness(0) invert(1) opacity(.9)}
+.riel .marca div{font-family:"Archivo",sans-serif;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.riel .marca div span{display:block;font-weight:500;font-size:10.5px;letter-spacing:.2em;color:rgba(255,255,255,.45);margin-top:3px}
+
+.riel h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:23px;line-height:1.2;margin:0;text-wrap:balance}
+.riel h2 em{font-style:normal;color:var(--rojo-vivo)}
+
+/* el orden es real (usuario -> clave), por eso va numerado */
+ol.pasos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ol.pasos li{display:flex;gap:14px;align-items:flex-start;padding:0 0 22px;position:relative}
+ol.pasos li:not(:last-child)::before{
+  content:"";position:absolute;left:13px;top:28px;bottom:0;width:1px;background:var(--linea-oscura);
+}
+ol.pasos .num{
+  flex:none;width:27px;height:27px;border-radius:50%;border:1px solid var(--linea-oscura);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:rgba(255,255,255,.5);background:var(--carbon);
+  transition:background .2s,color .2s,border-color .2s;
+}
+ol.pasos .txt{font-size:13.5px;color:rgba(255,255,255,.42);padding-top:4px}
+ol.pasos .txt b{display:block;font-family:"Archivo",sans-serif;font-weight:600;font-size:14px;color:rgba(255,255,255,.55);margin-bottom:2px;transition:color .2s}
+ol.pasos li.activo .num{background:var(--rojo-bn);border-color:var(--rojo-bn);color:#fff}
+ol.pasos li.activo .txt{color:rgba(255,255,255,.72)}
+ol.pasos li.activo .txt b{color:#fff}
+ol.pasos li.hecho .num{background:rgba(255,255,255,.14);border-color:transparent;color:#fff}
+
+.riel .nota{
+  margin-top:auto;font-size:11.5px;color:rgba(255,255,255,.42);line-height:1.6;
+  border-top:1px solid var(--linea-oscura);padding-top:18px;
+}
+.riel .nota b{font-family:"IBM Plex Mono",monospace;font-weight:400;color:rgba(255,255,255,.68)}
+
+/* ---------- escenario ---------- */
+.escena{display:flex;align-items:center;justify-content:center;padding:48px 40px;position:relative}
+.escena::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--borde) 1px,transparent 1px),linear-gradient(90deg,var(--borde) 1px,transparent 1px);
+  background-size:56px 56px;opacity:.5;
+  -webkit-mask-image:radial-gradient(75% 65% at 50% 45%,transparent 25%,#000);
+  mask-image:radial-gradient(75% 65% at 50% 45%,transparent 25%,#000);
+}
+form{position:relative;width:100%;max-width:440px}
+.paso{display:none}
+.paso.activo{display:block}
+.rotulo{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--rojo-bn);margin:0 0 10px;
+}
+h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:32px;line-height:1.1;margin:0 0 8px;text-wrap:balance}
+.bajada{margin:0 0 30px;color:var(--plomo);max-width:40ch}
+
+/* casillas del usuario: 4 letras, una por casilla */
+.casillas{display:flex;gap:10px;margin-bottom:8px}
+.casillas input{
+  width:62px;height:74px;text-align:center;border:1px solid var(--borde);border-radius:6px;background:#fff;
+  font-family:"IBM Plex Mono",monospace;font-size:30px;text-transform:uppercase;color:var(--tinta);
+  outline:0;caret-color:var(--rojo-bn);transition:border-color .15s,box-shadow .15s;
+}
+.casillas input:focus{border-color:var(--rojo-bn);box-shadow:0 0 0 3px rgba(207,37,40,.14)}
+.pista{font-size:12.5px;color:var(--plomo-claro);margin:0 0 26px}
+
+/* clave */
+.usuario-eco{
+  display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--borde);
+  border-radius:999px;padding:5px 8px 5px 14px;margin-bottom:22px;
+}
+.usuario-eco strong{font-family:"IBM Plex Mono",monospace;font-size:15px;letter-spacing:.18em}
+.usuario-eco button{
+  border:0;background:#f1ebe8;border-radius:999px;padding:4px 10px;cursor:pointer;
+  font-family:"Barlow",sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--plomo);
+}
+.usuario-eco button:hover{background:#e7dfdb;color:var(--rojo-bn)}
+.caja-clave{
+  display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--borde);border-radius:6px;
+  height:64px;padding:0 16px;transition:border-color .15s,box-shadow .15s;
+}
+.caja-clave:focus-within{border-color:var(--rojo-bn);box-shadow:0 0 0 3px rgba(207,37,40,.14)}
+.caja-clave.mal{border-color:var(--error);box-shadow:0 0 0 3px rgba(179,38,30,.12)}
+.caja-clave > svg{flex:none;color:var(--plomo-claro)}
+.caja-clave input{
+  flex:1;min-width:0;border:0;outline:0;background:none;height:100%;
+  font-family:"IBM Plex Mono",monospace;font-size:24px;letter-spacing:.3em;color:var(--tinta);
+}
+.caja-clave input::placeholder{color:#d3cac6}
+.ojo{border:0;background:none;cursor:pointer;color:var(--plomo-claro);display:flex;padding:4px}
+.ojo:hover{color:var(--rojo-bn)}
+.barra{display:flex;gap:5px;margin:12px 0 6px}
+.barra i{height:3px;flex:1;background:#e9e2de;border-radius:2px;display:block;transition:background .12s}
+.barra i.on{background:var(--rojo-bn)}
+
+.mensaje{display:none;align-items:flex-start;gap:8px;color:var(--error);font-size:13.5px;margin:14px 0 0}
+.mensaje.visible{display:flex}
+.mensaje svg{flex:none;margin-top:2px}
+.mayus{display:none;font-size:12.5px;color:#8a5a06;margin:10px 0 0}
+.mayus.visible{display:block}
+
+.acciones{display:flex;align-items:center;gap:14px;margin-top:30px}
+button.principal{
+  height:52px;padding:0 30px;border:0;border-radius:6px;cursor:pointer;background:var(--rojo-bn);color:#fff;
+  font-family:"Archivo",sans-serif;font-weight:600;font-size:15px;letter-spacing:.05em;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;
+}
+button.principal:hover:not(:disabled){background:#b31f22}
+button.principal:disabled{background:#e5ded9;color:#b3aaa6;cursor:not-allowed}
+button.secundaria{border:0;background:none;cursor:pointer;color:var(--plomo);font-family:"Barlow",sans-serif;font-size:14px;font-weight:500}
+button.secundaria:hover{color:var(--rojo-bn);text-decoration:underline}
+button:focus-visible,input:focus-visible,.ojo:focus-visible{outline:2px solid var(--rojo-vivo);outline-offset:2px}
+.aro{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:girar .8s linear infinite;display:none}
+button.principal.cargando .aro{display:block}
+@keyframes girar{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.aro{animation-duration:2.4s}}
+
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .riel{border-right:0;border-bottom:4px solid var(--rojo-bn);gap:24px;padding:24px}
+  .riel h2,ol.pasos li:not(.activo){display:none}
+  ol.pasos li{padding-bottom:0}
+  .riel .nota{margin-top:0}
+  .escena{padding:34px 22px}
+  h1{font-size:26px}
+  .casillas input{width:100%;height:66px;font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="riel">
+    <div class="marca">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAsCAYAAAAn4+taAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAN4SURBVHgB7ZnfSxRRFMfPrltBIrYWlBH4Iwp7MIl86UHNMKK3sn8goR4DSXqOpHroLTKTQIiQ8jEhhB4izR6FMqwXIe2HEJi6u7qo68zcPjdXEHR37o5jjbQfONzZ8c6953vPnTlnRpE8efL8F4TEA7FYLFpcXFzJ4XGsAjuklIqGQqHCNd0msQnbtj/Mzc0NRqPRmPxrxsbGduFoC/bAcZyPtLbKBcdBj93L0UXZIowiEo/HSwoLCxtxZDYSiSicKisoKCjj90micJ4uETGnA2vlOluCBGJKsCtE6ptpgFiITgkq+FeOTShzmiSoLC8vnzFVQVR6JMiwxb4bahkQHwmL/4ybdEJIXHzEdyFEZIdhvz4JKrOzs3tYacdtTyHiJ81e8RFfI1JUVNQsBrmJHPIQm179PTw8vANhZYuLi0dp61Kp1AmOD3NsnJ88lSiZ0FkfB6uz9rGsERUKddCvJhwOn+JUado28kUH8DM2gr0iCfdwnSNbiWVZl5U7aHUsbcob41iLbBUMXqHckyGP5eV62pC2RCKxl/Y0dg3rU7lg23fFb/r7+3exwp9cpv6KHck2DhG9oHKrDFrFT8jQj7PNlq7BKkzGop++wePKjGmsQDYLg4RZxc5sM1mpVLdSsWiO47YrQ3i61chmGB0d3UkknmeagCgkmeSqeIB6rUkZQt868QrXl+Do+ywi3qmlpSrxiFp5AJjg6AQsXiBJnc303pE+r1dzU7mJVT5nosK2rF7xQIitdAtnNxpzhr+16ewsPsB4T0yEzM/PV+c0sC4VEDCk1kdAPzVuzszMFItPsBi7GXfSQIf5u4zef6x0BwPPrXE+SfMCa1DqTS7v6UYw3x0DERNEY7/rYHSMsE/b9JZZ9R97y7nrtDk9SnNhKZGoUu6Vc0xRWLoOlr7RvujwsjrP1Er54Gu5vRF68Zhz3EVEYmFhod5owKmpqVIuKBOfq2IX9IPkUTYFiPyRTCZrJciwC267iNB1WqUEGSLhJuIljbek9zfQ9wQinmbbSjSXJMjgYDmOjmYSQSHarfhEK0GGr/LHMn330kmX+6VRggx+RtlKXRmCMIAFW4BG/akC1hWaOvG9JgINEnR4J9/Hfu9Sa7I12+cXkWmnxDggQUcLYKXvpQVoG8L5GyTbg7Jd4K2wlu9Wgzh/H2vW/6KTPHm2N78BieM9OGVQPPAAAAAASUVORK5CYII=" alt="Banco de la Nación" />
+      <div>Banco de la Nación<span>SAHE · Horas Extra</span></div>
+    </div>
+
+    <h2>Ingreso en <em>dos pasos</em> al sistema de horas extra.</h2>
+
+    <ol class="pasos">
+      <li id="pasoUno" class="activo">
+        <span class="num">1</span>
+        <span class="txt"><b>Usuario</b>Sus 4 letras de red</span>
+      </li>
+      <li id="pasoDos">
+        <span class="num">2</span>
+        <span class="txt"><b>Clave host</b>8 caracteres alfanuméricos</span>
+      </li>
+    </ol>
+
+    <p class="nota">La validación la realiza el <b>Sistema de Claves Host</b> con el acrónimo <b>NSAH00</b>. Sus permisos de menú se cargan al ingresar.</p>
+  </aside>
+
+  <section class="escena">
+    <form autocomplete="off" novalidate>
+      <!-- Paso 1 -->
+      <div class="paso activo" id="vistaUno">
+        <p class="rotulo">Paso 1 de 2</p>
+        <h1>¿Cuál es su usuario?</h1>
+        <p class="bajada">Escriba las cuatro letras de su usuario de red institucional.</p>
+        <div class="casillas" id="casillasC">
+          <input type="text" maxlength="1" aria-label="Letra 1 del usuario" spellcheck="false" />
+          <input type="text" maxlength="1" aria-label="Letra 2 del usuario" spellcheck="false" />
+          <input type="text" maxlength="1" aria-label="Letra 3 del usuario" spellcheck="false" />
+          <input type="text" maxlength="1" aria-label="Letra 4 del usuario" spellcheck="false" />
+        </div>
+        <p class="pista">Solo letras. Puede pegar el usuario completo en la primera casilla.</p>
+        <div class="acciones">
+          <button type="button" class="principal" id="btnSiguienteC" disabled>Continuar</button>
+        </div>
+      </div>
+
+      <!-- Paso 2 -->
+      <div class="paso" id="vistaDos">
+        <p class="rotulo">Paso 2 de 2</p>
+        <h1>Ingrese su clave host</h1>
+        <div class="usuario-eco">
+          <strong id="ecoUsuarioC">----</strong>
+          <button type="button" id="btnCambiarC">Cambiar</button>
+        </div>
+        <div class="caja-clave" id="cajaClaveC">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>
+          <input id="claveC" type="password" maxlength="8" placeholder="••••••••" spellcheck="false" aria-label="Clave host" />
+          <button type="button" class="ojo" id="ojoC" aria-label="Mostrar clave" aria-pressed="false">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+          </button>
+        </div>
+        <div class="barra" id="barraC" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p class="pista">8 caracteres alfanuméricos.</p>
+        <p class="mayus" id="mayusC">Bloq Mayús está activado.</p>
+        <div class="mensaje" id="msgC" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span id="msgTextoC"></span>
+        </div>
+        <div class="acciones">
+          <button type="submit" class="principal" id="btnEntrarC" disabled><span class="aro" aria-hidden="true"></span><span id="btnTextoC">Iniciar sesión</span></button>
+          <button type="button" class="secundaria" id="btnAtrasC">Atrás</button>
+        </div>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cas=document.getElementById('casillasC').querySelectorAll('input'),
+      btnSig=document.getElementById('btnSiguienteC'),
+      vistaUno=document.getElementById('vistaUno'),vistaDos=document.getElementById('vistaDos'),
+      pasoUno=document.getElementById('pasoUno'),pasoDos=document.getElementById('pasoDos'),
+      eco=document.getElementById('ecoUsuarioC'),
+      c=document.getElementById('claveC'),caja=document.getElementById('cajaClaveC'),
+      barra=document.getElementById('barraC').children,
+      btnEntrar=document.getElementById('btnEntrarC'),bt=document.getElementById('btnTextoC'),
+      msg=document.getElementById('msgC'),mt=document.getElementById('msgTextoC'),
+      mayus=document.getElementById('mayusC'),ojo=document.getElementById('ojoC');
+
+  function usuario(){
+    var v='';
+    for(var i=0;i<cas.length;i++) v+=cas[i].value;
+    return v.toUpperCase();
+  }
+  function revisarUsuario(){ btnSig.disabled = usuario().length!==4; }
+
+  for(var i=0;i<cas.length;i++){
+    (function(idx){
+      var el=cas[idx];
+      el.addEventListener('input',function(){
+        var limpio=el.value.replace(/[^A-Za-z]/g,'').toUpperCase();
+        if(limpio.length>1){ /* pegado */
+          for(var j=0;j<cas.length && j<limpio.length;j++) cas[j].value=limpio.charAt(j);
+          cas[Math.min(limpio.length,cas.length)-1].focus();
+        } else {
+          el.value=limpio;
+          if(limpio && idx<cas.length-1) cas[idx+1].focus();
+        }
+        revisarUsuario();
+      });
+      el.addEventListener('keydown',function(e){
+        var k=e.key;
+        if(k==='Backspace' && !el.value && idx>0){ cas[idx-1].focus(); cas[idx-1].value=''; revisarUsuario(); }
+        if(k==='ArrowLeft' && idx>0) cas[idx-1].focus();
+        if(k==='ArrowRight' && idx<cas.length-1) cas[idx+1].focus();
+        if(k==='Enter'){ e.preventDefault(); if(!btnSig.disabled) btnSig.click(); }
+      });
+    })(i);
+  }
+
+  function irPaso(n){
+    vistaUno.classList.toggle('activo',n===1);
+    vistaDos.classList.toggle('activo',n===2);
+    pasoUno.className = n===1 ? 'activo' : 'hecho';
+    pasoDos.className = n===2 ? 'activo' : '';
+    if(n===2){ eco.textContent=usuario(); c.focus(); } else { cas[3].focus(); }
+  }
+  btnSig.addEventListener('click',function(){ irPaso(2); });
+  document.getElementById('btnAtrasC').addEventListener('click',function(){ irPaso(1); });
+  document.getElementById('btnCambiarC').addEventListener('click',function(){ irPaso(1); });
+
+  function pintarClave(){
+    c.value=c.value.replace(/[^A-Za-z0-9]/g,'');
+    for(var i=0;i<barra.length;i++) barra[i].className = i<c.value.length ? 'on' : '';
+    btnEntrar.disabled = c.value.length!==8;
+  }
+  c.addEventListener('input',pintarClave);
+  c.addEventListener('keyup',function(e){
+    if(e.getModifierState) mayus.classList.toggle('visible',e.getModifierState('CapsLock'));
+  });
+
+  ojo.addEventListener('click',function(){
+    var ver=c.type==='password';
+    c.type=ver?'text':'password';
+    ojo.setAttribute('aria-pressed',String(ver));
+    ojo.setAttribute('aria-label',ver?'Ocultar clave':'Mostrar clave');
+    c.focus();
+  });
+
+  document.querySelector('form').addEventListener('submit',function(e){
+    e.preventDefault();
+    msg.classList.remove('visible'); caja.classList.remove('mal');
+    btnEntrar.classList.add('cargando'); btnEntrar.disabled=true; bt.textContent='Validando clave host';
+    setTimeout(function(){
+      btnEntrar.classList.remove('cargando'); bt.textContent='Iniciar sesión';
+      mt.textContent='La clave del usuario ' + usuario() + ' no es correcta. Le quedan 2 intentos.';
+      msg.classList.add('visible'); caja.classList.add('mal');
+      c.value=''; pintarClave(); c.focus();
+    },1400);
+  });
+
+  revisarUsuario(); pintarClave();
+})();
+</script>
+</body>
+</html>

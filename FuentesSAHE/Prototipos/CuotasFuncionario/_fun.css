@@ -1,0 +1,111 @@
+/* =========================================================================
+   Lo que estas tres pantallas agregan sobre _comun.css: la forma de mostrar
+   el SALDO de una cuota. Todo con inline-block y floats, sin grid ni gap:
+   Chrome 49 no los tiene.
+   ========================================================================= */
+
+/* --------------------------------------------------- identificacion ----- */
+.quien {
+    margin-bottom: 14px; padding: 8px 12px; border-radius: 8px;
+    background: #F7F6F3; border: 1px solid #EDEAE5; font-size: 12.5px; color: #5F5C58;
+}
+.quien b { color: #221F1F; }
+.quien .quien__sep { margin: 0 10px; color: #D5D0C9; }
+
+/* ------------------------------------------------------ ficha de bolsa -- */
+/* La tarjeta de una oficina a cargo: su cuota, lo repartido y lo que queda. */
+.bolsa {
+    display: inline-block; vertical-align: top; width: 340px;
+    margin: 0 12px 12px 0; padding: 12px 14px;
+    border: 1px solid #EDEAE5; border-left: 4px solid #D5D0C9; border-radius: 8px;
+    background: #FFFFFF; text-align: left;
+}
+.bolsa--elegible { cursor: pointer; }
+.bolsa--elegible:hover { border-color: #E4B9BE; border-left-color: #C8102E; background: #FDF7F7; }
+.bolsa--activa { border-left-color: #C8102E; background: #FCEBEB; }
+.bolsa--excedida { border-left-color: #B3261E; background: #FFF7F7; }
+
+.bolsa__nombre { font-size: 13px; font-weight: 700; line-height: 1.25; color: #221F1F; }
+.bolsa__codigo { font-size: 12px; font-weight: 400; color: #8A8781; }
+
+.bolsa__cifras { margin-top: 8px; }
+.bolsa__dato { display: inline-block; width: 32%; vertical-align: top; }
+.bolsa__rotulo { font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #8A8781; }
+.bolsa__valor {
+    font-size: 15px; font-weight: 700; color: #221F1F;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+.bolsa__valor--pendiente { color: #1E7A46; }
+.bolsa__valor--rojo { color: #B3261E; }
+
+/* La barra: de un vistazo, cuanto de la cuota ya esta repartido. */
+.barrita { height: 6px; margin-top: 9px; border-radius: 4px; background: #EDEAE5; overflow: hidden; }
+.barrita__lleno { height: 100%; background: #C8102E; }
+.barrita__lleno--completo { background: #1E7A46; }
+.barrita__lleno--excedido { background: #B3261E; }
+
+/* ------------------------------------------------------------ cintillo -- */
+/* La version chica de la ficha, para la cabecera de una grilla o del popup. */
+.cintillo {
+    margin-bottom: 10px; padding: 8px 12px; border-radius: 8px;
+    background: #F7F6F3; border: 1px solid #EDEAE5; font-size: 13px;
+}
+.cintillo b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.cintillo--excedido { background: #FFF7F7; border-color: #E4B9BE; color: #B3261E; }
+.cintillo__pie { margin-top: 3px; font-size: 12px; color: #8A8781; }
+
+/* ------------------------------------------------------------ secciones -- */
+.seccion { margin-bottom: 26px; }
+.seccion__cabecera {
+    padding: 10px 14px; border: 1px solid #EDEAE5; border-bottom: 0;
+    border-radius: 8px 8px 0 0; background: #F7F6F3;
+}
+.seccion__cabecera--excedida { background: #FFF7F7; border-color: #E4B9BE; }
+.seccion__titulo { display: inline-block; font-size: 14px; font-weight: 700; }
+.seccion__titulo small { font-weight: 400; color: #8A8781; }
+.seccion__saldo { float: right; font-size: 13px; }
+.seccion__saldo b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.seccion__cabecera:after { content: ""; display: block; clear: both; }
+.seccion .rejilla { border-radius: 0 0 8px 8px; }
+
+/* ------------------------------------------------------------- avisos --- */
+.aviso {
+    margin-bottom: 14px; padding: 9px 12px; border-radius: 8px; font-size: 13px;
+    border: 1px solid #E4B9BE; background: #FCEBEB; color: #8A1F2B;
+}
+.aviso--bien { border-color: #BEE3CD; background: #EFF8F3; color: #1E7A46; }
+
+/* ------------------------------------------------------------- fichas --- */
+/* La cinta de saldos del prototipo C: una ficha por bolsa, siempre a la vista. */
+.ficha {
+    display: inline-block; vertical-align: top; margin: 0 10px 10px 0; padding: 8px 12px;
+    border: 1px solid #EDEAE5; border-radius: 20px; background: #FFFFFF; font-size: 12.5px;
+}
+.ficha__punto {
+    display: inline-block; width: 9px; height: 9px; margin-right: 7px;
+    border-radius: 50%; background: #C8102E;
+}
+.ficha b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.ficha--excedida { border-color: #E4B9BE; background: #FFF7F7; color: #B3261E; }
+.ficha--excedida .ficha__punto { background: #B3261E; }
+
+/* --------------------------------------------------------- celda color -- */
+td.bolsa-celda { border-left: 4px solid transparent; }
+td.bolsa-celda--1 { border-left-color: #C8102E; }
+td.bolsa-celda--2 { border-left-color: #1E5F8A; }
+.etiqueta-bolsa {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    font-size: 11.5px; font-weight: 600; background: #F1EFEC; color: #5F5C58;
+}
+.etiqueta-bolsa--1 { background: #FCEBEB; color: #8A1F2B; }
+.etiqueta-bolsa--2 { background: #E8F1F7; color: #1E5F8A; }
+
+/* ------------------------------------------------------------- notas ---- */
+/* Solo del prototipo: explica en la propia pagina que se esta mirando. */
+.nota {
+    margin: 22px 0 0; padding: 12px 14px; border-left: 4px solid #D5D0C9;
+    background: #F7F6F3; font-size: 12.5px; color: #5F5C58; line-height: 1.55;
+}
+.nota b { color: #221F1F; }
+.nota ul { margin: 6px 0 0 18px; }
+.nota li { margin-bottom: 3px; }

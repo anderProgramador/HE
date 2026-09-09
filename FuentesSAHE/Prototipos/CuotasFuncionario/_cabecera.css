@@ -1,0 +1,152 @@
+/* =========================================================================
+   La cabecera del sistema y las tres formas de cambiar de oficina desde
+   ella. Se agrega sobre _comun.css y _fun.css sin tocarlos: los prototipos
+   A, B y C siguen viéndose igual.
+
+   Todo con inline-block, float y position absolute. Chrome 49 no tiene grid
+   ni gap, y sticky es irregular.
+   ========================================================================= */
+
+/* --------------------------------------------------- barra del sistema -- */
+.app {
+    position: relative; padding: 6px 12px; background: #FFFFFF;
+    border-bottom: 1px solid #EDEAE5;
+}
+.app:after { content: ""; display: block; clear: both; }
+
+.app__menu {
+    float: left; padding: 6px 14px; border: 0; border-radius: 4px;
+    background: #C8102E; color: #FFFFFF; font-size: 12.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+}
+.app__menu span { margin-left: 10px; }
+
+.app__salir {
+    float: right; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 4px;
+    background: #C8102E; color: #FFFFFF; cursor: pointer;
+}
+.app__salir svg { width: 16px; height: 16px; vertical-align: middle; }
+
+.app__datos { float: right; margin-right: 16px; padding-top: 6px; font-size: 11.5px; color: #5F5C58; }
+.app__datos b { color: #221F1F; font-weight: 700; }
+.app__datos .app__sep { display: inline-block; width: 18px; }
+
+/* ------------------------------------- D · el desplegable de la cabecera -- */
+/* La oficina deja de ser un rótulo y pasa a ser un botón: es el mismo gesto
+   con el que hoy se cambia de perfil. */
+.oficina-boton {
+    padding: 3px 26px 3px 10px; border: 1px solid #D5D0C9; border-radius: 4px;
+    background: #FFFFFF; font-family: inherit; font-size: 11.5px; color: #221F1F;
+    font-weight: 700; cursor: pointer; position: relative;
+}
+.oficina-boton:hover { border-color: #C8102E; color: #C8102E; }
+.oficina-boton:after {
+    content: ""; position: absolute; right: 9px; top: 50%; margin-top: -2px;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 5px solid #8A8781;
+}
+.oficina-boton--abierto { border-color: #C8102E; background: #FCEBEB; }
+
+.menu-oficinas {
+    display: none; position: absolute; right: 12px; top: 40px; z-index: 40;
+    width: 430px; padding: 6px; text-align: left;
+    background: #FFFFFF; border: 1px solid #D5D0C9; border-radius: 8px;
+    -webkit-box-shadow: 0 8px 24px rgba(0,0,0,.18); box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+.menu-oficinas.abierto { display: block; }
+.menu-oficinas__titulo {
+    padding: 6px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .4px; color: #8A8781;
+}
+.menu-oficinas__item {
+    display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 6px;
+    background: #FFFFFF; text-align: left; font-family: inherit; font-size: 13px; cursor: pointer;
+}
+.menu-oficinas__item:hover { background: #FCEBEB; }
+.menu-oficinas__item--activo { background: #FCEBEB; -webkit-box-shadow: inset 3px 0 0 #C8102E; box-shadow: inset 3px 0 0 #C8102E; }
+.menu-oficinas__nombre { display: block; font-weight: 700; color: #221F1F; }
+.menu-oficinas__saldo { display: block; margin-top: 2px; font-size: 12px; color: #5F5C58; }
+.menu-oficinas__saldo b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.menu-oficinas__pie {
+    padding: 7px 10px 4px; border-top: 1px solid #EDEAE5; margin-top: 4px;
+    font-size: 11.5px; color: #8A8781;
+}
+
+/* ------------------------------------------ E · la cinta de contexto ----- */
+/* Una franja fija bajo la cabecera. No hay que abrir nada para saber sobre
+   qué oficina se está trabajando ni para cambiarla. */
+.cinta {
+    padding: 7px 14px; background: #F7F6F3; border-bottom: 1px solid #EDEAE5;
+}
+.cinta:after { content: ""; display: block; clear: both; }
+.cinta__rotulo {
+    float: left; margin: 6px 12px 0 0; font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .4px; color: #8A8781;
+}
+.cinta__pestana {
+    float: left; margin-right: 8px; padding: 5px 14px; border: 1px solid #D5D0C9;
+    border-radius: 18px; background: #FFFFFF; font-family: inherit; font-size: 12.5px;
+    color: #5F5C58; cursor: pointer; text-align: left;
+}
+.cinta__pestana:hover { border-color: #C8102E; color: #C8102E; }
+.cinta__pestana--activa { border-color: #C8102E; background: #C8102E; color: #FFFFFF; }
+.cinta__pestana b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.cinta__pestana--activa .cinta__pendiente { color: #FFFFFF; }
+.cinta__pendiente { color: #1E7A46; font-weight: 700; }
+.cinta__aviso { float: right; padding-top: 7px; font-size: 12px; color: #8A8781; }
+
+/* --------------------------------------- F · la elección al entrar ------- */
+.velo-eleccion {
+    display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60;
+    background: rgba(34,31,31,.55);
+}
+.velo-eleccion.abierto { display: block; }
+.eleccion {
+    width: 760px; max-width: 94%; margin: 90px auto 0; padding: 22px 26px 18px;
+    background: #FFFFFF; border-radius: 10px;
+    -webkit-box-shadow: 0 18px 50px rgba(0,0,0,.3); box-shadow: 0 18px 50px rgba(0,0,0,.3);
+}
+.eleccion h2 { font-size: 18px; font-weight: 700; }
+.eleccion p { margin-top: 4px; margin-bottom: 16px; font-size: 13px; color: #5F5C58; }
+
+.opcion {
+    display: inline-block; vertical-align: top; width: 330px; margin: 0 10px 10px 0;
+    padding: 14px 16px; border: 1px solid #EDEAE5; border-left: 4px solid #D5D0C9;
+    border-radius: 8px; background: #FFFFFF; text-align: left; font-family: inherit;
+    cursor: pointer;
+}
+.opcion:hover { border-color: #E4B9BE; border-left-color: #C8102E; background: #FDF7F7; }
+.opcion__nombre { display: block; font-size: 13.5px; font-weight: 700; color: #221F1F; line-height: 1.25; }
+.opcion__codigo { display: block; margin-top: 2px; font-size: 12px; color: #8A8781; }
+.opcion__cifra { display: block; margin-top: 10px; font-size: 12.5px; color: #5F5C58; }
+.opcion__cifra b {
+    font-size: 16px; color: #1E7A46;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+.eleccion__pie { margin-top: 8px; font-size: 12px; color: #8A8781; }
+
+/* La marca que queda en la cabecera después de elegir. */
+.chip-oficina {
+    display: inline-block; padding: 3px 10px; border-radius: 14px;
+    background: #FCEBEB; color: #8A1F2B; font-size: 11.5px; font-weight: 700;
+}
+.chip-cambiar {
+    margin-left: 8px; padding: 0; border: 0; background: none; font-family: inherit;
+    font-size: 11.5px; color: #C8102E; text-decoration: underline; cursor: pointer;
+}
+
+/* ------------------------------- El combo de oficina en la cabecera ------ */
+/* Va donde hoy está el rótulo "Oficina:", entre los datos del trabajador, y
+   se comporta como el cambio de perfil: elige el contexto de la sesión, no
+   un dato de la pantalla. Se dibuja chico para que no rompa la línea. */
+.oficina-combo {
+    height: 22px; max-width: 420px; padding: 1px 4px;
+    border: 1px solid #D5D0C9; border-radius: 4px; background: #FFFFFF;
+    font-family: inherit; font-size: 11.5px; font-weight: 700; color: #221F1F;
+    vertical-align: middle; cursor: pointer;
+}
+.oficina-combo:hover { border-color: #C8102E; }
+.oficina-combo:focus { border-color: #C8102E; outline: none; }
+/* Con una sola oficina no hay nada que elegir: se muestra el rótulo de
+   siempre y no un desplegable de una sola opción. */
+.oficina-fija { font-size: 11.5px; font-weight: 700; color: #221F1F; }

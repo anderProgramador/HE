@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - C - Reparto en una sola grilla</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+</head>
+<body>
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Todo el reparto del periodo en una sola hoja: se escriben las horas en la grilla y se graba una vez.
+           Las fichas de arriba llevan la cuenta de cada cuota mientras usted escribe.</p>
+    </div>
+
+    <div class="quien">
+        <b id="qNombre"></b><span class="quien__sep">|</span>
+        Código: <b id="qCodigo"></b><span class="quien__sep">|</span>
+        Periodo: <b id="qPeriodo"></b>
+    </div>
+
+    <!-- Las fichas: una por cuota. Se recalculan con cada tecla, y la que se
+         pasa se pone en rojo antes de que el usuario intente grabar. -->
+    <div id="fichas"></div>
+
+    <div class="aviso oculto" id="aviso"></div>
+
+    <div class="barra">
+        <div class="barra__titulo">Reparto del periodo <span id="tPeriodo"></span></div>
+        <div class="barra__cuenta">Registros: <b id="cuenta">0</b></div>
+        <select class="control" id="fBolsa" style="width:auto;margin-right:8px"></select>
+        <button type="button" class="boton boton--secundario" id="btnAgregar">Agregar oficina</button>
+    </div>
+
+    <div class="rejilla">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th class="col-periodo">Periodo</th>
+                    <th style="width:230px">Se descuenta de</th>
+                    <th class="col-codigo">Código Oficina</th>
+                    <th>Oficina</th>
+                    <th class="der col-horas">Horas Asignadas</th>
+                    <th class="cen col-pdf">Adjunto</th>
+                    <th class="cen" style="width:56px"></th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+        </table>
+    </div>
+
+    <div class="pie-acciones">
+        <div class="pie-acciones__nota">Un solo grabado para todo el reparto: o entra completo, o no entra nada.</div>
+        <button type="button" class="boton boton--secundario" id="btnDeshacer">Deshacer cambios</button>
+        <button type="button" class="boton boton--primario" id="btnGrabar">Grabar reparto</button>
+    </div>
+
+    <div class="nota">
+        <b>Alternativa C — una sola grilla, un solo grabado.</b>
+        <ul>
+            <li>Repartir es <b>mover horas de un lado a otro</b>: quitarle a una oficina para darle a otra.
+                Aquí eso es una operación, no cuatro ventanas, y se graba de una vez -cabecera y detalle,
+                como ya hace T17-.</li>
+            <li>La columna <i>Se descuenta de</i> hace visible lo que el diseño anterior no decía: de cuál de
+                las dos cuotas sale cada línea. El color del borde repite el de la ficha.</li>
+            <li>El tope se avisa mientras se escribe y el botón <i>Grabar</i> se apaga si alguna cuota quedó
+                pasada, así que nunca se manda al paquete un reparto que no cuadra.</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="_fun.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    /* Se trabaja sobre una COPIA: hasta que no se graba, la pantalla puede
+       deshacer y volver a lo que hay en la base. */
+    var original = JSON.stringify(Fun.reparto);
+    var lineas = JSON.parse(original);
+    var filtro = "";
+
+    Fun.porId("qNombre").textContent = Fun.funcionario.nombre;
+    Fun.porId("qCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("qPeriodo").textContent = Fun.periodo;
+    Fun.porId("tPeriodo").textContent = Fun.periodo;
+
+    /* ---------------------------------------------------------- fichas -- */
+
+    function color(codigo) {
+        var i;
+        for (i = 0; i < Fun.bolsas.length; i++) if (Fun.bolsas[i].codigo === codigo) return i + 1;
+        return 0;
+    }
+
+    function pintarFichas() {
+        var caja = Fun.porId("fichas"), i, s, f;
+        caja.innerHTML = "";
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            s = Fun.saldo(Fun.bolsas[i], lineas);
+            f = Fun.crear("div", "ficha" + (s.excedida ? " ficha--excedida" : ""));
+            f.innerHTML = '<span class="ficha__punto" style="background:' +
+                (s.excedida ? "#B3261E" : (color(Fun.bolsas[i].codigo) === 1 ? "#C8102E" : "#1E5F8A")) + '"></span>' +
+                Fun.bolsas[i].nombre +
+                " &nbsp;·&nbsp; asignada <b>" + Fun.formatear(s.asignada) + "</b>" +
+                " &nbsp;·&nbsp; repartida <b>" + Fun.formatear(s.repartida) + "</b>" +
+                " &nbsp;·&nbsp; pendiente <b>" + Fun.conSigno(s.pendiente) + "</b>";
+            caja.appendChild(f);
+        }
+    }
+
+    /* ---------------------------------------------------------- filtro -- */
+
+    function pintarFiltro() {
+        var sel = Fun.porId("fBolsa"), i;
+        if (sel.options.length > 0) return;
+        sel.appendChild(new Option("Todas mis oficinas", ""));
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            sel.appendChild(new Option("Solo " + Fun.bolsas[i].nombre, Fun.bolsas[i].codigo));
+        }
+        sel.onchange = function () { filtro = this.value; pintar(); };
+    }
+
+    /* ---------------------------------------------------------- grilla -- */
+
+    function pintar() {
+        var cuerpo = Fun.porId("cuerpo"), n = 0, i, fila;
+        cuerpo.innerHTML = "";
+        for (i = 0; i < lineas.length; i++) {
+            if (filtro !== "" && lineas[i].bolsa !== filtro) continue;
+            cuerpo.appendChild(filaDe(lineas[i]));
+            n++;
+        }
+        if (n === 0) {
+            fila = Fun.crear("tr", "sin-datos");
+            fila.appendChild(Fun.crear("td", "", "No hay líneas que mostrar.")).colSpan = 7;
+            cuerpo.appendChild(fila);
+        }
+        Fun.porId("cuenta").textContent = n;
+        pintarFichas();
+        revisar();
+    }
+
+    function filaDe(linea) {
+        var tr = document.createElement("tr"), td, caja, etiqueta, c = color(linea.bolsa);
+
+        tr.appendChild(Fun.crear("td", "", Fun.periodo));
+
+        td = Fun.crear("td", "bolsa-celda bolsa-celda--" + c);
+        etiqueta = Fun.crear("span", "etiqueta-bolsa etiqueta-bolsa--" + c, Fun.bolsaDe(linea.bolsa).nombre);
+        td.appendChild(etiqueta);
+        tr.appendChild(td);
+
+        tr.appendChild(Fun.crear("td", "", linea.codigo));
+        tr.appendChild(Fun.crear("td", "", linea.nombre));
+
+        /* Las horas se escriben en la propia fila: es el único dato que el
+           funcionario cambia una y otra vez mientras acomoda el reparto. */
+        td = Fun.crear("td", "der");
+        caja = document.createElement("input");
+        caja.type = "text";
+        caja.className = "control control--numero";
+        caja.maxLength = 8;
+        caja.value = linea.horas;
+        caja.oninput = function () {
+            Fun.limpiarHora(this);
+            linea.horas = this.value;
+            pintarFichas();
+            revisar();
+            marcar(this, linea);
+        };
+        td.appendChild(caja);
+        tr.appendChild(td);
+
+        td = Fun.crear("td", "cen");
+        td.innerHTML = '<button type="button" class="boton-fila"' +
+            (linea.adjunto === "S/R" ? " disabled" : "") + ' title="' +
+            (linea.adjunto === "S/R" ? "Sin documento" : linea.adjunto) + '">' + Fun.iconos.pdf + "</button>";
+        tr.appendChild(td);
+
+        td = Fun.crear("td", "cen");
+        td.innerHTML = '<button type="button" class="boton-fila" title="Quitar del reparto">' + Fun.iconos.eliminar + "</button>";
+        td.firstChild.onclick = function () { quitar(linea); };
+        tr.appendChild(td);
+
+        marcar(caja, linea);
+        return tr;
+    }
+
+    /* Lo que cambió respecto de la base queda marcado: al grabar de golpe,
+       el usuario tiene que poder ver qué está por mandar. */
+    function marcar(caja, linea) {
+        var previos = JSON.parse(original), i, igual = false;
+        for (i = 0; i < previos.length; i++) {
+            if (previos[i].id === linea.id && previos[i].horas === linea.horas) igual = true;
+        }
+        caja.className = "control control--numero" + (igual ? "" : " control--cambiado");
+    }
+
+    function quitar(linea) {
+        var i;
+        for (i = 0; i < lineas.length; i++) if (lineas[i].id === linea.id) { lineas.splice(i, 1); break; }
+        pintar();
+    }
+
+    /* ------------------------------------------------------ agregar fila -- */
+
+    /* La oficina destino decide sola de qué cuota sale: cada dependiente
+       cuelga de una sola de las oficinas a cargo, así que no hay nada más
+       que preguntar. */
+    function agregar() {
+        var sel = document.createElement("select"), i, j, grupo, lista, ya = {}, elegido;
+        for (i = 0; i < lineas.length; i++) ya[lineas[i].codigo] = true;
+
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            grupo = document.createElement("optgroup");
+            grupo.label = Fun.bolsas[i].nombre;
+            lista = Fun.dependientes[Fun.bolsas[i].codigo];
+            for (j = 0; j < lista.length; j++) {
+                if (ya[lista[j].codigo]) continue;
+                grupo.appendChild(new Option(lista[j].codigo + " - " + lista[j].nombre,
+                                             Fun.bolsas[i].codigo + "|" + lista[j].codigo));
+            }
+            if (grupo.children.length > 0) sel.appendChild(grupo);
+        }
+        if (sel.children.length === 0) {
+            avisar("Ya están todas sus oficinas dependientes en el reparto.", false);
+            return;
+        }
+        /* En el prototipo alcanza con prompt; en la pantalla real es la lupa
+           de siempre, con su grilla de ayuda. */
+        elegido = window.prompt("Código de la oficina a agregar:\n\n" + opcionesComoTexto(sel), "");
+        if (!elegido) return;
+        ponerLinea(sel, elegido);
+    }
+
+    function opcionesComoTexto(sel) {
+        var texto = "", i, j, g;
+        for (i = 0; i < sel.children.length; i++) {
+            g = sel.children[i];
+            texto += g.label + "\n";
+            for (j = 0; j < g.children.length; j++) texto += "   " + g.children[j].text + "\n";
+        }
+        return texto;
+    }
+
+    function ponerLinea(sel, codigo) {
+        var i, j, g, partes;
+        for (i = 0; i < sel.children.length; i++) {
+            g = sel.children[i];
+            for (j = 0; j < g.children.length; j++) {
+                partes = g.children[j].value.split("|");
+                if (partes[1] !== codigo) continue;
+                lineas.push({
+                    id: new Date().getTime(), bolsa: partes[0], codigo: partes[1],
+                    nombre: g.children[j].text.split(" - ")[1], horas: "0:00", adjunto: "S/R"
+                });
+                pintar();
+                return;
+            }
+        }
+        avisar("El código " + codigo + " no está entre sus oficinas dependientes.", false);
+    }
+
+    /* ----------------------------------------------------------- grabar -- */
+
+    /* Se revisa el conjunto, no la línea: el reparto cuadra o no cuadra. */
+    function revisar() {
+        var pasadas = [], i, s;
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            s = Fun.saldo(Fun.bolsas[i], lineas);
+            if (s.excedida) pasadas.push(Fun.bolsas[i].nombre + " (excede en " + Fun.formatear(-s.pendiente) + ")");
+        }
+        Fun.porId("btnGrabar").disabled = pasadas.length > 0;
+        if (pasadas.length > 0) avisar("No se puede grabar: " + pasadas.join(" y ") + ".", false);
+        else esconderAviso();
+        return pasadas.length === 0;
+    }
+
+    function avisar(texto, bien) {
+        var a = Fun.porId("aviso");
+        a.className = "aviso" + (bien ? " aviso--bien" : "");
+        a.textContent = texto;
+    }
+
+    function esconderAviso() { Fun.porId("aviso").className = "aviso oculto"; }
+
+    Fun.porId("btnAgregar").onclick = agregar;
+    Fun.porId("btnDeshacer").onclick = function () { lineas = JSON.parse(original); pintar(); };
+    Fun.porId("btnGrabar").onclick = function () {
+        var trama = [], i;
+        if (!revisar()) return;
+        for (i = 0; i < lineas.length; i++) {
+            trama.push([lineas[i].bolsa, lineas[i].codigo, Fun.formatear(Fun.aMinutos(lineas[i].horas)),
+                        lineas[i].adjunto].join("|"));
+        }
+        original = JSON.stringify(lineas);
+        pintar();
+        avisar("Se grabó el reparto. Trama del detalle: " + trama.join(" ¬ "), true);
+    };
+
+    pintarFiltro();
+    pintar();
+})();
+</script>
+</body>
+</html>

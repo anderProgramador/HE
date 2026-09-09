@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Ingreso (demo Chrome 49)</title>
+<!-- Usa EXACTAMENTE el mismo CSS y JS que se copian al aplicativo. -->
+<link href="Estilos/Login.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="divLoading" class="wrap_loading hide">
+        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        <div class="loading_text">Procesando ...</div>
+    </div>
+
+    <div class="franja"></div>
+
+    <div class="layout">
+        <div class="panel-form" id="primera_columna">
+            <div class="membrete">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAsCAYAAAAn4+taAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAN4SURBVHgB7ZnfSxRRFMfPrltBIrYWlBH4Iwp7MIl86UHNMKK3sn8goR4DSXqOpHroLTKTQIiQ8jEhhB4izR6FMqwXIe2HEJi6u7qo68zcPjdXEHR37o5jjbQfONzZ8c6953vPnTlnRpE8efL8F4TEA7FYLFpcXFzJ4XGsAjuklIqGQqHCNd0msQnbtj/Mzc0NRqPRmPxrxsbGduFoC/bAcZyPtLbKBcdBj93L0UXZIowiEo/HSwoLCxtxZDYSiSicKisoKCjj90micJ4uETGnA2vlOluCBGJKsCtE6ptpgFiITgkq+FeOTShzmiSoLC8vnzFVQVR6JMiwxb4bahkQHwmL/4ybdEJIXHzEdyFEZIdhvz4JKrOzs3tYacdtTyHiJ81e8RFfI1JUVNQsBrmJHPIQm179PTw8vANhZYuLi0dp61Kp1AmOD3NsnJ88lSiZ0FkfB6uz9rGsERUKddCvJhwOn+JUado28kUH8DM2gr0iCfdwnSNbiWVZl5U7aHUsbcob41iLbBUMXqHckyGP5eV62pC2RCKxl/Y0dg3rU7lg23fFb/r7+3exwp9cpv6KHck2DhG9oHKrDFrFT8jQj7PNlq7BKkzGop++wePKjGmsQDYLg4RZxc5sM1mpVLdSsWiO47YrQ3i61chmGB0d3UkknmeagCgkmeSqeIB6rUkZQt868QrXl+Do+ywi3qmlpSrxiFp5AJjg6AQsXiBJnc303pE+r1dzU7mJVT5nosK2rF7xQIitdAtnNxpzhr+16ewsPsB4T0yEzM/PV+c0sC4VEDCk1kdAPzVuzszMFItPsBi7GXfSQIf5u4zef6x0BwPPrXE+SfMCa1DqTS7v6UYw3x0DERNEY7/rYHSMsE/b9JZZ9R97y7nrtDk9SnNhKZGoUu6Vc0xRWLoOlr7RvujwsjrP1Er54Gu5vRF68Zhz3EVEYmFhod5owKmpqVIuKBOfq2IX9IPkUTYFiPyRTCZrJciwC267iNB1WqUEGSLhJuIljbek9zfQ9wQinmbbSjSXJMjgYDmOjmYSQSHarfhEK0GGr/LHMn330kmX+6VRggx+RtlKXRmCMIAFW4BG/akC1hWaOvG9JgINEnR4J9/Hfu9Sa7I12+cXkWmnxDggQUcLYKXvpQVoG8L5GyTbg7Jd4K2wlu9Wgzh/H2vW/6KTPHm2N78BieM9OGVQPPAAAAAASUVORK5CYII=" alt="Banco de la Nación" />
+                <div class="nombre">
+                    Banco de la Nación
+                    <span>Gestión de Recursos Humanos</span>
+                </div>
+            </div>
+
+            <div class="wrap-form" id="box-form">
+                <h1>Sistema Administrativo de Horas Extra</h1>
+                <p class="bajada">Ingrese con su usuario de red y su clave host institucional.</p>
+
+                <span id="spnValida" class="MensajeError"></span>
+
+                <div class="campo">
+                    <label class="etiqueta" for="txtUsuario">
+                        <span>Usuario</span>
+                        <span class="pista">4 letras</span>
+                    </label>
+                    <div class="caja" id="cajaUsuario">
+                        <input id="txtUsuario" name="txtUsuario" class="R1 G1" type="text" maxlength="4"
+                               placeholder="ABCD" autocomplete="off" spellcheck="false" />
+                        <span class="contador" id="spnContUsuario">0/4</span>
+                    </div>
+                </div>
+
+                <div class="campo">
+                    <label class="etiqueta" for="txtClave">
+                        <span>Clave host</span>
+                        <span class="pista">8 alfanuméricos</span>
+                    </label>
+                    <div class="caja" id="cajaClave">
+                        <input id="txtClave" name="txtClave" class="R1 G1" type="password" maxlength="8"
+                               placeholder="********" autocomplete="off" spellcheck="false" />
+                        <span class="contador" id="spnContClave">0/8</span>
+                        <button type="button" class="btn-ver" id="btnVerClave">Ver</button>
+                    </div>
+                </div>
+
+                <p class="aviso-mayus" id="lblMayus">Bloq Mayús está activado.</p>
+
+                <button type="button" id="btnIngresar" class="button-standar" disabled="disabled">
+                    <span class="aro-btn"></span><span id="lblBtnIngresar">Iniciar sesión</span>
+                </button>
+            </div>
+
+            <div class="pie">
+                <span>Autenticación por Sistema de Claves Host · acrónimo <b>NSAH00</b></span>
+                <span>SAHE <b>v1.0.3</b></span>
+            </div>
+        </div>
+
+        <div class="panel-marca" id="segunda_columna">
+            <!-- En el aplicativo aquí va <img class="img-fondo-login" src="~/Imagenes/Login/FONDO_LOGIN.png" />.
+                 Sin la fotografía, el degradado institucional queda como respaldo. -->
+            <span class="velo"></span>
+            <div class="reloj">
+                <strong id="lblHora">--:--</strong>
+                <span id="lblFecha">&nbsp;</span>
+            </div>
+            <h2>Cada hora extra, registrada y sustentada.</h2>
+            <p>
+                Registro, autorización y consolidado de pago de horas extra y trabajos en día de
+                descanso, conforme a la Directiva BN-DIR-7500-006-04.
+            </p>
+            <div class="hitos">
+                <div>Registro<b>Del trabajador</b></div>
+                <div>Autorización<b>Jefatura y RA</b></div>
+                <div>Consolidado<b>Planilla mensual</b></div>
+            </div>
+        </div>
+
+        <input id="hdfRaiz" type="hidden" value="/" />
+        <input id="hdfToken" type="hidden" value="demo" />
+    </div>
+
+<script>
+/* Solo para esta demo: reemplaza a Http de General.js y devuelve la respuesta
+   que daria el Sistema de Claves Host ante una clave incorrecta.
+   Escriba ABCD / 12345678 y pulse Iniciar sesion. */
+var Http = {
+    post: function (url, callback, frm) {
+        setTimeout(function () {
+            callback("01|Usuario o clave incorrectos. Le quedan 2 intentos antes del bloqueo.");
+        }, 1200);
+    }
+};
+</script>
+<script src="Scripts/Login.js"></script>
+</body>
+</html>

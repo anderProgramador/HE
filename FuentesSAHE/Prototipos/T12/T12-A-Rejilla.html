@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Tipo de Compensación (Prototipo A)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO A - Rejilla corregida y ventana modal
+   La misma disposición de hoy, arreglada: la barra de acciones con texto, la
+   fila de filtros que se lee como filtros, los números alineados a la derecha,
+   el estado como distintivo y la ventana Nuevo con la misma tipografía y
+   colores del resto del aplicativo.
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin position:sticky.
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #FFFFFF; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.pantalla { max-width: 1180px; margin: 0 auto; padding: 22px 24px 32px; }
+
+/* ---------------------------------------------------------------- cabecera */
+.pantalla__cabecera {
+    padding-bottom: 14px; margin-bottom: 16px; border-bottom: 2px solid #C8102E;
+}
+.pantalla__titulo { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.pantalla__subtitulo { margin-top: 3px; font-size: 13.5px; color: #5F5C58; }
+
+/* ----------------------------------------------------------------- barra -- */
+.barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.barra__conteo {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+    font-size: 13px; color: #5F5C58;
+}
+.barra__conteo b { color: #221F1F; }
+/* Los botones dicen qué hacen: antes eran cuatro iconos rojos sin rótulo. */
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 34px; margin-left: 8px; padding: 0 14px;
+    border: 1px solid #D5D0C9; border-radius: 6px;
+    background: #FFFFFF; color: #5F5C58;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 600;
+    cursor: pointer;
+    -webkit-transition: background-color .15s ease, color .15s ease; transition: background-color .15s ease, color .15s ease;
+}
+.boton:hover { background: #F7F6F3; color: #C8102E; }
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton svg { margin-right: 7px; }
+.boton--primario { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.boton--primario:hover { background: #A32D2D; border-color: #A32D2D; color: #FFFFFF; }
+
+/* ---------------------------------------------------------------- rejilla -- */
+.rejilla-marco { border: 1px solid #EDEAE5; border-radius: 8px; overflow: hidden; }
+.rejilla-scroll { overflow-x: auto; }
+table.rejilla { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.rejilla th, table.rejilla td { text-align: left; padding: 9px 12px; }
+table.rejilla thead th {
+    background: #C8102E; color: #FFFFFF;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    white-space: nowrap; border-right: 1px solid #A32D2D;
+}
+table.rejilla thead th:last-child { border-right: 0; }
+table.rejilla thead th.num { text-align: right; }
+
+/* La fila de filtros se distingue del encabezado en vez de parecer otra cabecera */
+tr.filtros td { padding: 6px 8px; background: #F7F6F3; border-bottom: 1px solid #EDEAE5; }
+tr.filtros input, tr.filtros select {
+    width: 100%; height: 28px; padding: 0 8px;
+    border: 1px solid #D5D0C9; border-radius: 4px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; color: #221F1F; outline: 0;
+}
+tr.filtros input:focus, tr.filtros select:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 2px rgba(200,16,46,.13); box-shadow: 0 0 0 2px rgba(200,16,46,.13);
+}
+table.rejilla tbody td { border-bottom: 1px solid #EDEAE5; }
+table.rejilla tbody tr:last-child td { border-bottom: 0; }
+table.rejilla tbody tr:nth-child(even) td { background: #FBFAF9; }
+table.rejilla tbody tr:hover td { background: #FCEBEB; cursor: pointer; }
+table.rejilla tbody tr.seleccionada td { background: #FCEBEB; }
+td.num {
+    text-align: right; font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+td.codigo { font-family: Consolas, "Courier New", monospace; font-size: 12.5px; }
+.minutos { display: block; font-size: 11px; color: #A9A6A0; }
+
+/* Estado como distintivo: se distingue de un vistazo sin leer */
+.marca {
+    display: inline-block; padding: 2px 9px; border-radius: 10px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.marca--activo { background: #E8F3EC; color: #1F7A4D; }
+.marca--inactivo { background: #F1EFEC; color: #78756F; }
+
+.acciones-fila { white-space: nowrap; text-align: right; }
+.enlace {
+    border: 0; background: none; padding: 2px 6px; cursor: pointer;
+    color: #C8102E; font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 600;
+}
+.enlace:hover { text-decoration: underline; }
+
+.vacio { padding: 26px; text-align: center; color: #8A8781; font-size: 13.5px; }
+
+/* -------------------------------------------------------------- paginado -- */
+.paginado {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    margin-top: 14px;
+}
+.paginado button {
+    min-width: 30px; height: 30px; margin: 0 3px; padding: 0 8px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    color: #5F5C58; font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; cursor: pointer;
+}
+.paginado button:hover { background: #F7F6F3; }
+.paginado button.activa { background: #C8102E; border-color: #C8102E; color: #FFFFFF; font-weight: 700; }
+
+/* ---------------------------------------------------------------- ventana -- */
+.velo {
+    display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(20,18,18,.5); z-index: 1000;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.velo.abierto { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.ventana {
+    width: 100%; max-width: 620px; max-height: 90%; margin: 0 16px;
+    background: #FFFFFF; border-radius: 8px; overflow: auto;
+    -webkit-box-shadow: 0 18px 44px rgba(0,0,0,.3); box-shadow: 0 18px 44px rgba(0,0,0,.3);
+}
+.ventana__barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    padding: 12px 18px; background: #C8102E; color: #FFFFFF;
+}
+.ventana__titulo { font-size: 14.5px; font-weight: 700; }
+.ventana__cerrar {
+    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%;
+    background: rgba(255,255,255,.16); color: #FFFFFF; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.ventana__cerrar:hover { background: rgba(255,255,255,.3); }
+.ventana__cuerpo { padding: 18px 18px 6px; }
+.ventana__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    padding: 14px 18px; border-top: 1px solid #EDEAE5; background: #FBFAF9;
+}
+.ventana__pie .boton { margin-left: 10px; }
+
+/* Dos columnas: el formulario de hoy es una sola tira muy alta */
+.campos {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -8px;
+}
+.campo { padding: 0 8px; margin-bottom: 14px; width: 50%; }
+.campo--total { width: 100%; }
+.campo__etiqueta { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; }
+.campo__obligatorio { margin-left: 3px; color: #C8102E; }
+.campo__control {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.control {
+    width: 100%; min-width: 0; height: 34px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; color: #221F1F; outline: 0;
+    -webkit-transition: border-color .15s ease, box-shadow .15s ease; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.control:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 3px rgba(200,16,46,.13); box-shadow: 0 0 0 3px rgba(200,16,46,.13);
+}
+.control[readonly] { background: #F7F6F3; color: #5F5C58; }
+textarea.control { height: auto; padding: 8px 10px; resize: vertical; }
+.campo__unidad { -ms-flex-negative: 0; flex-shrink: 0; margin-left: 8px; font-size: 12.5px; color: #8A8781; }
+/* La lupa es un botón con foco y rótulo, no un icono suelto al lado */
+.btn-lupa {
+    -ms-flex-negative: 0; flex-shrink: 0; width: 34px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-left: 0; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.btn-lupa:hover { background: #FCEBEB; color: #C8102E; }
+.campo__ayuda { margin-top: 4px; font-size: 11.5px; color: #8A8781; }
+.campo__error { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: #B3261E; }
+.campo--error .control { border-color: #B3261E; }
+
+@media screen and (max-width: 700px) {
+    .pantalla { padding: 16px 14px 24px; }
+    .campo, .campo--total { width: 100%; }
+    .barra__conteo { width: 100%; margin-bottom: 8px; }
+    .boton { margin: 0 8px 0 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="pantalla">
+    <div class="pantalla__cabecera">
+        <h1 class="pantalla__titulo">Tipo de Solicitud de Compensación</h1>
+        <p class="pantalla__subtitulo">Equivalencias entre las horas extra acumuladas y el descanso compensatorio.</p>
+    </div>
+
+    <div class="barra">
+        <span class="barra__conteo">Mostrando <b id="conteo">5</b> de <b>5</b> registros</span>
+        <button type="button" class="boton" id="btnLimpiar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"></path></svg>
+            Limpiar filtros
+        </button>
+        <button type="button" class="boton">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><polyline points="14 3 14 8 19 8"></polyline></svg>
+            Exportar PDF
+        </button>
+        <button type="button" class="boton">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><polyline points="14 3 14 8 19 8"></polyline><path d="M9 13l6 5M15 13l-6 5"></path></svg>
+            Exportar Excel
+        </button>
+        <button type="button" class="boton boton--primario" id="btnNuevo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nuevo
+        </button>
+    </div>
+
+    <div class="rejilla-marco">
+        <div class="rejilla-scroll">
+            <table class="rejilla">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Justificación</th>
+                        <th>Tipo de duración</th>
+                        <th>Descripción</th>
+                        <th class="num">Compensa</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                    <tr class="filtros">
+                        <td><input type="text" data-col="0" placeholder="Filtrar" /></td>
+                        <td><input type="text" data-col="1" placeholder="Filtrar" /></td>
+                        <td><input type="text" data-col="2" placeholder="Filtrar" /></td>
+                        <td><input type="text" data-col="3" placeholder="Filtrar" /></td>
+                        <td><input type="text" data-col="4" placeholder="Filtrar" /></td>
+                        <td>
+                            <select data-col="5">
+                                <option value="">Todos</option>
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="paginado">
+        <button type="button" class="activa">1</button>
+    </div>
+</div>
+
+<!-- ============================== ventana Nuevo ============================ -->
+<div class="velo" id="velo">
+    <div class="ventana" role="dialog" aria-labelledby="tituloVentana">
+        <div class="ventana__barra">
+            <span class="ventana__titulo" id="tituloVentana">Nuevo tipo de compensación</span>
+            <button type="button" class="ventana__cerrar" id="btnCerrar" title="Cerrar">&times;</button>
+        </div>
+        <div class="ventana__cuerpo">
+            <div class="campos">
+                <div class="campo">
+                    <label class="campo__etiqueta" for="txtCodigo">Código de justificación <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="text" id="txtCodigo" class="control" maxlength="60" placeholder="COMPENSA_HORA" />
+                        <button type="button" class="btn-lupa" title="Buscar justificación">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+                        </button>
+                    </div>
+                    <p class="campo__ayuda">Búsquelo con la lupa; la descripción se completa sola.</p>
+                </div>
+
+                <div class="campo">
+                    <label class="campo__etiqueta" for="txtJustificacion">Justificación</label>
+                    <div class="campo__control">
+                        <input type="text" id="txtJustificacion" class="control" readonly placeholder="Se completa al elegir el código" />
+                    </div>
+                </div>
+
+                <div class="campo">
+                    <label class="campo__etiqueta" for="cboDuracion">Tipo de duración <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <select id="cboDuracion" class="control">
+                            <option value="">Seleccione</option>
+                            <option value="HORA">Por hora</option>
+                            <option value="DIA">Por día</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="campo">
+                    <label class="campo__etiqueta" for="numHoras">Compensa <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="number" id="numHoras" class="control" min="1" max="24" step="1" />
+                        <span class="campo__unidad">horas</span>
+                    </div>
+                    <!-- La base guarda minutos; el usuario piensa en horas -->
+                    <p class="campo__ayuda" id="ayudaHoras">Se guardan como minutos.</p>
+                    <p class="campo__error" id="errHoras"></p>
+                </div>
+
+                <div class="campo campo--total">
+                    <label class="campo__etiqueta" for="txtDescripcion">Descripción del tipo de solicitud <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <textarea id="txtDescripcion" class="control" rows="2" maxlength="250" placeholder="Compensación por 4 horas"></textarea>
+                    </div>
+                    <p class="campo__ayuda">Es el texto que verá el trabajador al pedir su compensación.</p>
+                </div>
+
+                <div class="campo">
+                    <label class="campo__etiqueta" for="cboEstado">Estado <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <select id="cboEstado" class="control">
+                            <option value="A">Activo</option>
+                            <option value="I">Inactivo</option>
+                        </select>
+                    </div>
+                    <p class="campo__ayuda">Inactivo deja de ofrecerse a los trabajadores.</p>
+                </div>
+            </div>
+        </div>
+        <div class="ventana__pie">
+            <button type="button" class="boton" id="btnCancelar">Cancelar</button>
+            <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* Los cinco registros que hoy devuelve la base (DVSAHET12, estado A). */
+    var DATOS = [
+        { codigo: "COMPENSA_DIA",  justificacion: "Por día",  duracion: "COMPENSACION POR DIA SDxD",   descripcion: "Compensación por día",      minutos: 480, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 7 horas",  minutos: 420, estado: "Inactivo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 6 horas",  minutos: 360, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 5 horas",  minutos: 300, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 4 horas",  minutos: 240, estado: "Activo" }
+    ];
+
+    function esc(t) {
+        return String(t === undefined || t === null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function horas(minutos) { return (minutos / 60); }
+
+    function pintar(filas) {
+        var html = "", i, f;
+        if (filas.length === 0) {
+            document.getElementById("cuerpo").innerHTML =
+                "<tr><td colspan='7' class='vacio'>Ningún registro coincide con los filtros.</td></tr>";
+            document.getElementById("conteo").innerHTML = "0";
+            return;
+        }
+        for (i = 0; i < filas.length; i++) {
+            f = filas[i];
+            html += "<tr>";
+            html += "<td class='codigo'>" + esc(f.codigo) + "</td>";
+            html += "<td>" + esc(f.justificacion) + "</td>";
+            html += "<td>" + esc(f.duracion) + "</td>";
+            html += "<td>" + esc(f.descripcion) + "</td>";
+            html += "<td class='num'>" + horas(f.minutos) + " h<span class='minutos'>" + f.minutos + " min</span></td>";
+            html += "<td><span class='marca marca--" + (f.estado === "Activo" ? "activo" : "inactivo") + "'>" + esc(f.estado) + "</span></td>";
+            html += "<td class='acciones-fila'><button type='button' class='enlace' data-editar='" + i + "'>Modificar</button></td>";
+            html += "</tr>";
+        }
+        document.getElementById("cuerpo").innerHTML = html;
+        document.getElementById("conteo").innerHTML = filas.length;
+    }
+
+    function filtrar() {
+        var entradas = document.querySelectorAll("tr.filtros [data-col]");
+        var criterios = [], i, j, valor;
+
+        for (i = 0; i < entradas.length; i++) {
+            criterios.push(String(entradas[i].value || "").toLowerCase());
+        }
+
+        var filas = [];
+        for (i = 0; i < DATOS.length; i++) {
+            var f = DATOS[i];
+            var celdas = [f.codigo, f.justificacion, f.duracion, f.descripcion, String(horas(f.minutos)), f.estado];
+            var pasa = true;
+            for (j = 0; j < criterios.length; j++) {
+                valor = criterios[j];
+                if (valor === "") continue;
+                if (String(celdas[j]).toLowerCase().indexOf(valor) === -1) { pasa = false; break; }
+            }
+            if (pasa) filas.push(f);
+        }
+        pintar(filas);
+    }
+
+    var entradas = document.querySelectorAll("tr.filtros [data-col]");
+    for (var k = 0; k < entradas.length; k++) {
+        entradas[k].oninput = filtrar;
+        entradas[k].onchange = filtrar;
+    }
+
+    document.getElementById("btnLimpiar").onclick = function () {
+        var i, campos = document.querySelectorAll("tr.filtros [data-col]");
+        for (i = 0; i < campos.length; i++) campos[i].value = "";
+        filtrar();
+    };
+
+    /* ------------------------------------------------------------- ventana */
+    var velo = document.getElementById("velo");
+
+    function abrir(titulo, fila) {
+        document.getElementById("tituloVentana").innerHTML = titulo;
+        document.getElementById("txtCodigo").value = fila ? fila.codigo : "";
+        document.getElementById("txtJustificacion").value = fila ? fila.justificacion : "";
+        document.getElementById("cboDuracion").value = fila ? (fila.minutos >= 480 ? "DIA" : "HORA") : "";
+        document.getElementById("numHoras").value = fila ? horas(fila.minutos) : "";
+        document.getElementById("txtDescripcion").value = fila ? fila.descripcion : "";
+        document.getElementById("cboEstado").value = fila ? (fila.estado === "Activo" ? "A" : "I") : "A";
+        document.getElementById("errHoras").innerHTML = "";
+        velo.className = "velo abierto";
+        document.getElementById("txtCodigo").focus();
+    }
+
+    function cerrar() { velo.className = "velo"; }
+
+    document.getElementById("btnNuevo").onclick = function () { abrir("Nuevo tipo de compensación", null); };
+    document.getElementById("btnCerrar").onclick = cerrar;
+    document.getElementById("btnCancelar").onclick = cerrar;
+    velo.onclick = function (e) { if ((e.target || e.srcElement) === velo) cerrar(); };
+    document.onkeydown = function (e) {
+        e = e || window.event;
+        if ((e.keyCode || e.which) === 27) cerrar();
+    };
+
+    document.getElementById("cuerpo").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        var indice = destino.getAttribute ? destino.getAttribute("data-editar") : null;
+        if (indice === null) return;
+        abrir("Modificar tipo de compensación", DATOS[+indice]);
+    };
+
+    /* Muestra en minutos lo que se guardará, mientras el usuario escribe horas */
+    document.getElementById("numHoras").oninput = function () {
+        var valor = Number(this.value);
+        var ayuda = document.getElementById("ayudaHoras");
+        if (isNaN(valor) || valor <= 0) { ayuda.innerHTML = "Se guardan como minutos."; return; }
+        ayuda.innerHTML = "Se guardarán " + (valor * 60) + " minutos.";
+    };
+
+    document.getElementById("btnGrabar").onclick = function () {
+        var valor = Number(document.getElementById("numHoras").value);
+        var error = document.getElementById("errHoras");
+        if (isNaN(valor) || valor <= 0 || valor > 24) {
+            error.innerHTML = "Ingrese entre 1 y 24 horas.";
+            document.getElementById("numHoras").focus();
+            return;
+        }
+        error.innerHTML = "";
+        cerrar();
+    };
+
+    filtrar();
+})();
+</script>
+</body>
+</html>

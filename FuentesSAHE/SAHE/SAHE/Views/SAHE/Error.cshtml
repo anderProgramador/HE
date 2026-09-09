@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Aplicativo para el Proceso de Horas Extras" />
+    <link href="~/Estilos/Error.css?v=@ViewBag.VersionCss" rel="stylesheet" />
+    <link rel="shortcut icon" href="~/Imagenes/Login/favicon.ico" />
+    <title>SAHE - Error</title>
+</head>
+<body>
+    <div class="franja"></div>
+
+    <div class="hoja">
+        <div class="membrete">
+            <span class="logo">BN</span>
+            <span class="rotulo">
+                Banco de la Nación
+                <span>SAHE · Horas Extra</span>
+            </span>
+        </div>
+
+        <div class="centro">
+            <div class="bloque">
+                <div class="codigo" id="codigo">500</div>
+                <span class="rotulo-codigo" id="rotulo">Error del sistema</span>
+
+                <h1 id="titulo">No pudimos completar su solicitud</h1>
+                <p class="explicacion" id="explicacion">
+                    Ocurrió un problema al procesar la operación.
+                </p>
+
+                <div class="acciones" id="acciones"></div>
+
+                <p class="referencia">
+                    Referencia de la incidencia: <b id="referencia">@ViewBag.Referencia</b>
+                </p>
+            </div>
+        </div>
+
+        <div class="pie">Sistema Administrativo de Horas Extra · Banco de la Nación</div>
+    </div>
+
+    <input id="hdfRaiz" type="hidden" value="@Url.Content("~")" />
+    <input id="hdfCodigo" type="hidden" value="@ViewBag.Codigo" />
+    <input id="hdfReferencia" type="hidden" value="@ViewBag.Referencia" />
+    @* Ruta que falló; customErrors la envía en aspxerrorpath y con ella el
+       botón Reintentar vuelve a la pantalla original y no a esta. *@
+    <input id="hdfOrigen" type="hidden" value="@ViewBag.Origen" />
+
+    <script src="~/Scripts/Error.js?v=@ViewBag.VersionJs" defer></script>
+</body>
+</html>

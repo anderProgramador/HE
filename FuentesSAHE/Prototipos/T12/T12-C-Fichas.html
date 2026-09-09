@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Tipo de Compensación (Prototipo C)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO C - Fichas agrupadas y editor en línea
+   Esta tabla es un catálogo corto: cinco filas que casi no cambian y que se
+   consultan más de lo que se editan. Una rejilla de seis columnas para eso
+   desperdicia el ancho y obliga a leer en horizontal; las fichas agrupadas por
+   justificación muestran de un vistazo qué equivalencias existen.
+   El alta y la modificación se abren EN LÍNEA, en el lugar de la ficha, sin
+   ventana ni panel: no hay nada que tapar porque la lista es corta.
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin position:sticky.
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #FBFAF9; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.pantalla { max-width: 980px; margin: 0 auto; padding: 22px 24px 40px; }
+
+.pantalla__cabecera { padding-bottom: 14px; margin-bottom: 16px; border-bottom: 2px solid #C8102E; }
+.pantalla__titulo { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.pantalla__subtitulo { margin-top: 3px; font-size: 13.5px; color: #5F5C58; }
+
+.barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap; margin-bottom: 18px;
+}
+.buscador { position: relative; width: 280px; max-width: 100%; }
+.buscador input {
+    width: 100%; height: 34px; padding: 0 10px 0 32px;
+    border: 1px solid #D5D0C9; border-radius: 6px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13.5px; outline: 0;
+}
+.buscador input:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 3px rgba(200,16,46,.13); box-shadow: 0 0 0 3px rgba(200,16,46,.13);
+}
+.buscador svg { position: absolute; left: 10px; top: 9px; color: #A9A6A0; }
+.barra__conteo { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; margin-left: 12px; font-size: 13px; color: #8A8781; }
+
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 34px; margin-left: 8px; padding: 0 14px;
+    border: 1px solid #D5D0C9; border-radius: 6px; background: #FFFFFF; color: #5F5C58;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    -webkit-transition: background-color .15s ease, color .15s ease; transition: background-color .15s ease, color .15s ease;
+}
+.boton:hover { background: #F7F6F3; color: #C8102E; }
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton svg { margin-right: 7px; }
+.boton--primario { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.boton--primario:hover { background: #A32D2D; border-color: #A32D2D; color: #FFFFFF; }
+
+/* ------------------------------------------------------------------ grupo -- */
+.grupo { margin-bottom: 22px; }
+.grupo__titulo {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: baseline; -ms-flex-align: baseline; align-items: baseline;
+    margin-bottom: 9px;
+}
+.grupo__codigo {
+    font-family: Consolas, "Courier New", monospace; font-size: 13px; font-weight: 700; color: #221F1F;
+}
+.grupo__leyenda { margin-left: 10px; font-size: 12px; color: #8A8781; }
+
+.fichas {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -7px;
+}
+.ficha-caja { width: 33.33%; padding: 0 7px; margin-bottom: 14px; }
+.ficha {
+    position: relative; height: 100%; padding: 14px 15px;
+    border: 1px solid #EDEAE5; border-left: 3px solid #C8102E; border-radius: 7px;
+    background: #FFFFFF; cursor: pointer;
+    -webkit-transition: border-color .15s ease, box-shadow .15s ease; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.ficha:hover {
+    -webkit-box-shadow: 0 4px 12px rgba(0,0,0,.08); box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.ficha--inactiva { border-left-color: #C4C1BA; background: #FBFAF9; }
+.ficha--inactiva .ficha__cantidad { color: #8A8781; }
+
+/* La cifra es el dato que distingue una ficha de otra: va grande */
+.ficha__cantidad { font-size: 26px; font-weight: 700; line-height: 1.1; color: #C8102E; }
+.ficha__cantidad small { font-size: 13px; font-weight: 600; margin-left: 3px; }
+.ficha__minutos { font-size: 11.5px; color: #A9A6A0; }
+.ficha__descripcion { margin-top: 7px; font-size: 13px; color: #221F1F; }
+.ficha__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    margin-top: 10px; padding-top: 9px; border-top: 1px solid #EDEAE5;
+}
+.ficha__duracion { font-size: 11.5px; color: #78756F; }
+.marca { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.marca--activo { background: #E8F3EC; color: #1F7A4D; }
+.marca--inactivo { background: #F1EFEC; color: #78756F; }
+
+.vacio {
+    padding: 30px; text-align: center; color: #8A8781; font-size: 13.5px;
+    border: 1px dashed #D5D0C9; border-radius: 8px; background: #FFFFFF;
+}
+
+/* ----------------------------------------------------------- editor en línea */
+.editor {
+    display: none; margin-bottom: 22px; padding: 18px 20px 6px;
+    border: 1px solid #EDEAE5; border-top: 3px solid #C8102E; border-radius: 8px;
+    background: #FFFFFF;
+    -webkit-box-shadow: 0 6px 18px rgba(0,0,0,.07); box-shadow: 0 6px 18px rgba(0,0,0,.07);
+}
+.editor.abierto { display: block; }
+.editor__titulo {
+    margin-bottom: 14px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase; color: #C8102E;
+}
+.campos {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap; margin: 0 -8px;
+}
+.campo { padding: 0 8px; margin-bottom: 14px; width: 33.33%; }
+.campo--medio { width: 50%; }
+.campo--total { width: 100%; }
+.campo__etiqueta { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; }
+.campo__obligatorio { margin-left: 3px; color: #C8102E; }
+.campo__control {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.control {
+    width: 100%; min-width: 0; height: 34px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; color: #221F1F; outline: 0;
+    -webkit-transition: border-color .15s ease, box-shadow .15s ease; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.control:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 3px rgba(200,16,46,.13); box-shadow: 0 0 0 3px rgba(200,16,46,.13);
+}
+.control[readonly] { background: #F7F6F3; color: #5F5C58; }
+textarea.control { height: auto; padding: 8px 10px; resize: vertical; }
+.campo__unidad { -ms-flex-negative: 0; flex-shrink: 0; margin-left: 8px; font-size: 12.5px; color: #8A8781; }
+.btn-lupa {
+    -ms-flex-negative: 0; flex-shrink: 0; width: 34px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-left: 0; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.btn-lupa:hover { background: #FCEBEB; color: #C8102E; }
+.campo__ayuda { margin-top: 4px; font-size: 11.5px; color: #8A8781; }
+.campo__error { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: #B3261E; }
+.editor__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    margin: 4px -20px 0; padding: 12px 20px; border-top: 1px solid #EDEAE5; background: #FBFAF9;
+    border-radius: 0 0 8px 8px;
+}
+
+@media screen and (max-width: 900px) {
+    .ficha-caja { width: 50%; }
+    .campo { width: 50%; }
+}
+@media screen and (max-width: 640px) {
+    .pantalla { padding: 16px 14px 26px; }
+    .ficha-caja { width: 100%; }
+    .campo, .campo--medio { width: 100%; }
+    .buscador { width: 100%; }
+    .barra__conteo { width: 100%; margin: 8px 0; }
+    .boton { margin: 0 8px 0 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="pantalla">
+    <div class="pantalla__cabecera">
+        <h1 class="pantalla__titulo">Tipo de Solicitud de Compensación</h1>
+        <p class="pantalla__subtitulo">Equivalencias entre las horas extra acumuladas y el descanso compensatorio.</p>
+    </div>
+
+    <div class="barra">
+        <span class="buscador">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+            <input type="text" id="txtBuscar" placeholder="Buscar equivalencia" />
+        </span>
+        <span class="barra__conteo" id="conteo"></span>
+        <button type="button" class="boton">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><polyline points="14 3 14 8 19 8"></polyline></svg>
+            Exportar
+        </button>
+        <button type="button" class="boton boton--primario" id="btnNuevo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nueva equivalencia
+        </button>
+    </div>
+
+    <!-- ============================ editor en línea ======================== -->
+    <div class="editor" id="editor">
+        <p class="editor__titulo" id="tituloEditor">Nueva equivalencia</p>
+        <div class="campos">
+            <div class="campo campo--medio">
+                <label class="campo__etiqueta" for="txtCodigo">Código de justificación <span class="campo__obligatorio">*</span></label>
+                <div class="campo__control">
+                    <input type="text" id="txtCodigo" class="control" maxlength="60" placeholder="COMPENSA_HORA" />
+                    <button type="button" class="btn-lupa" title="Buscar justificación">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="campo campo--medio">
+                <label class="campo__etiqueta" for="txtJustificacion">Justificación</label>
+                <input type="text" id="txtJustificacion" class="control" readonly placeholder="Se completa al elegir el código" />
+            </div>
+            <div class="campo">
+                <label class="campo__etiqueta" for="cboDuracion">Tipo de duración <span class="campo__obligatorio">*</span></label>
+                <select id="cboDuracion" class="control">
+                    <option value="">Seleccione</option>
+                    <option value="HORA">Por hora</option>
+                    <option value="DIA">Por día</option>
+                </select>
+            </div>
+            <div class="campo">
+                <label class="campo__etiqueta" for="numHoras">Compensa <span class="campo__obligatorio">*</span></label>
+                <div class="campo__control">
+                    <input type="number" id="numHoras" class="control" min="1" max="24" step="1" />
+                    <span class="campo__unidad">horas</span>
+                </div>
+                <p class="campo__ayuda" id="ayudaHoras">Se guardan como minutos.</p>
+                <p class="campo__error" id="errHoras"></p>
+            </div>
+            <div class="campo">
+                <label class="campo__etiqueta" for="cboEstado">Estado <span class="campo__obligatorio">*</span></label>
+                <select id="cboEstado" class="control">
+                    <option value="A">Activo</option>
+                    <option value="I">Inactivo</option>
+                </select>
+            </div>
+            <div class="campo campo--total">
+                <label class="campo__etiqueta" for="txtDescripcion">Descripción <span class="campo__obligatorio">*</span></label>
+                <textarea id="txtDescripcion" class="control" rows="2" maxlength="250" placeholder="Compensación por 4 horas"></textarea>
+                <p class="campo__ayuda">Es el texto que verá el trabajador al pedir su compensación.</p>
+            </div>
+        </div>
+        <div class="editor__pie">
+            <button type="button" class="boton" id="btnCancelar">Cancelar</button>
+            <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+        </div>
+    </div>
+
+    <div id="lista"></div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var DATOS = [
+        { codigo: "COMPENSA_DIA",  justificacion: "Por día",  duracion: "COMPENSACION POR DIA SDxD",   descripcion: "Compensación por día",     minutos: 480, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 7 horas", minutos: 420, estado: "Inactivo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 6 horas", minutos: 360, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 5 horas", minutos: 300, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 4 horas", minutos: 240, estado: "Activo" }
+    ];
+
+    function esc(t) {
+        return String(t === undefined || t === null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function horas(minutos) { return minutos / 60; }
+
+    /* Agrupa por código de justificación: es la jerarquía real del catálogo. */
+    function agrupar(filas) {
+        var grupos = [], mapa = {}, i, f;
+        for (i = 0; i < filas.length; i++) {
+            f = filas[i];
+            if (!mapa[f.codigo]) {
+                mapa[f.codigo] = { codigo: f.codigo, justificacion: f.justificacion, filas: [] };
+                grupos.push(mapa[f.codigo]);
+            }
+            mapa[f.codigo].filas.push(f);
+        }
+        return grupos;
+    }
+
+    function visibles() {
+        var texto = String(document.getElementById("txtBuscar").value || "").toLowerCase();
+        var salida = [], i, f, todo;
+        for (i = 0; i < DATOS.length; i++) {
+            f = DATOS[i];
+            todo = (f.codigo + " " + f.justificacion + " " + f.descripcion + " " + horas(f.minutos)).toLowerCase();
+            if (texto !== "" && todo.indexOf(texto) === -1) continue;
+            f.indice = i;
+            salida.push(f);
+        }
+        return salida;
+    }
+
+    function pintar() {
+        var filas = visibles();
+        var grupos = agrupar(filas);
+        var html = "", i, j, g, f;
+
+        document.getElementById("conteo").innerHTML =
+            filas.length === DATOS.length
+                ? filas.length + " equivalencias"
+                : filas.length + " de " + DATOS.length + " equivalencias";
+
+        if (filas.length === 0) {
+            document.getElementById("lista").innerHTML =
+                "<p class='vacio'>Ninguna equivalencia coincide con la búsqueda.</p>";
+            return;
+        }
+
+        for (i = 0; i < grupos.length; i++) {
+            g = grupos[i];
+            html += "<div class='grupo'>";
+            html += "<div class='grupo__titulo'><span class='grupo__codigo'>" + esc(g.codigo) + "</span>";
+            html += "<span class='grupo__leyenda'>" + esc(g.justificacion) + " · " + g.filas.length + " equivalencia(s)</span></div>";
+            html += "<div class='fichas'>";
+            for (j = 0; j < g.filas.length; j++) {
+                f = g.filas[j];
+                html += "<div class='ficha-caja'>";
+                html += "<div class='ficha" + (f.estado === "Activo" ? "" : " ficha--inactiva") + "' data-indice='" + f.indice + "' title='Modificar'>";
+                html += "<div class='ficha__cantidad'>" + horas(f.minutos) + "<small>horas</small></div>";
+                html += "<div class='ficha__minutos'>" + f.minutos + " minutos</div>";
+                html += "<div class='ficha__descripcion'>" + esc(f.descripcion) + "</div>";
+                html += "<div class='ficha__pie'><span class='ficha__duracion'>" + esc(f.duracion) + "</span>";
+                html += "<span class='marca marca--" + (f.estado === "Activo" ? "activo" : "inactivo") + "'>" + esc(f.estado) + "</span></div>";
+                html += "</div></div>";
+            }
+            html += "</div></div>";
+        }
+        document.getElementById("lista").innerHTML = html;
+    }
+
+    /* -------------------------------------------------------------- editor */
+    var editor = document.getElementById("editor");
+
+    function abrir(titulo, fila) {
+        document.getElementById("tituloEditor").innerHTML = titulo;
+        document.getElementById("txtCodigo").value = fila ? fila.codigo : "";
+        document.getElementById("txtJustificacion").value = fila ? fila.justificacion : "";
+        document.getElementById("cboDuracion").value = fila ? (fila.minutos >= 480 ? "DIA" : "HORA") : "";
+        document.getElementById("numHoras").value = fila ? horas(fila.minutos) : "";
+        document.getElementById("txtDescripcion").value = fila ? fila.descripcion : "";
+        document.getElementById("cboEstado").value = fila ? (fila.estado === "Activo" ? "A" : "I") : "A";
+        document.getElementById("errHoras").innerHTML = "";
+        editor.className = "editor abierto";
+        document.getElementById("txtCodigo").focus();
+    }
+
+    function cerrar() { editor.className = "editor"; }
+
+    document.getElementById("btnNuevo").onclick = function () { abrir("Nueva equivalencia", null); };
+    document.getElementById("btnCancelar").onclick = cerrar;
+    document.onkeydown = function (e) {
+        e = e || window.event;
+        if ((e.keyCode || e.which) === 27) cerrar();
+    };
+
+    document.getElementById("lista").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        while (destino && (!destino.getAttribute || destino.getAttribute("data-indice") === null)) {
+            destino = destino.parentNode;
+            if (destino === this) return;
+        }
+        if (!destino || !destino.getAttribute) return;
+        abrir("Modificar equivalencia", DATOS[+destino.getAttribute("data-indice")]);
+    };
+
+    document.getElementById("txtBuscar").oninput = function () { pintar(); };
+
+    document.getElementById("numHoras").oninput = function () {
+        var valor = Number(this.value);
+        var ayuda = document.getElementById("ayudaHoras");
+        if (isNaN(valor) || valor <= 0) { ayuda.innerHTML = "Se guardan como minutos."; return; }
+        ayuda.innerHTML = "Se guardarán " + (valor * 60) + " minutos.";
+    };
+
+    document.getElementById("btnGrabar").onclick = function () {
+        var valor = Number(document.getElementById("numHoras").value);
+        var error = document.getElementById("errHoras");
+        if (isNaN(valor) || valor <= 0 || valor > 24) {
+            error.innerHTML = "Ingrese entre 1 y 24 horas.";
+            document.getElementById("numHoras").focus();
+            return;
+        }
+        error.innerHTML = "";
+        cerrar();
+    };
+
+    pintar();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+connect bn_sahe/BNS4h3$.@10.7.12.107:4530/TEST

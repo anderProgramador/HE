@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - Oficina en la cabecera</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+<link rel="stylesheet" href="_cabecera.css">
+<style>
+/* La tarjeta deja de ser un botón y pasa a ser lo que dice su nombre: un
+   resumen. Sin cursor de mano, sin hover, sin nada que invite a hacer clic
+   -quien elige es el combo de la cabecera-. */
+.bolsa--resumen { margin: 0 0 16px 0; width: 380px; cursor: default; }
+.bolsa--resumen:hover { border-color: #EDEAE5; border-left-color: #C8102E; background: #FFFFFF; }
+</style>
+</head>
+<body style="background:#F1EFEC">
+
+<!-- ------------------------------------------------- barra del sistema -->
+<!-- Donde hoy dice "Oficina: GERENCIA A / GERENCIA B" ahora hay un combo.
+     Es el mismo lugar y el mismo gesto del cambio de perfil: elige el
+     contexto de la sesión, no un dato de esta pantalla. -->
+<div class="app">
+    <button type="button" class="app__menu">Menu de Opciones <span>&#9776;</span></button>
+    <button type="button" class="app__salir" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+    </button>
+    <div class="app__datos">
+        Código: <b id="hCodigo"></b><span class="app__sep"></span>
+        Nombres: <b id="hNombre"></b><span class="app__sep"></span>
+        Oficina: <select class="oficina-combo" id="hOficina" title="Oficina sobre la que está trabajando"></select>
+    </div>
+</div>
+
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.
+           La oficina sobre la que trabaja se elige arriba, junto a sus datos.</p>
+    </div>
+
+    <div class="aviso oculto" id="aviso"></div>
+
+    <!-- En la pantalla queda un solo filtro: el periodo. -->
+    <div class="fila">
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta" for="cboPeriodo">Periodo</label>
+            <select class="control" id="cboPeriodo"></select>
+        </div>
+    </div>
+
+    <!-- El resumen de la oficina que está puesta en la cabecera. -->
+    <div class="bolsa bolsa--resumen" id="resumen"></div>
+
+    <div id="area"></div>
+
+    <div class="nota">
+        <b>Diseño elegido — la oficina en la cabecera, el periodo en la pantalla.</b>
+        <ul>
+            <li>La oficina es <b>contexto de la sesión</b>, como el perfil: se pone una vez arriba y vale para
+                todas las pantallas —consultas, reportes, autorizaciones—, no solo para ésta.</li>
+            <li>El periodo sí es un <b>filtro de esta pantalla</b> y se queda abajo. Cambiarlo vuelve a
+                consultar: la cuota y el reparto son de ese periodo y de esa oficina.</li>
+            <li>La tarjeta no se toca: resume la cuota <b>asignada</b>, lo <b>repartido</b> y lo
+                <b>pendiente</b>, y se rehace después de cada grabado.</li>
+            <li>Con una sola oficina a cargo, la cabecera muestra el rótulo de siempre y no un desplegable de
+                una sola opción.</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="_fun.js"></script>
+<script src="_cuerpo.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    /* Lo que devolvería 'cargar' para cada periodo: la cuota de cada oficina
+       a cargo y el reparto ya hecho. Cambiar el periodo es volver a pedir
+       esto, no filtrar en el navegador. */
+    var PERIODOS = ["202610", "202609", "202608", "202607"];
+    var DATOS = {
+        "202609": {
+            cuotas: { "7700": "2636:00", "7800": "1200:00" },
+            reparto: Fun.reparto
+        },
+        "202608": {
+            cuotas: { "7700": "2400:00", "7800": "1100:00" },
+            reparto: [
+                { id: 21, bolsa: "7700", codigo: "7900", nombre: "GERENCIA BANCA DIGITAL", horas: "1180:00", adjunto: "MEMO-7900-2608.pdf" },
+                { id: 22, bolsa: "7700", codigo: "8300", nombre: "GERENCIA DE TECNOLOGÍAS DE INFORMACIÓN", horas: "600:00", adjunto: "S/R" },
+                { id: 23, bolsa: "7800", codigo: "3100", nombre: "SUBGERENCIA DE PROCESOS", horas: "410:30", adjunto: "S/R" }
+            ]
+        }
+    };
+
+    Fun.porId("hCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("hNombre").textContent = Fun.funcionario.nombre;
+
+    /* El cintillo de la grilla se apaga: la tarjeta ya dice el saldo y
+       repetirlo dos veces en la misma pantalla no agrega nada. */
+    Cuerpo.montar("area", false);
+    Cuerpo.alCambiar = pintarResumen;
+
+    /* ---------------------------------------- la oficina, en la cabecera -- */
+
+    function armarOficina() {
+        var sel = Fun.porId("hOficina"), i, fijo;
+
+        /* Con una sola oficina no hay elección que hacer: se reemplaza el
+           combo por el rótulo de siempre. Un desplegable de una sola opción
+           solo invita a buscar la que falta. */
+        if (Fun.bolsas.length < 2) {
+            fijo = Fun.crear("b", "oficina-fija", Fun.bolsas[0].nombre);
+            sel.parentNode.replaceChild(fijo, sel);
+            return;
+        }
+
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            sel.appendChild(new Option(Fun.bolsas[i].nombre, Fun.bolsas[i].codigo));
+        }
+        sel.onchange = function () {
+            Cuerpo.ir(this.value);
+            avisar("Ahora está trabajando sobre " + Fun.bolsaDe(this.value).nombre + ".");
+        };
+    }
+
+    /* -------------------------------------- el periodo, en la pantalla --- */
+
+    function armarPeriodo() {
+        var sel = Fun.porId("cboPeriodo"), i;
+        for (i = 0; i < PERIODOS.length; i++) sel.appendChild(new Option(PERIODOS[i], PERIODOS[i]));
+        sel.value = Fun.periodo;
+        sel.onchange = function () { consultar(this.value); };
+    }
+
+    /* Cambiar de periodo es una consulta nueva: cambian la cuota asignada y
+       el reparto, no solo lo que se ve. */
+    function consultar(periodo) {
+        var datos = DATOS[periodo], i, bolsa;
+
+        Fun.periodo = periodo;
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            bolsa = Fun.bolsas[i];
+            bolsa.asignada = datos ? datos.cuotas[bolsa.codigo] : "0:00";
+        }
+        Fun.reparto = datos ? datos.reparto : [];
+        Cuerpo.ir(Cuerpo.activa().codigo);
+
+        if (!datos) avisar("El periodo " + periodo + " todavía no tiene cuota asignada.");
+        else esconderAviso();
+    }
+
+    /* ------------------------------------------------------ el resumen -- */
+
+    function pintarResumen(bolsa) {
+        var s = Fun.saldo(bolsa);
+        var caja = Fun.porId("resumen");
+        var lleno;
+
+        caja.className = "bolsa bolsa--resumen" + (s.excedida ? " bolsa--excedida" : "");
+        caja.innerHTML =
+            '<div class="bolsa__nombre">' + bolsa.nombre + "</div>" +
+            '<div class="bolsa__codigo">Código ' + bolsa.codigo + " · periodo " + Fun.periodo + "</div>" +
+            '<div class="bolsa__cifras">' +
+                dato("Asignada", Fun.formatear(s.asignada), "") +
+                dato("Repartida", Fun.formatear(s.repartida), "") +
+                dato("Pendiente", Fun.conSigno(s.pendiente),
+                     s.pendiente < 0 ? "bolsa__valor--rojo" : "bolsa__valor--pendiente") +
+            "</div>" +
+            '<div class="barrita"><div class="barrita__lleno' +
+                (s.excedida ? " barrita__lleno--excedido" : (s.pendiente === 0 ? " barrita__lleno--completo" : "")) +
+            '" id="barrita"></div></div>';
+
+        /* El ancho se pone por código y no en el marcado: es un dato, no una
+           decisión de estilo. */
+        lleno = Fun.porId("barrita");
+        lleno.style.width = s.porcentaje + "%";
+    }
+
+    function dato(rotulo, valor, clase) {
+        return '<div class="bolsa__dato">' +
+                    '<div class="bolsa__rotulo">' + rotulo + "</div>" +
+                    '<div class="bolsa__valor ' + clase + '">' + valor + "</div>" +
+               "</div>";
+    }
+
+    /* --------------------------------------------------------- avisos --- */
+
+    function avisar(texto) {
+        var a = Fun.porId("aviso");
+        a.className = "aviso aviso--bien";
+        a.textContent = texto;
+    }
+
+    function esconderAviso() { Fun.porId("aviso").className = "aviso oculto"; }
+
+    armarOficina();
+    armarPeriodo();
+    Cuerpo.ir(Fun.bolsas[0].codigo);
+})();
+</script>
+</body>
+</html>

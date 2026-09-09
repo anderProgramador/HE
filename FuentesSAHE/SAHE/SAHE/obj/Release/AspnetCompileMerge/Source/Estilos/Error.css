@@ -1,0 +1,144 @@
+@charset "utf-8";
+/* ============================================================================
+   SAHE - Sistema Administrativo de Horas Extra
+   Error.css  -  pantalla de error a página completa (Institucional).
+
+   Misma paleta y tipografía de Login.css y Escritorio.css.
+
+   Compatibilidad: Chrome 49 (intranet BN). No se usa CSS Grid, gap en
+   flexbox, clamp(), inset, :focus-visible ni position:sticky.
+
+   Paleta
+     Rojo institucional ......... #C8102E
+     Rojo oscuro (foco) ......... #7A0E1F
+     Rojo al pasar el mouse ..... #A32D2D
+     Rojo suave ................. #FCEBEB
+     Texto ...................... #221F1F
+     Texto secundario ........... #5F5C58
+     Texto atenuado ............. #8A8781
+     Texto tenue ................ #A9A6A0
+     Borde ...................... #EDEAE5
+     Fondo al pasar el mouse .... #F7F6F3
+   ========================================================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+    background: #f5f5f5;
+    color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.franja { height: 4px; background-color: #C8102E; }
+
+.hoja {
+    min-height: calc(100% - 4px);
+    padding: 28px 32px 40px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+    -ms-flex-direction: column; flex-direction: column;
+}
+
+/* ================================================================ membrete */
+.membrete {
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.membrete .logo {
+    width: 34px; height: 34px; margin-right: 12px; border-radius: 8px;
+    background: #C8102E; color: #FFFFFF; font-weight: 800; font-size: 13px;
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.membrete .rotulo {
+    font-size: 12px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: #78756F;
+}
+.membrete .rotulo span {
+    display: block; margin-top: 2px; font-weight: 600; font-size: 10px;
+    letter-spacing: 1.6px; color: #A9A6A0;
+}
+
+/* ================================================================== centro */
+.centro {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.bloque { width: 100%; max-width: 560px; text-align: center; }
+
+/* El número es el dato que el trabajador dicta por teléfono: va grande. */
+.codigo {
+    font-size: 96px; line-height: 1; font-weight: 700;
+    color: #C8102E; letter-spacing: -2px;
+}
+.rotulo-codigo {
+    display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 11px;
+    background: #FCEBEB; color: #A32D2D;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+}
+
+.bloque h1 {
+    margin: 22px 0 10px;
+    font-size: 24px; font-weight: 700; line-height: 1.2;
+}
+.explicacion { margin: 0 auto; max-width: 46em; color: #5F5C58; font-size: 15px; }
+
+/* ================================================================ acciones */
+.acciones {
+    margin-top: 30px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+}
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 40px; margin: 6px; padding: 0 20px;
+    border: 1px solid #C8102E; border-radius: 8px;
+    background: #C8102E; color: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13.5px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    -webkit-transition: background-color .15s ease; transition: background-color .15s ease;
+}
+.boton:hover { background: #A32D2D; border-color: #A32D2D; }
+/* Chrome 49 no soporta :focus-visible */
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton.secundario { background: #FFFFFF; color: #C8102E; }
+.boton.secundario:hover { background: #FCEBEB; }
+.boton svg { margin-right: 8px; }
+
+/* ============================================================== referencia */
+.referencia {
+    margin-top: 34px; padding-top: 18px; border-top: 1px solid #EDEAE5;
+    font-size: 12px; color: #8A8781;
+}
+.referencia b {
+    padding: 2px 7px; border-radius: 3px; background: #F7F6F3; color: #221F1F;
+    font-family: Consolas, "Courier New", monospace; font-weight: normal;
+}
+
+.pie {
+    -ms-flex-negative: 0; flex-shrink: 0; padding-top: 22px;
+    text-align: center; font-size: 11.5px; color: #A9A6A0;
+}
+
+/* ====================================================== pantallas angostas */
+@media screen and (max-width: 600px) {
+    .hoja { padding: 20px 18px 30px; }
+    .codigo { font-size: 68px; }
+    .bloque h1 { font-size: 20px; }
+    .boton {
+        width: 100%;
+        -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    }
+}

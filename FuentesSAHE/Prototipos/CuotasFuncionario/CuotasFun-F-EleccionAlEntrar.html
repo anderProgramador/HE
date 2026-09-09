@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - F - Elección al entrar</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+<link rel="stylesheet" href="_cabecera.css">
+</head>
+<body style="background:#F1EFEC">
+
+<!-- ------------------------------------------------- barra del sistema -->
+<div class="app">
+    <button type="button" class="app__menu">Menu de Opciones <span>&#9776;</span></button>
+    <button type="button" class="app__salir" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+    </button>
+    <div class="app__datos">
+        Código: <b id="hCodigo"></b><span class="app__sep"></span>
+        Nombres: <b id="hNombre"></b><span class="app__sep"></span>
+        Oficina: <span class="chip-oficina" id="hChip">—</span>
+        <button type="button" class="chip-cambiar" id="hCambiar">Cambiar</button>
+    </div>
+</div>
+
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.</p>
+    </div>
+
+    <div id="area"></div>
+
+    <div class="nota">
+        <b>Alternativa F — se elige al entrar, como quien elige el perfil al iniciar sesión.</b>
+        <ul>
+            <li>Nadie empieza a trabajar sin haber dicho sobre qué oficina. <b>No hay una opción por defecto
+                que se pueda pasar por alto</b>, y esa es toda la idea: el error que se evita es grabar veinte
+                horas en la cuota equivocada por no haber mirado la cabecera.</li>
+            <li>La elección se hace una vez y con el dato completo -asignada, repartida y pendiente de cada
+                una-, no en un desplegable de dos renglones.</li>
+            <li>Después queda una marca en la cabecera con <i>Cambiar</i> al lado: el mismo gesto que hoy tiene
+                el cambio de perfil.</li>
+            <li>El costo: una ventana más entre el menú y la pantalla. Molesta si el funcionario entra y sale
+                muchas veces al día.</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- --------------------------------------------- la elección al entrar -->
+<div class="velo-eleccion" id="velo">
+    <div class="eleccion">
+        <h2>¿Sobre qué oficina va a trabajar?</h2>
+        <p>Usted tiene más de una oficina a su cargo y cada una lleva su propia cuota de horas.
+           Elija una para continuar; puede cambiarla después desde la cabecera.</p>
+        <div id="opciones"></div>
+        <div class="eleccion__pie">Periodo <span id="ePeriodo"></span></div>
+    </div>
+</div>
+
+<script src="_fun.js"></script>
+<script src="_cuerpo.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    Fun.porId("hCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("hNombre").textContent = Fun.funcionario.nombre;
+    Fun.porId("ePeriodo").textContent = Fun.periodo;
+
+    Cuerpo.montar("area");
+    Cuerpo.alCambiar = function (bolsa) { Fun.porId("hChip").textContent = bolsa.nombre; };
+
+    function pintarOpciones() {
+        var caja = Fun.porId("opciones"), i, bolsa, s, boton;
+        caja.innerHTML = "";
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            bolsa = Fun.bolsas[i];
+            s = Fun.saldo(bolsa);
+            boton = Fun.crear("button", "opcion");
+            boton.type = "button";
+            boton.innerHTML =
+                '<span class="opcion__nombre">' + bolsa.nombre + "</span>" +
+                '<span class="opcion__codigo">Código ' + bolsa.codigo + "</span>" +
+                '<span class="opcion__cifra">Asignada ' + Fun.formatear(s.asignada) +
+                " · repartida " + Fun.formatear(s.repartida) +
+                "<br>Pendiente de repartir <b>" + Fun.conSigno(s.pendiente) + "</b></span>";
+            boton.onclick = (function (codigo) {
+                return function () { cerrar(); Cuerpo.ir(codigo); };
+            })(bolsa.codigo);
+            caja.appendChild(boton);
+        }
+    }
+
+    function abrir() { pintarOpciones(); Fun.porId("velo").className = "velo-eleccion abierto"; }
+
+    function cerrar() {
+        Fun.porId("velo").className = "velo-eleccion";
+        /* Recién ahora se muestra la pantalla. Si se pintara antes, detrás de
+           la ventana habría un reparto ya cargado con una oficina que el
+           usuario no eligió, y la pregunta pasaría a ser decorativa. */
+        Fun.porId("area").className = "";
+    }
+
+    Fun.porId("hCambiar").onclick = abrir;
+
+    /* Con una sola oficina no se pregunta nada: se entra directo. La ventana
+       existe por el caso de varias, no como un paso más para todos. */
+    if (Fun.bolsas.length < 2) {
+        Fun.porId("hCambiar").className = "chip-cambiar oculto";
+        cerrar();
+        Cuerpo.ir(Fun.bolsas[0].codigo);
+    } else {
+        Fun.porId("area").className = "oculto";
+        abrir();
+    }
+})();
+</script>
+</body>
+</html>

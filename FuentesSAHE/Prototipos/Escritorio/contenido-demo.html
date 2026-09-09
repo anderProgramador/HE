@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Contenido</title>
+<style>
+    /* Página de ejemplo que se carga DENTRO de #ifrPagina.
+       En el aplicativo real aquí entra la vista MVC de cada opción. */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 14px; color: #333; background: #FFFFFF; padding: 24px;
+    }
+    h1 { font-size: 19px; color: #221F1F; margin-bottom: 4px; }
+    p.ruta {
+        font-size: 11.5px; color: #8A8781; letter-spacing: .5px;
+        text-transform: uppercase; margin-bottom: 22px;
+    }
+    .tarjetas { font-size: 0; margin: 0 -8px; }
+    .tarjeta {
+        display: inline-block; vertical-align: top; width: 33.33%;
+        padding: 0 8px; margin-bottom: 16px; font-size: 14px;
+    }
+    .tarjeta div {
+        border: 1px solid #EDEAE5; border-left: 3px solid #C8102E;
+        border-radius: 6px; padding: 14px 16px; background: #FFFFFF;
+    }
+    .tarjeta b { display: block; font-size: 24px; color: #221F1F; font-weight: 700; }
+    .tarjeta span {
+        display: block; font-size: 11px; color: #78756F;
+        text-transform: uppercase; letter-spacing: .6px; margin-top: 3px;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #EDEAE5; font-size: 13px; }
+    th {
+        font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px;
+        color: #8A8781; background: #F7F6F3;
+    }
+    .estado {
+        display: inline-block; padding: 2px 8px; border-radius: 10px;
+        font-size: 11px; font-weight: 600;
+    }
+    .pendiente { background: #FCEBEB; color: #A32D2D; }
+    .aprobada { background: #E8F3EC; color: #1F7A4D; }
+    @media screen and (max-width: 700px) { .tarjeta { width: 100%; } }
+</style>
+</head>
+<body>
+    <h1 id="titulo">Inicio</h1>
+    <p class="ruta" id="ruta">SAHE · Escritorio</p>
+
+    <div class="tarjetas">
+        <div class="tarjeta"><div><b>18</b><span>Solicitudes pendientes</span></div></div>
+        <div class="tarjeta"><div><b>42.5</b><span>Horas del periodo</span></div></div>
+        <div class="tarjeta"><div><b>03</b><span>Días de descanso laborados</span></div></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Fecha</th><th>Trabajador</th><th>Horas</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>02/09/2026</td><td>GONZALES CORREA, PEDRO</td><td>3.0</td><td><span class="estado pendiente">Pendiente</span></td></tr>
+            <tr><td>01/09/2026</td><td>RAMOS VEGA, LUCÍA</td><td>2.5</td><td><span class="estado aprobada">Autorizada</span></td></tr>
+            <tr><td>31/08/2026</td><td>QUISPE ALVA, MARTÍN</td><td>4.0</td><td><span class="estado aprobada">Autorizada</span></td></tr>
+        </tbody>
+    </table>
+
+<script>
+    /* Toma el nombre de la opción de la cadena de consulta, para que se note
+       que el marco realmente navega al pulsar el menú. */
+    (function () {
+        var q = window.location.search;
+        var i = q.indexOf("op=");
+        if (i === -1) return;
+        var op = decodeURIComponent(q.substring(i + 3).split("&")[0]);
+        if (!op) return;
+        document.getElementById("titulo").innerHTML = op;
+        document.getElementById("ruta").innerHTML = "SAHE &middot; " + op;
+        document.title = op;
+    })();
+</script>
+</body>
+</html>

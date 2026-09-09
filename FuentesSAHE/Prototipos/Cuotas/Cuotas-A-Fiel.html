@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01 - Asignación de Cuotas Administrativas</title>
+<link rel="stylesheet" href="_comun.css">
+</head>
+<body>
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Asignación de Cuotas Administrativas</h1>
+        <p>Cuota de horas extra que cada gerencia puede consumir en el periodo.</p>
+    </div>
+
+    <div class="aviso oculto" id="avisoPrincipal"></div>
+
+    <!-- Filtros de carga: qué le pide la pantalla al paquete. Los dos admiten
+         varias marcas; en blanco significa "todo". -->
+    <div class="fila">
+        <div class="campo campo--medio">
+            <label class="campo__etiqueta" for="cboPeriodo">Periodo</label>
+            <div class="multi" id="cboPeriodo"></div>
+        </div>
+        <div class="campo campo--medio">
+            <label class="campo__etiqueta" for="cboOficina">Oficina</label>
+            <div class="multi" id="cboOficina"></div>
+        </div>
+    </div>
+
+    <div class="barra">
+        <div class="barra__titulo">Cuotas asignadas</div>
+        <div class="barra__cuenta">Registros encontrados: <b id="cuenta">0</b></div>
+        <button type="button" class="boton boton--secundario" id="btnLimpiar">Limpiar filtros</button>
+        <button type="button" class="boton boton--secundario boton--icono" id="btnExcel">Exportar</button>
+        <button type="button" class="boton boton--primario boton--icono" id="btnNuevo">Nuevo</button>
+    </div>
+
+    <div class="rejilla">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th class="col-periodo">Periodo</th>
+                    <th class="col-codigo">Código Gerencia</th>
+                    <th>Gerencia</th>
+                    <th class="der col-horas">Cuota (Horas)</th>
+                    <th class="cen col-pdf">Archivo Adjunto</th>
+                    <th class="cen col-accion">Acciones</th>
+                </tr>
+                <!-- El filtro está habilitado, así que va en todas las
+                     columnas. La de adjunto es un desplegable porque su celda
+                     muestra un icono y no hay texto contra el cual escribir. -->
+                <tr class="filtros">
+                    <th><input type="text" class="control" id="fPeriodo" placeholder="Filtrar"></th>
+                    <th><input type="text" class="control" id="fCodigo" placeholder="Filtrar"></th>
+                    <th><input type="text" class="control" id="fGerencia" placeholder="Filtrar"></th>
+                    <th><input type="text" class="control" id="fHoras" placeholder="Filtrar"></th>
+                    <th>
+                        <select class="control" id="fAdjunto">
+                            <option value="">Todos</option>
+                            <option value="C">Con documento</option>
+                            <option value="S">Sin documento</option>
+                        </select>
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3">Total asignado</td>
+                    <td class="der" id="total">0</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+</div>
+
+<!-- ------------------------------------------------ ventana de mantenimiento -->
+<div class="velo" id="veloMant">
+    <div class="ventana">
+        <div class="ventana__barra">
+            <div class="ventana__titulo" id="tituloMant">Nuevo</div>
+            <button type="button" class="ventana__cerrar" id="btnCerrarMant" title="Cerrar">&times;</button>
+        </div>
+        <div class="ventana__cuerpo">
+
+            <div class="resumen-cabecera oculto" id="resumenMant"></div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mPeriodo">Periodo<span class="campo__obligatorio">*</span></label>
+                    <select class="control" id="mPeriodo"></select>
+                </div>
+            </div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mCodigo">Código Oficina<span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="text" class="control control--conLupa" id="mCodigo" maxlength="4">
+                        <button type="button" class="lupa" id="btnLupaOfi" title="Buscar oficina"></button>
+                    </div>
+                </div>
+                <div class="campo" style="width:calc(100% - 190px)">
+                    <label class="campo__etiqueta" for="mNombre">Oficina</label>
+                    <input type="text" class="control" id="mNombre" readonly placeholder="Se completa al elegir el código">
+                </div>
+            </div>
+            <div class="campo__error" id="errOficina" style="margin:-10px 0 10px 8px"></div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mHoras">Cantidad de Horas<span class="campo__obligatorio">*</span></label>
+                    <input type="number" class="control control--numero" id="mHoras" min="1" step="1">
+                    <div class="campo__error" id="errHoras"></div>
+                </div>
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mReplica">¿Desea replicar?</label>
+                    <select class="control" id="mReplica">
+                        <option value="N">No</option>
+                        <option value="S">Sí</option>
+                    </select>
+                </div>
+                <!-- Se ve siempre; se habilita solo cuando 'Desea replicar'
+                     dice que sí. -->
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mMeses">Cantidad de meses</label>
+                    <input type="number" class="control control--numero" id="mMeses" min="1" step="1" disabled>
+                    <div class="campo__error" id="errMeses"></div>
+                </div>
+            </div>
+
+            <div class="replica oculto" id="cajaReplica">
+                <div class="replica__titulo">Replicación</div>
+                <div class="replica__detalle" id="resumenReplica"></div>
+            </div>
+
+            <div class="fila oculto" id="filaMotivo">
+                <div class="campo campo--largo">
+                    <label class="campo__etiqueta" for="mMotivo">
+                        Motivo del cambio<span class="campo__obligatorio">*</span>
+                        <span class="campo__cuenta" id="cuentaMotivo">0 / 250</span>
+                    </label>
+                    <input type="text" class="control" id="mMotivo" list="listaMotivos" maxlength="250"
+                           placeholder="Por qué cambia la cuota">
+                    <datalist id="listaMotivos"></datalist>
+                    <div class="campo__error" id="errMotivo"></div>
+                </div>
+            </div>
+
+            <div class="fila">
+                <div class="campo campo--largo">
+                    <label class="campo__etiqueta" for="mAdjunto">Adjuntar documento</label>
+                    <div class="adjunto">
+                        <input type="text" class="control" id="mAdjunto" readonly placeholder="Ningún archivo elegido">
+                        <button type="button" class="adjunto__boton" id="btnAdjunto">...</button>
+                    </div>
+                    <div class="campo__ayuda">Sin documento, la cuota se graba con la marca S/R.</div>
+                </div>
+            </div>
+
+        </div>
+        <div class="ventana__pie">
+            <button type="button" class="boton boton--secundario" id="btnCancelarMant">Cancelar</button>
+            <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+        </div>
+    </div>
+</div>
+
+<script src="_datos.js"></script>
+<script src="_comun.js"></script>
+<script src="Sistema.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+# ============================================================================
+# SAHE - T16 - Conceptos
+#
+# Lo que devuelve dvpkg_spT16.cargar, en segmentos separados por ~ :
+#   [0] combos   lista0 = estados
+#   [1] datos    filas de la grilla, en el orden del mapeo 'cargar'
+#   [2] ayudas   vacío: esta pantalla no tiene lupa
+# ============================================================================
+
+pantalla|tabla=T16|titulo=Conceptos|subtitulo=Conceptos de pago que después se asignan a cada trabajador.
+
+# combos:  '3cs0' pone en la columna 3 -Estado- un combo simple con la lista 0.
+# pk:      la llave que se manda a Obtener y a Eliminar.
+# uk:      el código no se puede repetir entre conceptos vigentes; es la misma
+#          regla del índice UNQ_T1601, adelantada para avisar con los rótulos
+#          de la pantalla.
+grilla|columnas=Id:0:numero,Código:120,Descripción:420,Estado:100|porPagina=10|filtros=si|combos=3cs0|pk=Id|uk=Concepto|rotulo=Descripcion|archivo=Conceptos.xlsx|acciones=nuevo,eliminarMultiple,excel,editar,eliminar,ver
+
+# ---------------------------------------------------------------------------
+# Ventana de mantenimiento
+#
+# deshabilitar: el código identifica al concepto y lo referencia T17; cambiarlo
+# sería otro concepto, no una modificación de este.
+# ---------------------------------------------------------------------------
+popup|titulo=Concepto|ancho=620|deshabilitar=editar:Concepto
+
+seccion|id=datos
+
+# ---------------------------------------------------------------------------
+# El orden es el que devuelve dvpkg_spT16.obtener:
+#   1 accion          -> CodigoAccion   (oculto)
+#   2 id              -> Id             (oculto)
+#   3 cconcepto       -> Concepto
+#   4 secuencia       -> Secuencia      (oculto)
+#   5 descripcion     -> Descripcion
+#   6 estadofuncional -> Estado
+#   7 creadopor       -> CreadoPor      (oculto)
+#   8 fcreacion       -> FechaCreacion  (oculto)
+#   9 actualizadopor  -> ActualizadoPor (oculto)
+# ---------------------------------------------------------------------------
+
+campo|tipo=oculto|id=CodigoAccion
+campo|tipo=oculto|id=Id|valor=0
+
+campo|tipo=text|id=Concepto|etiqueta=Código del concepto|largo=8|ancho=medio|requerido=si|marcador=C009|ayuda=Hasta 8 caracteres. No se puede cambiar después.
+
+campo|tipo=oculto|id=Secuencia|valor=0
+
+# La descripción es larga -255 en la base-, así que va en su propia fila y con
+# contador de caracteres.
+campo|tipo=textarea|id=Descripcion|etiqueta=Descripción del concepto|filas=2|largo=255|contador=si|ancho=total|requerido=si|marcador=Asignación Familiar|ayuda=Es el texto que se ve al asignar el concepto a un trabajador.
+
+campo|tipo=select|id=Estado|etiqueta=Estado|ancho=medio|requerido=si|origen=cs|lista=0|ayuda=Inactivo deja de ofrecerse al asignar conceptos.
+
+campo|tipo=oculto|id=CreadoPor
+campo|tipo=oculto|id=FechaCreacion
+campo|tipo=oculto|id=ActualizadoPor
+
+accion|id=Grabar|etiqueta=Grabar|estilo=primario|accion=grabar
+accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
+
+mapeo|origen=cargar|campos=Id,Concepto,Descripcion,Estado
+mapeo|origen=grabar|campos=CodigoAccion,Id,Concepto,Secuencia,Descripcion,Estado,CreadoPor,ActualizadoPor

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Aplicativo para el Proceso de Horas Extras" />
+<title>SAHE - Escritorio</title>
+<!-- Mismo marcado de Views/SAHE/Escritorio.cshtml y los MISMOS archivos que
+     se despliegan: lo que se ve aquí es exactamente lo que corre en el
+     aplicativo. Si mueve esta carpeta, corrija estas dos rutas. -->
+<link href="../../SAHE/SAHE/Estilos/Escritorio.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="divLoading" class="wrap_loading hide">
+        <div class="lds-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div class="loading_text">Procesando ...</div>
+    </div>
+
+    <div class="js-sn side-nav">
+        <div class="js-snc side-nav__container">
+            <div class="side-nav__header">
+                <div class="side-nav__brand">
+                    <span class="side-nav__brand-logo">BN</span>
+                    <span class="side-nav__brand-texto">Banco de la Nación</span>
+                </div>
+                <button id="btnO" class="side-nav__hide" title="Cerrar menú" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <ul id="divMenu" class="side-nav__content menu-list"></ul>
+            <div class="sidebar-footer">
+                SAHE v1.0.0 &middot; Horas Extra
+            </div>
+        </div>
+    </div>
+
+    <div id="datosEmpleado" class="datosbody">
+        <span id="btnT" class="boton-menu btn-opciones" title="Menu de opciones">
+            <span>Menu de Opciones</span>
+            <svg class="pointer-event-none" width='20px' height='20px' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                <path d='M4 6H20M4 12H20M4 18H20' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' />
+            </svg>
+        </span>
+        <div id="spnNombreEmpleado"></div>
+        <div class="cnt-usuario">
+            <div class="boton-menu js_btnCerrarSesion" title="Cerrar Sesión">
+                <svg class="pointer-event-none" width='18px' height='18px' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'>
+                    <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'></path>
+                    <polyline points='16 17 21 12 16 7'></polyline>
+                    <line x1='21' y1='12' x2='9' y2='12'></line>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div id="divFrame" class="divFrame">
+        <iframe title="Ventanas" id="ifrPagina" name="frmPagina" class="frmFrame"></iframe>
+    </div>
+
+    <input id="hdfRaiz" type="hidden" value="" />
+
+<script>
+/* Semilla solo para ver la pantalla fuera del aplicativo.
+   En producción estos datos los deja Login.js en sessionStorage y este
+   bloque no existe: Escritorio.js usa la sesión y no window.SAHE_DEMO.
+
+   Formato del menú, el mismo del aplicativo:
+       0 id | 1 titulo | 2 url | 3 data | 4 tipo(SM) | 5 idPadre
+       idPadre "00000000" = opción de primer nivel                        */
+window.SAHE_DEMO = {
+    /* Un registro por oficina a cargo, separados por ¬:
+           codigo|nombre|cpuesto|puesto|coficina|oficina|tipo
+       El primero es el que queda puesto al entrar. Con un solo registro la
+       cabecera muestra el rótulo de siempre en vez del desplegable. */
+    datosUsuario: "0277592|GUEVARA CAMARA MARIA LUISA|5195|GERENTE INNOVACIÓN Y TRANSFORMACIÓN DIGITAL|7800|GERENCIA DE INNOVACIÓN Y TRANSFORMACIÓN DIGITAL|T¬0277592|GUEVARA CAMARA MARIA LUISA|5199|GERENTE OPERACIONES|3100|GERENCIA OPERACIONES|P",
+    menu: [
+        "01|Inicio|SAHE/Inicio|0|MN|00000000",
+        "02|Procesos||||00000000",
+        "0201|Registro de horas extra|SAHE/Registro|1|SM|02",
+        "0202|Autorización de solicitudes|SAHE/Autorizacion|2|SM|02",
+        "0203|Cierre de solicitudes|SAHE/Cierre|3|SM|02",
+        "03|Consultas||||00000000",
+        "0301|Consolidado de pago|SAHE/Consolidado|4|SM|03",
+        "0302|Reportes|SAHE/Reportes|5|SM|03",
+        "04|Configuración||||00000000",
+        "0401|Parámetros|SAHE/Configuracion|6|SM|04",
+        "0402|Usuarios y perfiles|SAHE/Usuarios|7|SM|04"
+    ].join("¬"),
+    contenido: "contenido-demo.html"
+};
+</script>
+<script src="../../SAHE/SAHE/Scripts/Escritorio.js"></script>
+</body>
+</html>

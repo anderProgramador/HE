@@ -1,0 +1,442 @@
+﻿@charset "utf-8";
+/* ============================================================================
+   SAHE - Sistema Administrativo de Horas Extra
+   Escritorio.css  -  pantalla contenedora: cabecera, menu lateral y marco.
+
+   Toma los colores, la tipografia y los nombres de clase de EDDO
+   (General.css, Header.css y Menu.css) reunidos en un solo archivo.
+
+   Compatibilidad: Chrome 49 (intranet BN). Por eso NO se usa:
+     CSS Grid, gap en flexbox, clamp(), inset, :focus-visible, :focus-within,
+     position:sticky ni ::placeholder sin prefijo.
+   var() SI funciona desde Chrome 49, por eso se conservan los tokens.
+
+   Paleta
+     Rojo institucional ......... #C8102E
+     Rojo oscuro ................ #7A0E1F
+     Rojo al pasar el mouse ..... #A32D2D
+     Rojo suave (fondo activo) .. #FCEBEB
+     Texto ...................... #221F1F
+     Texto atenuado ............. #8A8781
+     Texto de submenu ........... #78756F
+     Icono ...................... #A9A6A0
+     Borde ...................... #EDEAE5
+     Fondo al pasar el mouse .... #F7F6F3
+     Dorado (capa de espera) .... #D4AF37
+   ========================================================================== */
+
+:root {
+    --main-color-red: #CC0C2F;
+    --light-gray: #f8f9fa;
+    --medium-gray: #e9ecef;
+    --dark-gray: #495057;
+    --gold-accent: #D4AF37;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #333;
+    background: #f5f5f5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+}
+
+/* ============================================================ capa de espera */
+.wrap_loading {
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(11, 60, 93, 0.9); z-index: 9999;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+    -ms-flex-direction: column; flex-direction: column;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.lds-ring { display: inline-block; position: relative; width: 64px; height: 64px; }
+.lds-ring div {
+    box-sizing: border-box; display: block; position: absolute;
+    width: 51px; height: 51px; margin: 6px;
+    border: 6px solid var(--gold-accent);
+    border-color: var(--gold-accent) transparent transparent transparent;
+    border-radius: 50%;
+    -webkit-animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+.lds-ring div:nth-child(1) { -webkit-animation-delay: -0.45s; animation-delay: -0.45s; }
+.lds-ring div:nth-child(2) { -webkit-animation-delay: -0.30s; animation-delay: -0.30s; }
+.lds-ring div:nth-child(3) { -webkit-animation-delay: -0.15s; animation-delay: -0.15s; }
+@-webkit-keyframes lds-ring {
+    0%   { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+@keyframes lds-ring {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.loading_text { color: #FFFFFF; margin-top: 15px; font-size: 16px; }
+
+.hide { display: none !important; }
+.pointer-event-none { pointer-events: none !important; }
+
+/* ================================================================= cabecera */
+#datosEmpleado {
+    --header-rojo: #C8102E;
+    --header-rojo-hover: #A32D2D;
+    --header-rojo-suave: #FCEBEB;
+    --header-texto: #221F1F;
+    --header-texto-mute: #8A8781;
+    --header-borde: #EDEAE5;
+    --header-sombra: rgba(0, 0, 0, 0.06);
+
+    position: fixed; left: 0; top: 0; width: 100%; height: 64px; padding: 0 24px;
+    color: var(--header-texto);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    background: #FFFFFF;
+    border-bottom: 3px solid var(--header-rojo);
+    box-shadow: 0 1px 3px var(--header-sombra);
+    z-index: 100;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-animation: fadeIn 0.4s ease; animation: fadeIn 0.4s ease;
+}
+@-webkit-keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.boton-menu {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 38px; padding: 8px 16px;
+    border: none; border-radius: 8px;
+    background-color: var(--header-rojo); color: #FFFFFF;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13.5px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 3px var(--header-sombra);
+    -webkit-transition: all 0.2s ease; transition: all 0.2s ease;
+}
+.boton-menu span { margin-right: 8px; }
+.boton-menu:hover {
+    background-color: var(--header-rojo-hover);
+    -webkit-transform: translateY(-1px); transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(200, 16, 46, 0.25);
+}
+.boton-menu:active {
+    -webkit-transform: translateY(0); transform: translateY(0);
+    box-shadow: 0 1px 3px var(--header-sombra);
+}
+/* Chrome 49 no soporta :focus-visible; se usa :focus */
+.boton-menu:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton-menu svg {
+    -webkit-transition: -webkit-transform 0.25s ease;
+    transition: transform 0.25s ease;
+}
+.boton-menu:hover svg { -webkit-transform: scale(1.08); transform: scale(1.08); }
+
+#btnT { min-width: 160px; }
+
+.js_btnCerrarSesion {
+    min-width: auto; padding: 8px 12px;
+    background-color: transparent; color: var(--header-rojo); box-shadow: none;
+}
+.js_btnCerrarSesion svg { color: var(--header-rojo); }
+.js_btnCerrarSesion:hover {
+    background-color: var(--header-rojo-suave); box-shadow: none;
+    -webkit-transform: none; transform: none;
+}
+.js_btnCerrarSesion:hover svg { -webkit-transform: scale(1.08); transform: scale(1.08); }
+
+#spnNombreEmpleado {
+    -webkit-box-flex: 1; -ms-flex-positive: 1; flex-grow: 1;
+    margin: 0 20px; min-width: 0;
+}
+.contenedordatos {
+    width: 100%; padding: 0; text-align: right;
+    font-size: 13px; font-weight: 600; color: var(--header-texto);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-pack: end; -ms-flex-pack: end; justify-content: flex-end;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+}
+.datoslabel, #lblcodigoEmpleado, .datoslabeloficina {
+    font-weight: 700; font-size: 10.5px; letter-spacing: 0.5px; text-transform: uppercase;
+    margin-left: 18px; margin-right: 5px; color: var(--header-texto-mute);
+}
+#lblcodigoEmpleado { margin-left: 0; color: var(--header-rojo); }
+
+/* El desplegable de oficina. Aparece solo cuando el usuario tiene más de una
+   a su cargo y ocupa el lugar donde antes iba el nombre de la oficina: elegir
+   la oficina de trabajo es el mismo gesto que cambiar de perfil, y por eso
+   vive en la cabecera y no dentro de cada pantalla. */
+.combo-oficina {
+    max-width: 420px; height: 24px; padding: 1px 4px;
+    border: 1px solid var(--header-borde); border-radius: 4px;
+    background: #FFFFFF; color: var(--header-texto);
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    vertical-align: middle; cursor: pointer;
+}
+.combo-oficina:hover, .combo-oficina:focus {
+    border-color: var(--header-rojo); outline: none;
+}
+
+/* Titular o encargado, cuando hay una sola ubicación y no hace falta el
+   desplegable. Va en tono apagado: acompaña al nombre de la oficina, no
+   compite con él. */
+.dato-movimiento {
+    margin-left: 8px; padding: 1px 8px; border-radius: 10px;
+    background: var(--header-borde); color: var(--header-texto-mute);
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cnt-usuario {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    padding-left: 16px; border-left: 1px solid var(--header-borde);
+}
+/* EDDO usa aqui gap:8px, que no existe hasta Chrome 84 */
+.cnt-usuario > * { margin-left: 8px; }
+.cnt-usuario > *:first-child { margin-left: 0; }
+
+/* ============================================================= menu lateral */
+.side-nav {
+    --menu-bg: #FFFFFF;
+    --menu-bg-hover: #F7F6F3;
+    --menu-bg-activo: #FCEBEB;
+    --menu-rojo: #C8102E;
+    --menu-rojo-hover: #A32D2D;
+    --menu-texto: #221F1F;
+    --menu-texto-sub: #78756F;
+    --menu-icono: #A9A6A0;
+    --menu-borde: #EDEAE5;
+    --menu-sombra: rgba(0, 0, 0, .18);
+
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    overflow: hidden; pointer-events: none; z-index: 1000;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+.side-nav::before {
+    content: ''; display: block; position: absolute; left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(20, 18, 18, 0.5); opacity: 0; will-change: opacity;
+    -webkit-transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.side-nav__container {
+    position: relative; width: 280px; max-width: 280px; height: 100%;
+    background-color: var(--menu-bg);
+    box-shadow: 4px 0 24px var(--menu-sombra);
+    -webkit-transform: translateX(-102%); transform: translateX(-102%);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+    -ms-flex-direction: column; flex-direction: column;
+    overflow: hidden;
+}
+.side-nav--visible { pointer-events: auto; }
+.side-nav--animatable .side-nav__container {
+    -webkit-transition: -webkit-transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.side-nav--visible::before { opacity: 1; }
+.side-nav--visible .side-nav__container { -webkit-transform: none; transform: none; }
+
+.side-nav__header {
+    height: 64px; padding: 0 20px; position: relative;
+    background: var(--menu-bg); border-bottom: 1px solid var(--menu-borde);
+    color: var(--menu-texto); overflow: hidden;
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.side-nav__brand {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.side-nav__brand-logo {
+    width: 32px; height: 32px; margin-right: 11px; border-radius: 8px;
+    background: var(--menu-rojo); color: #FFFFFF;
+    font-weight: 800; font-size: 13px; letter-spacing: .3px;
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.side-nav__brand-texto { font-weight: 700; font-size: 13px; color: var(--menu-texto); letter-spacing: .2px; }
+.side-nav__hide {
+    position: absolute; right: 14px; top: 50%;
+    -webkit-transform: translateY(-50%); transform: translateY(-50%);
+    width: 32px; height: 32px; padding: 0; margin: 0;
+    border: none; border-radius: 50%; outline: none; z-index: 9; cursor: pointer;
+    background: var(--menu-bg-hover); color: var(--menu-texto-sub);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-transition: background 0.2s ease, color 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.side-nav__hide:hover { background: var(--menu-bg-activo); color: var(--menu-rojo); }
+.side-nav__hide:focus { outline: 2px solid var(--menu-rojo); outline-offset: 2px; }
+.side-nav__hide svg { width: 16px; height: 16px; }
+
+.side-nav__content {
+    padding: 10px 0; margin: 0; list-style: none;
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+    background: var(--menu-bg);
+    overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
+.menu-grupo { margin: 1px 10px; border-radius: 8px; overflow: hidden; }
+.menu-grupo > .title {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--menu-texto);
+    -webkit-user-select: none; user-select: none;
+    -webkit-transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.menu-grupo > .title:hover { background-color: var(--menu-bg-hover); }
+.menu-grupo--abierto > .title { background-color: var(--menu-bg-activo); color: var(--menu-rojo-hover); }
+.menu-grupo--abierto > .title .menu-icono { color: var(--menu-rojo); }
+.menu-grupo--simple {
+    margin-bottom: 6px; padding-bottom: 6px; border-radius: 0;
+    border-bottom: 1px solid var(--menu-borde);
+}
+
+.menu-icono {
+    width: 20px; height: 20px; margin-right: 12px; color: var(--menu-icono);
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    -webkit-transition: color 0.2s ease; transition: color 0.2s ease;
+}
+.menu-icono svg { width: 19px; height: 19px; }
+
+.hide-menu {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.menu-flecha {
+    margin-left: 8px; color: #C4C1BA;
+    -ms-flex-negative: 0; flex-shrink: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-transition: -webkit-transform 0.25s ease, color 0.2s ease;
+    transition: transform 0.25s ease, color 0.2s ease;
+}
+.menu-flecha svg { width: 15px; height: 15px; }
+.menu-grupo--abierto > .title .menu-flecha {
+    -webkit-transform: rotate(90deg); transform: rotate(90deg); color: var(--menu-rojo);
+}
+
+.sub-menu {
+    max-height: 0; list-style: none; overflow: hidden; padding: 0; margin: 0;
+    -webkit-transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.menu-grupo--abierto > .sub-menu { max-height: 640px; padding: 2px 0 4px; }
+.sub-menu li > .title {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    position: relative; margin: 0 4px; padding: 8px 12px 8px 44px;
+    border-radius: 7px; cursor: pointer;
+    font-size: 12.5px; font-weight: 500; color: var(--menu-texto-sub);
+    -webkit-transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+}
+.sub-menu li > .title::before {
+    content: ''; position: absolute; left: 22px; top: 50%;
+    width: 4px; height: 4px; border-radius: 50%; background: #C4C1BA;
+    -webkit-transform: translateY(-50%); transform: translateY(-50%);
+    -webkit-transition: background-color 0.2s ease; transition: background-color 0.2s ease;
+}
+.sub-menu li > .title:hover {
+    background-color: var(--menu-bg-activo); color: var(--menu-rojo-hover); padding-left: 48px;
+}
+.sub-menu li > .title:hover::before { background: var(--menu-rojo); }
+
+/* opcion en pantalla: Escritorio.js aplica la clase */
+.title.activo { background-color: var(--menu-bg-activo); color: var(--menu-rojo-hover); }
+.sub-menu li > .title.activo::before { background: var(--menu-rojo); }
+.menu-grupo > .title.activo .menu-icono { color: var(--menu-rojo); }
+
+.sidebar-footer {
+    -ms-flex-negative: 0; flex-shrink: 0;
+    padding: 12px 20px; text-align: center; font-size: 11px;
+    color: var(--menu-texto-sub);
+    border-top: 1px solid var(--menu-borde); background: var(--menu-bg-hover);
+}
+
+@-webkit-keyframes menuFadeIn {
+    from { opacity: 0; -webkit-transform: translateX(-12px); }
+    to   { opacity: 1; -webkit-transform: translateX(0); }
+}
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.side-nav__content > li {
+    opacity: 0;
+    -webkit-animation: menuFadeIn 0.3s ease forwards;
+    animation: menuFadeIn 0.3s ease forwards;
+}
+.side-nav__content > li:nth-child(1) { -webkit-animation-delay: .03s; animation-delay: .03s; }
+.side-nav__content > li:nth-child(2) { -webkit-animation-delay: .06s; animation-delay: .06s; }
+.side-nav__content > li:nth-child(3) { -webkit-animation-delay: .09s; animation-delay: .09s; }
+.side-nav__content > li:nth-child(4) { -webkit-animation-delay: .12s; animation-delay: .12s; }
+.side-nav__content > li:nth-child(5) { -webkit-animation-delay: .15s; animation-delay: .15s; }
+.side-nav__content > li:nth-child(6) { -webkit-animation-delay: .18s; animation-delay: .18s; }
+
+/* ==================================================================== marco */
+/* En EDDO el marco usa height:calc(100vh - 70px) con margin-top:80px: esos
+   10 px de mas sacan barra de desplazamiento y cortan el pie del contenido.
+   Aqui el margen y el descuento son el mismo valor: 64 de cabecera + 3 de
+   borde inferior.                                                           */
+/* El marco ocupa todo el ancho disponible. Antes llevaba 20 px de relleno a
+   cada lado más borde y esquinas redondeadas, y la pantalla se veía como un
+   cuadro flotando sobre el fondo gris en vez de como el área de trabajo. */
+.divFrame {
+    position: relative; width: 100%;
+    margin-top: 67px; height: calc(100vh - 67px);
+    padding: 0; overflow: hidden;
+}
+.frmFrame {
+    display: block;
+    width: 100%; height: 100%;
+    border: 0; border-radius: 0; background: #FFFFFF;
+}
+
+/* ====================================================== pantallas angostas */
+@media screen and (max-width: 1024px) {
+    #datosEmpleado { height: 58px; padding: 0 16px; }
+    .boton-menu { font-size: 13px; padding: 7px 14px; height: 36px; }
+    .contenedordatos { font-size: 12.5px; }
+    .divFrame { margin-top: 61px; height: calc(100vh - 61px); }
+}
+@media screen and (max-width: 768px) {
+    .side-nav__container { width: 100%; max-width: 100%; }
+    #datosEmpleado { padding: 0 14px; }
+    #btnT { min-width: auto; }
+    #spnNombreEmpleado { margin: 0 10px; }
+    .datoslabel, .datoslabeloficina { display: none; }
+    /* En pantalla angosta el nombre de la oficina no entra entero; el
+       desplegable se acorta pero NO se esconde: es el único sitio donde se ve
+       -y se cambia- sobre qué oficina se está trabajando. */
+    .combo-oficina { max-width: 160px; }
+    .divFrame { padding: 0; }
+}
+@media screen and (max-width: 480px) {
+    html { font-size: 13px; }
+    .boton-menu { font-size: 12px; padding: 6px 10px; height: 34px; }
+    .boton-menu span { display: none; }
+    .contenedordatos { font-size: 11px; }
+    .js_btnCerrarSesion { padding: 6px; }
+}

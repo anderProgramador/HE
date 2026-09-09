@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - E - Cinta de contexto</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+<link rel="stylesheet" href="_cabecera.css">
+</head>
+<body style="background:#F1EFEC">
+
+<!-- ------------------------------------------------- barra del sistema -->
+<div class="app">
+    <button type="button" class="app__menu">Menu de Opciones <span>&#9776;</span></button>
+    <button type="button" class="app__salir" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+    </button>
+    <div class="app__datos">
+        Código: <b id="hCodigo"></b><span class="app__sep"></span>
+        Nombres: <b id="hNombre"></b>
+    </div>
+</div>
+
+<!-- La cinta de contexto: no reemplaza el rótulo de la cabecera, lo saca de
+     ahí y lo pone donde se puede tocar. Aparece solo si hay más de una
+     oficina; con una sola, esta franja no se dibuja. -->
+<div class="cinta" id="cinta">
+    <div class="cinta__rotulo">Trabajando en</div>
+    <div id="pestanas" style="display:inline-block"></div>
+    <div class="cinta__aviso" id="avisoCinta"></div>
+</div>
+
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.</p>
+    </div>
+
+    <div id="area"></div>
+
+    <div class="nota">
+        <b>Alternativa E — una franja de contexto, siempre a la vista.</b>
+        <ul>
+            <li>Cambiar de oficina es <b>un clic, sin abrir nada</b>. Y el pendiente de cada una va escrito en
+                su propia pestaña, así que se ve de reojo cuál falta repartir sin cambiar de contexto.</li>
+            <li>La oficina activa está permanentemente en pantalla. Es la diferencia con el desplegable:
+                nadie graba sobre la oficina equivocada por haber olvidado cuál dejó puesta.</li>
+            <li>Ocupa una franja fija arriba, y con muchas oficinas las pestañas se van a dos líneas. Para dos
+                o tres es el punto justo.</li>
+        </ul>
+    </div>
+
+</div>
+
+<script src="_fun.js"></script>
+<script src="_cuerpo.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    Fun.porId("hCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("hNombre").textContent = Fun.funcionario.nombre;
+
+    /* Con una sola oficina a cargo no hay nada que elegir y la cinta sobra. */
+    if (Fun.bolsas.length < 2) Fun.porId("cinta").className = "cinta oculto";
+
+    Cuerpo.montar("area");
+    Cuerpo.alCambiar = function () { pintarPestanas(); };
+
+    function pintarPestanas() {
+        var caja = Fun.porId("pestanas"), activa = Cuerpo.activa(), i, bolsa, s, boton;
+        caja.innerHTML = "";
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            bolsa = Fun.bolsas[i];
+            s = Fun.saldo(bolsa);
+            boton = Fun.crear("button", "cinta__pestana" +
+                (bolsa.codigo === activa.codigo ? " cinta__pestana--activa" : ""));
+            boton.type = "button";
+            boton.innerHTML = bolsa.nombre +
+                ' &nbsp;·&nbsp; pendiente <span class="cinta__pendiente">' +
+                Fun.conSigno(s.pendiente) + "</span>";
+            boton.onclick = (function (codigo) {
+                return function () { if (codigo !== Cuerpo.activa().codigo) Cuerpo.ir(codigo); };
+            })(bolsa.codigo);
+            caja.appendChild(boton);
+        }
+        Fun.porId("avisoCinta").textContent =
+            "Periodo " + Fun.periodo + " · lo que grabe se descuenta de la oficina encendida";
+    }
+
+    Cuerpo.ir(Fun.bolsas[0].codigo);
+})();
+</script>
+</body>
+</html>

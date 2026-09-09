@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - T01FUN - A - Bolsa activa</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_fun.css">
+</head>
+<body>
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Distribución de Cuotas</h1>
+        <p>Reparta entre sus oficinas dependientes las horas extra que le asignó la administración.
+           Cada oficina a su cargo tiene su propia cuota y se rinde por separado.</p>
+    </div>
+
+    <div class="quien">
+        <b id="qNombre"></b><span class="quien__sep">|</span>
+        Código: <b id="qCodigo"></b><span class="quien__sep">|</span>
+        Periodo: <b id="qPeriodo"></b>
+    </div>
+
+    <!-- Las oficinas a cargo. No son un resumen para mirar: son el selector.
+         La que está encendida manda sobre todo lo que viene abajo. -->
+    <div class="campo__etiqueta">Elija la cuota que va a repartir</div>
+    <div id="bolsas"></div>
+
+    <div class="cintillo" id="cintillo"></div>
+
+    <div class="barra">
+        <div class="barra__titulo">Reparto de <span id="tituloBolsa"></span></div>
+        <div class="barra__cuenta">Registros: <b id="cuenta">0</b></div>
+        <button type="button" class="boton boton--secundario" id="btnExcel">Exportar</button>
+        <button type="button" class="boton boton--primario" id="btnNuevo">Nuevo</button>
+    </div>
+
+    <div class="rejilla">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th class="col-periodo">Periodo</th>
+                    <th class="col-codigo">Código Oficina</th>
+                    <th>Oficina</th>
+                    <th class="der col-horas">Horas Asignadas</th>
+                    <th class="cen col-pdf">Adjunto</th>
+                    <th class="cen col-accion">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3">Repartido de esta cuota</td>
+                    <td class="der" id="total">0:00</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="nota">
+        <b>Alternativa A — una cuota a la vez, elegida a propósito.</b>
+        <ul>
+            <li>La oficina deja de ser un <i>filtro</i> y pasa a ser el <b>contexto de trabajo</b>: mientras
+                una tarjeta está encendida, todo lo que se agrega se descuenta de esa cuota y de ninguna otra.</li>
+            <li>El saldo vive arriba y se mueve mientras se escribe, así que nunca hay que abrir una calculadora
+                para saber cuánto queda.</li>
+            <li>La ventana de mantenimiento no pregunta la oficina de origen: la hereda. Un dato que no se
+                pregunta es un dato que no se puede equivocar.</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- --------------------------------------------- ventana de mantenimiento -->
+<div class="velo" id="velo">
+    <div class="ventana">
+        <div class="ventana__barra">
+            <div class="ventana__titulo" id="tituloVentana">Nuevo reparto</div>
+            <button type="button" class="ventana__cerrar" id="btnCerrar" title="Cerrar">&times;</button>
+        </div>
+        <div class="ventana__cuerpo">
+
+            <div class="cintillo" id="cintilloPop"></div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mCodigo">Código Oficina<span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <select class="control" id="mCodigo"></select>
+                    </div>
+                </div>
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mHoras">Horas a asignar<span class="campo__obligatorio">*</span></label>
+                    <input type="text" class="control control--numero" id="mHoras" maxlength="8" placeholder="hh:mm">
+                    <div class="campo__ayuda" id="ayudaHoras"></div>
+                </div>
+            </div>
+
+            <div class="campo__error" id="error"></div>
+
+        </div>
+        <div class="pie-acciones">
+            <div class="pie-acciones__nota" id="notaPie"></div>
+            <button type="button" class="boton boton--secundario" id="btnCancelar">Cancelar</button>
+            <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+        </div>
+    </div>
+</div>
+
+<script src="_fun.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var activa = Fun.bolsas[0].codigo;
+
+    Fun.porId("qNombre").textContent = Fun.funcionario.nombre;
+    Fun.porId("qCodigo").textContent = Fun.funcionario.codigo;
+    Fun.porId("qPeriodo").textContent = Fun.periodo;
+
+    /* ------------------------------------------------ tarjetas de cuota -- */
+
+    function pintarBolsas() {
+        var caja = Fun.porId("bolsas"), i;
+        caja.innerHTML = "";
+        for (i = 0; i < Fun.bolsas.length; i++) {
+            caja.appendChild(tarjeta(Fun.bolsas[i]));
+        }
+    }
+
+    function tarjeta(bolsa) {
+        var s = Fun.saldo(bolsa);
+        var d = Fun.crear("div", "bolsa bolsa--elegible" +
+            (bolsa.codigo === activa ? " bolsa--activa" : "") +
+            (s.excedida ? " bolsa--excedida" : ""));
+        var lleno;
+
+        d.appendChild(Fun.crear("div", "bolsa__nombre", bolsa.nombre));
+        d.appendChild(Fun.crear("div", "bolsa__codigo", "Código " + bolsa.codigo));
+
+        d.appendChild(cifras([
+            ["Asignada", Fun.formatear(s.asignada), ""],
+            ["Repartida", Fun.formatear(s.repartida), ""],
+            ["Pendiente", Fun.conSigno(s.pendiente),
+             s.pendiente < 0 ? "bolsa__valor--rojo" : "bolsa__valor--pendiente"]
+        ]));
+
+        lleno = Fun.crear("div", "barrita__lleno" +
+            (s.excedida ? " barrita__lleno--excedido" : (s.pendiente === 0 ? " barrita__lleno--completo" : "")));
+        lleno.style.width = s.porcentaje + "%";
+        d.appendChild(Fun.crear("div", "barrita")).appendChild(lleno);
+
+        d.onclick = function () { activa = bolsa.codigo; pintar(); };
+        return d;
+    }
+
+    function cifras(lista) {
+        var caja = Fun.crear("div", "bolsa__cifras"), i, dato;
+        for (i = 0; i < lista.length; i++) {
+            dato = Fun.crear("div", "bolsa__dato");
+            dato.appendChild(Fun.crear("div", "bolsa__rotulo", lista[i][0]));
+            dato.appendChild(Fun.crear("div", "bolsa__valor " + lista[i][2], lista[i][1]));
+            caja.appendChild(dato);
+        }
+        return caja;
+    }
+
+    /* -------------------------------------------------------- la grilla -- */
+
+    function pintar() {
+        var bolsa = Fun.bolsaDe(activa);
+        var s = Fun.saldo(bolsa);
+        var cuerpo = Fun.porId("cuerpo"), n = 0, i, fila;
+
+        pintarBolsas();
+        Fun.porId("tituloBolsa").textContent = bolsa.nombre;
+        Fun.porId("cintillo").className = "cintillo" + (s.excedida ? " cintillo--excedido" : "");
+        Fun.porId("cintillo").innerHTML =
+            "Cuota de <b>" + bolsa.nombre + "</b> — asignada <b>" + Fun.formatear(s.asignada) +
+            "</b>, repartida <b>" + Fun.formatear(s.repartida) +
+            "</b>, <b>pendiente " + Fun.conSigno(s.pendiente) + "</b>" +
+            (s.excedida ? " — se pasó de la cuota" : "");
+
+        cuerpo.innerHTML = "";
+        for (i = 0; i < Fun.reparto.length; i++) {
+            if (Fun.reparto[i].bolsa !== activa) continue;
+            cuerpo.appendChild(filaDe(Fun.reparto[i]));
+            n++;
+        }
+        if (n === 0) {
+            fila = Fun.crear("tr", "sin-datos");
+            fila.appendChild(Fun.crear("td", "", "Esta cuota todavía no se ha repartido.")).colSpan = 6;
+            cuerpo.appendChild(fila);
+        }
+        Fun.porId("cuenta").textContent = n;
+        Fun.porId("total").textContent = Fun.formatear(s.repartida);
+    }
+
+    function filaDe(linea) {
+        var tr = document.createElement("tr"), td;
+        tr.appendChild(Fun.crear("td", "", Fun.periodo));
+        tr.appendChild(Fun.crear("td", "", linea.codigo));
+        tr.appendChild(Fun.crear("td", "", linea.nombre));
+        tr.appendChild(Fun.crear("td", "der", linea.horas));
+
+        td = Fun.crear("td", "cen");
+        td.innerHTML = '<button type="button" class="boton-fila"' +
+            (linea.adjunto === "S/R" ? " disabled" : "") + ' title="' +
+            (linea.adjunto === "S/R" ? "Sin documento" : linea.adjunto) + '">' + Fun.iconos.pdf + "</button>";
+        tr.appendChild(td);
+
+        td = Fun.crear("td", "cen");
+        td.innerHTML = '<button type="button" class="boton-fila" title="Editar">' + Fun.iconos.editar + "</button>" +
+                       '<button type="button" class="boton-fila" title="Eliminar">' + Fun.iconos.eliminar + "</button>";
+        td.firstChild.onclick = function () { abrir(linea); };
+        td.lastChild.onclick = function () { quitar(linea); };
+        tr.appendChild(td);
+        return tr;
+    }
+
+    function quitar(linea) {
+        var i;
+        for (i = 0; i < Fun.reparto.length; i++) {
+            if (Fun.reparto[i].id === linea.id) { Fun.reparto.splice(i, 1); break; }
+        }
+        pintar();
+    }
+
+    /* ------------------------------------------------------- la ventana -- */
+
+    var enEdicion = null;
+
+    function abrir(linea) {
+        var bolsa = Fun.bolsaDe(activa);
+        var s = Fun.saldo(bolsa);
+        var libres = s.pendiente + (linea ? Fun.aMinutos(linea.horas) : 0);
+        var sel = Fun.porId("mCodigo"), lista = Fun.dependientes[activa], i, op;
+
+        enEdicion = linea || null;
+        Fun.porId("tituloVentana").textContent = linea ? "Modificar reparto" : "Nuevo reparto";
+        Fun.porId("cintilloPop").innerHTML =
+            "Se descuenta de <b>" + bolsa.nombre + "</b>" +
+            '<div class="cintillo__pie">Disponible para esta línea: <b>' + Fun.conSigno(libres) + "</b></div>";
+        Fun.porId("ayudaHoras").textContent = "Máximo " + Fun.conSigno(libres) + " (hh:mm)";
+
+        sel.innerHTML = "";
+        sel.appendChild(new Option("Seleccione", ""));
+        for (i = 0; i < lista.length; i++) {
+            op = new Option(lista[i].codigo + " - " + lista[i].nombre, lista[i].codigo);
+            sel.appendChild(op);
+        }
+        sel.value = linea ? linea.codigo : "";
+        sel.disabled = !!linea;
+        Fun.porId("mHoras").value = linea ? linea.horas : "";
+        Fun.porId("error").textContent = "";
+        Fun.porId("notaPie").textContent = "El tope lo pone la cuota de la oficina, no el sistema.";
+        Fun.porId("velo").className = "velo abierto";
+    }
+
+    function cerrar() { Fun.porId("velo").className = "velo"; }
+
+    function grabar() {
+        var bolsa = Fun.bolsaDe(activa);
+        var s = Fun.saldo(bolsa);
+        var codigo = Fun.porId("mCodigo").value;
+        var horas = Fun.porId("mHoras").value;
+        var minutos = Fun.aMinutos(horas);
+        var libres = s.pendiente + (enEdicion ? Fun.aMinutos(enEdicion.horas) : 0);
+        var nombre = "", lista = Fun.dependientes[activa], i;
+
+        if (!codigo) { Fun.porId("error").textContent = "Indique la oficina."; return; }
+        if (minutos === 0) { Fun.porId("error").textContent = "Indique las horas en hh:mm."; return; }
+        if (minutos > libres) {
+            Fun.porId("error").textContent =
+                "Solo quedan " + Fun.conSigno(libres) + " en la cuota de " + bolsa.nombre + ".";
+            return;
+        }
+        for (i = 0; i < lista.length; i++) if (lista[i].codigo === codigo) nombre = lista[i].nombre;
+
+        if (enEdicion) {
+            enEdicion.horas = Fun.formatear(minutos);
+        } else {
+            Fun.reparto.push({
+                id: new Date().getTime(), bolsa: activa, codigo: codigo,
+                nombre: nombre, horas: Fun.formatear(minutos), adjunto: "S/R"
+            });
+        }
+        cerrar();
+        pintar();
+    }
+
+    Fun.porId("btnNuevo").onclick = function () { abrir(null); };
+    Fun.porId("btnCerrar").onclick = cerrar;
+    Fun.porId("btnCancelar").onclick = cerrar;
+    Fun.porId("btnGrabar").onclick = grabar;
+    Fun.porId("mHoras").oninput = function () { Fun.limpiarHora(this); };
+
+    pintar();
+})();
+</script>
+</body>
+</html>

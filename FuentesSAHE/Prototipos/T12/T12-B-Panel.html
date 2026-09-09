@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Tipo de Compensación (Prototipo B)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO B - Rejilla con panel lateral
+   El alta y la modificación entran por un panel que se abre al costado, no por
+   una ventana que tapa la lista: el usuario sigue viendo los registros que ya
+   existen mientras carga uno nuevo, que es justo lo que necesita para no
+   repetir una compensación ya definida.
+   Un solo buscador arriba en lugar de una caja por columna, y las columnas
+   ordenables.
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin position:sticky.
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #FFFFFF; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.pantalla { padding: 22px 24px 32px; }
+.pantalla__cabecera { padding-bottom: 14px; margin-bottom: 16px; border-bottom: 2px solid #C8102E; }
+.pantalla__titulo { font-size: 21px; font-weight: 700; line-height: 1.2; }
+.pantalla__subtitulo { margin-top: 3px; font-size: 13.5px; color: #5F5C58; }
+
+/* ------------------------------------------------------------------ barra -- */
+.barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap; margin-bottom: 12px;
+}
+.buscador {
+    position: relative; width: 300px; max-width: 100%; margin-right: 12px;
+}
+.buscador input {
+    width: 100%; height: 34px; padding: 0 10px 0 32px;
+    border: 1px solid #D5D0C9; border-radius: 6px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13.5px; color: #221F1F; outline: 0;
+}
+.buscador input:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 3px rgba(200,16,46,.13); box-shadow: 0 0 0 3px rgba(200,16,46,.13);
+}
+.buscador svg { position: absolute; left: 10px; top: 9px; color: #A9A6A0; }
+
+.filtro-estado {
+    height: 34px; margin-right: 12px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 6px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13.5px; color: #5F5C58; outline: 0;
+}
+.barra__conteo { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; font-size: 13px; color: #8A8781; }
+
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 34px; margin-left: 8px; padding: 0 14px;
+    border: 1px solid #D5D0C9; border-radius: 6px; background: #FFFFFF; color: #5F5C58;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    -webkit-transition: background-color .15s ease, color .15s ease; transition: background-color .15s ease, color .15s ease;
+}
+.boton:hover { background: #F7F6F3; color: #C8102E; }
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton svg { margin-right: 7px; }
+.boton--primario { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.boton--primario:hover { background: #A32D2D; border-color: #A32D2D; color: #FFFFFF; }
+
+/* -------------------------------------------------- rejilla y panel juntos -- */
+.area {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: start; -ms-flex-align: start; align-items: flex-start;
+}
+.area__lista {
+    -webkit-box-flex: 1; -ms-flex: 1; flex: 1; min-width: 0;
+    -webkit-transition: margin-right .2s ease; transition: margin-right .2s ease;
+}
+
+.rejilla-marco { border: 1px solid #EDEAE5; border-radius: 8px; overflow: hidden; }
+.rejilla-scroll { overflow-x: auto; }
+table.rejilla { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.rejilla th, table.rejilla td { text-align: left; padding: 10px 12px; }
+table.rejilla thead th {
+    background: #F7F6F3; color: #78756F; border-bottom: 2px solid #C8102E;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    white-space: nowrap; cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+table.rejilla thead th:hover { color: #C8102E; }
+table.rejilla thead th.num { text-align: right; }
+table.rejilla thead th .orden { margin-left: 5px; color: #C8102E; }
+table.rejilla tbody td { border-bottom: 1px solid #EDEAE5; }
+table.rejilla tbody tr:last-child td { border-bottom: 0; }
+table.rejilla tbody tr:hover td { background: #FBFAF9; cursor: pointer; }
+table.rejilla tbody tr.activa td { background: #FCEBEB; }
+table.rejilla tbody tr.activa td:first-child { -webkit-box-shadow: inset 3px 0 0 #C8102E; box-shadow: inset 3px 0 0 #C8102E; }
+td.num {
+    text-align: right;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+td.codigo { font-family: Consolas, "Courier New", monospace; font-size: 12.5px; }
+.minutos { display: block; font-size: 11px; color: #A9A6A0; }
+.marca { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 600; }
+.marca--activo { background: #E8F3EC; color: #1F7A4D; }
+.marca--inactivo { background: #F1EFEC; color: #78756F; }
+.vacio { padding: 26px; text-align: center; color: #8A8781; font-size: 13.5px; }
+
+/* ------------------------------------------------------------------ panel -- */
+.panel {
+    display: none; -ms-flex-negative: 0; flex-shrink: 0;
+    width: 380px; margin-left: 18px;
+    border: 1px solid #EDEAE5; border-top: 3px solid #C8102E; border-radius: 8px;
+    background: #FFFFFF;
+    -webkit-box-shadow: 0 6px 18px rgba(0,0,0,.07); box-shadow: 0 6px 18px rgba(0,0,0,.07);
+}
+.panel.abierto { display: block; }
+.panel__barra {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #EDEAE5;
+}
+.panel__titulo { font-size: 14px; font-weight: 700; color: #221F1F; }
+.panel__cerrar {
+    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%;
+    background: #F7F6F3; color: #78756F; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.panel__cerrar:hover { background: #FCEBEB; color: #C8102E; }
+.panel__cuerpo { padding: 16px 16px 4px; }
+.panel__pie {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    padding: 12px 16px; border-top: 1px solid #EDEAE5; background: #FBFAF9;
+}
+.panel__pie .boton { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; margin: 0 0 0 8px; -ms-flex-pack: center; justify-content: center; }
+.panel__pie .boton:first-child { margin-left: 0; }
+
+.campo { margin-bottom: 13px; }
+.campo__etiqueta { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; }
+.campo__obligatorio { margin-left: 3px; color: #C8102E; }
+.campo__control {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.control {
+    width: 100%; min-width: 0; height: 34px; padding: 0 10px;
+    border: 1px solid #D5D0C9; border-radius: 5px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 14px; color: #221F1F; outline: 0;
+    -webkit-transition: border-color .15s ease, box-shadow .15s ease; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.control:focus {
+    border-color: #C8102E;
+    -webkit-box-shadow: 0 0 0 3px rgba(200,16,46,.13); box-shadow: 0 0 0 3px rgba(200,16,46,.13);
+}
+.control[readonly] { background: #F7F6F3; color: #5F5C58; }
+textarea.control { height: auto; padding: 8px 10px; resize: vertical; }
+.campo__unidad { -ms-flex-negative: 0; flex-shrink: 0; margin-left: 8px; font-size: 12.5px; color: #8A8781; }
+.btn-lupa {
+    -ms-flex-negative: 0; flex-shrink: 0; width: 34px; height: 34px; margin-left: -1px;
+    border: 1px solid #D5D0C9; border-left: 0; border-radius: 0 5px 5px 0;
+    background: #F7F6F3; color: #5F5C58; cursor: pointer;
+}
+.btn-lupa:hover { background: #FCEBEB; color: #C8102E; }
+.campo__ayuda { margin-top: 4px; font-size: 11.5px; color: #8A8781; }
+.campo__error { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: #B3261E; }
+
+@media screen and (max-width: 980px) {
+    /* Bajo este ancho el panel ya no cabe al costado: pasa a ocupar la pantalla */
+    .area { display: block; }
+    .panel {
+        position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 1000;
+        width: auto; margin: 0; border-radius: 0; overflow: auto;
+    }
+}
+@media screen and (max-width: 700px) {
+    .pantalla { padding: 16px 14px 24px; }
+    .buscador { width: 100%; margin: 0 0 8px 0; }
+    .boton { margin: 0 8px 0 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="pantalla">
+    <div class="pantalla__cabecera">
+        <h1 class="pantalla__titulo">Tipo de Solicitud de Compensación</h1>
+        <p class="pantalla__subtitulo">Equivalencias entre las horas extra acumuladas y el descanso compensatorio.</p>
+    </div>
+
+    <div class="barra">
+        <span class="buscador">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+            <input type="text" id="txtBuscar" placeholder="Buscar por código, justificación o descripción" />
+        </span>
+        <select class="filtro-estado" id="cboFiltroEstado">
+            <option value="">Todos los estados</option>
+            <option value="Activo">Solo activos</option>
+            <option value="Inactivo">Solo inactivos</option>
+        </select>
+        <span class="barra__conteo" id="conteo"></span>
+        <button type="button" class="boton">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><polyline points="14 3 14 8 19 8"></polyline></svg>
+            Exportar
+        </button>
+        <button type="button" class="boton boton--primario" id="btnNuevo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nuevo
+        </button>
+    </div>
+
+    <div class="area">
+        <div class="area__lista">
+            <div class="rejilla-marco">
+                <div class="rejilla-scroll">
+                    <table class="rejilla">
+                        <thead>
+                            <tr>
+                                <th data-orden="codigo">Código</th>
+                                <th data-orden="justificacion">Justificación</th>
+                                <th data-orden="duracion">Tipo de duración</th>
+                                <th data-orden="descripcion">Descripción</th>
+                                <th data-orden="minutos" class="num">Compensa</th>
+                                <th data-orden="estado">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel__barra">
+                <span class="panel__titulo" id="tituloPanel">Nuevo tipo de compensación</span>
+                <button type="button" class="panel__cerrar" id="btnCerrar" title="Cerrar">&times;</button>
+            </div>
+            <div class="panel__cuerpo">
+                <div class="campo">
+                    <label class="campo__etiqueta" for="txtCodigo">Código de justificación <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="text" id="txtCodigo" class="control" maxlength="60" placeholder="COMPENSA_HORA" />
+                        <button type="button" class="btn-lupa" title="Buscar justificación">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.6" y2="16.6"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="campo">
+                    <label class="campo__etiqueta" for="txtJustificacion">Justificación</label>
+                    <input type="text" id="txtJustificacion" class="control" readonly placeholder="Se completa al elegir el código" />
+                </div>
+                <div class="campo">
+                    <label class="campo__etiqueta" for="cboDuracion">Tipo de duración <span class="campo__obligatorio">*</span></label>
+                    <select id="cboDuracion" class="control">
+                        <option value="">Seleccione</option>
+                        <option value="HORA">Por hora</option>
+                        <option value="DIA">Por día</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label class="campo__etiqueta" for="numHoras">Compensa <span class="campo__obligatorio">*</span></label>
+                    <div class="campo__control">
+                        <input type="number" id="numHoras" class="control" min="1" max="24" step="1" />
+                        <span class="campo__unidad">horas</span>
+                    </div>
+                    <p class="campo__ayuda" id="ayudaHoras">Se guardan como minutos.</p>
+                    <p class="campo__error" id="errHoras"></p>
+                </div>
+                <div class="campo">
+                    <label class="campo__etiqueta" for="txtDescripcion">Descripción <span class="campo__obligatorio">*</span></label>
+                    <textarea id="txtDescripcion" class="control" rows="2" maxlength="250" placeholder="Compensación por 4 horas"></textarea>
+                </div>
+                <div class="campo">
+                    <label class="campo__etiqueta" for="cboEstado">Estado <span class="campo__obligatorio">*</span></label>
+                    <select id="cboEstado" class="control">
+                        <option value="A">Activo</option>
+                        <option value="I">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="panel__pie">
+                <button type="button" class="boton" id="btnCancelar">Cancelar</button>
+                <button type="button" class="boton boton--primario" id="btnGrabar">Grabar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var DATOS = [
+        { codigo: "COMPENSA_DIA",  justificacion: "Por día",  duracion: "COMPENSACION POR DIA SDxD",   descripcion: "Compensación por día",     minutos: 480, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 7 horas", minutos: 420, estado: "Inactivo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 6 horas", minutos: 360, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 5 horas", minutos: 300, estado: "Activo" },
+        { codigo: "COMPENSA_HORA", justificacion: "Por hora", duracion: "COMPENSACION POR HORAS SDxH", descripcion: "Compensación por 4 horas", minutos: 240, estado: "Activo" }
+    ];
+
+    var ordenCampo = "";
+    var ordenAsc = true;
+    var seleccionada = -1;
+
+    function esc(t) {
+        return String(t === undefined || t === null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function horas(minutos) { return minutos / 60; }
+
+    function visibles() {
+        var texto = String(document.getElementById("txtBuscar").value || "").toLowerCase();
+        var estado = document.getElementById("cboFiltroEstado").value;
+        var salida = [], i, f, todo;
+
+        for (i = 0; i < DATOS.length; i++) {
+            f = DATOS[i];
+            if (estado !== "" && f.estado !== estado) continue;
+            todo = (f.codigo + " " + f.justificacion + " " + f.duracion + " " + f.descripcion).toLowerCase();
+            if (texto !== "" && todo.indexOf(texto) === -1) continue;
+            f.indice = i;
+            salida.push(f);
+        }
+
+        if (ordenCampo !== "") {
+            salida.sort(function (a, b) {
+                var x = a[ordenCampo], y = b[ordenCampo];
+                if (typeof x === "string") { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+                if (x < y) return ordenAsc ? -1 : 1;
+                if (x > y) return ordenAsc ? 1 : -1;
+                return 0;
+            });
+        }
+        return salida;
+    }
+
+    function pintar() {
+        var filas = visibles(), html = "", i, f;
+
+        document.getElementById("conteo").innerHTML =
+            filas.length === DATOS.length
+                ? filas.length + " registros"
+                : filas.length + " de " + DATOS.length + " registros";
+
+        if (filas.length === 0) {
+            document.getElementById("cuerpo").innerHTML =
+                "<tr><td colspan='6' class='vacio'>Ningún registro coincide con la búsqueda.</td></tr>";
+            return;
+        }
+        for (i = 0; i < filas.length; i++) {
+            f = filas[i];
+            html += "<tr data-indice='" + f.indice + "'" + (f.indice === seleccionada ? " class='activa'" : "") + ">";
+            html += "<td class='codigo'>" + esc(f.codigo) + "</td>";
+            html += "<td>" + esc(f.justificacion) + "</td>";
+            html += "<td>" + esc(f.duracion) + "</td>";
+            html += "<td>" + esc(f.descripcion) + "</td>";
+            html += "<td class='num'>" + horas(f.minutos) + " h<span class='minutos'>" + f.minutos + " min</span></td>";
+            html += "<td><span class='marca marca--" + (f.estado === "Activo" ? "activo" : "inactivo") + "'>" + esc(f.estado) + "</span></td>";
+            html += "</tr>";
+        }
+        document.getElementById("cuerpo").innerHTML = html;
+    }
+
+    document.getElementById("txtBuscar").oninput = function () { pintar(); };
+    document.getElementById("cboFiltroEstado").onchange = function () { pintar(); };
+
+    var cabeceras = document.querySelectorAll("thead th[data-orden]");
+    for (var c = 0; c < cabeceras.length; c++) {
+        cabeceras[c].onclick = function () {
+            var campo = this.getAttribute("data-orden");
+            if (ordenCampo === campo) ordenAsc = !ordenAsc;
+            else { ordenCampo = campo; ordenAsc = true; }
+            marcarOrden();
+            pintar();
+        };
+    }
+
+    function marcarOrden() {
+        var i, th, base;
+        for (i = 0; i < cabeceras.length; i++) {
+            th = cabeceras[i];
+            base = th.innerHTML.replace(/<span class="orden">.*<\/span>/, "").replace(/<span class='orden'>.*<\/span>/, "");
+            th.innerHTML = base + (th.getAttribute("data-orden") === ordenCampo
+                ? "<span class='orden'>" + (ordenAsc ? "▲" : "▼") + "</span>" : "");
+        }
+    }
+
+    /* --------------------------------------------------------------- panel */
+    var panel = document.getElementById("panel");
+
+    function abrir(titulo, fila, indice) {
+        document.getElementById("tituloPanel").innerHTML = titulo;
+        document.getElementById("txtCodigo").value = fila ? fila.codigo : "";
+        document.getElementById("txtJustificacion").value = fila ? fila.justificacion : "";
+        document.getElementById("cboDuracion").value = fila ? (fila.minutos >= 480 ? "DIA" : "HORA") : "";
+        document.getElementById("numHoras").value = fila ? horas(fila.minutos) : "";
+        document.getElementById("txtDescripcion").value = fila ? fila.descripcion : "";
+        document.getElementById("cboEstado").value = fila ? (fila.estado === "Activo" ? "A" : "I") : "A";
+        document.getElementById("errHoras").innerHTML = "";
+        seleccionada = indice === undefined ? -1 : indice;
+        panel.className = "panel abierto";
+        pintar();
+        document.getElementById("txtCodigo").focus();
+    }
+
+    function cerrar() {
+        panel.className = "panel";
+        seleccionada = -1;
+        pintar();
+    }
+
+    document.getElementById("btnNuevo").onclick = function () { abrir("Nuevo tipo de compensación", null); };
+    document.getElementById("btnCerrar").onclick = cerrar;
+    document.getElementById("btnCancelar").onclick = cerrar;
+    document.onkeydown = function (e) {
+        e = e || window.event;
+        if ((e.keyCode || e.which) === 27) cerrar();
+    };
+
+    document.getElementById("cuerpo").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        while (destino && destino.tagName !== "TR") destino = destino.parentNode;
+        if (!destino || !destino.getAttribute) return;
+        var indice = destino.getAttribute("data-indice");
+        if (indice === null) return;
+        abrir("Modificar tipo de compensación", DATOS[+indice], +indice);
+    };
+
+    document.getElementById("numHoras").oninput = function () {
+        var valor = Number(this.value);
+        var ayuda = document.getElementById("ayudaHoras");
+        if (isNaN(valor) || valor <= 0) { ayuda.innerHTML = "Se guardan como minutos."; return; }
+        ayuda.innerHTML = "Se guardarán " + (valor * 60) + " minutos.";
+    };
+
+    document.getElementById("btnGrabar").onclick = function () {
+        var valor = Number(document.getElementById("numHoras").value);
+        var error = document.getElementById("errHoras");
+        if (isNaN(valor) || valor <= 0 || valor > 24) {
+            error.innerHTML = "Ingrese entre 1 y 24 horas.";
+            document.getElementById("numHoras").focus();
+            return;
+        }
+        error.innerHTML = "";
+        cerrar();
+    };
+
+    pintar();
+})();
+</script>
+</body>
+</html>

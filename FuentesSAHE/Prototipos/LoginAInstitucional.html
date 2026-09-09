@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE · Ingreso (Prototipo A)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+:root{
+  --rojo-bn:#cf2528;
+  --rojo-vivo:#e63a3c;
+  --tinta:#1c1517;
+  --plomo:#6b6260;
+  --plomo-claro:#a49c99;
+  --lienzo:#f3efec;
+  --papel:#ffffff;
+  --borde:#ddd5d0;
+  --error:#b3261e;
+  --aviso:#8a5a06;
+  --radio:4px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--lienzo);color:var(--tinta);
+  font-family:"Barlow",system-ui,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.45;
+}
+.franja{height:4px;background:linear-gradient(90deg,var(--rojo-bn) 0 60%,#8f1b1d 60% 100%)}
+.layout{display:grid;grid-template-columns:minmax(420px,46%) 1fr;min-height:calc(100% - 4px)}
+
+/* ---------- columna del formulario ---------- */
+.panel-form{background:var(--papel);padding:40px 56px;display:flex;flex-direction:column}
+.membrete{display:flex;align-items:center;gap:14px}
+.membrete img{width:44px;height:auto;display:block}
+.membrete .nombre{font-family:"Archivo",sans-serif;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--plomo)}
+.membrete .nombre span{display:block;font-weight:500;font-size:11px;letter-spacing:.18em;color:var(--plomo-claro)}
+
+form{margin:auto 0;width:100%;max-width:352px}
+h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:30px;line-height:1.1;margin:0 0 6px;text-wrap:balance}
+.bajada{margin:0 0 30px;color:var(--plomo);max-width:34ch}
+.campo{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.campo > label{
+  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--plomo);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.campo .pista{font-family:"IBM Plex Mono",monospace;font-weight:400;letter-spacing:0;text-transform:none;color:var(--plomo-claro);font-size:11px}
+.caja{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid var(--borde);border-radius:var(--radio);background:var(--papel);
+  padding:0 12px;height:46px;transition:border-color .15s,box-shadow .15s;
+}
+.caja:focus-within{border-color:var(--rojo-bn);box-shadow:0 0 0 3px rgba(207,37,40,.14)}
+.caja svg{flex:none;color:var(--plomo-claro)}
+.caja input{
+  flex:1;min-width:0;border:0;outline:0;background:none;height:100%;
+  font-family:"IBM Plex Mono",monospace;font-size:16px;letter-spacing:.22em;color:var(--tinta);
+}
+.caja input::placeholder{letter-spacing:.12em;color:#c8c0bc}
+#usuarioA{text-transform:uppercase}
+.ojo{
+  border:0;background:none;padding:4px;cursor:pointer;color:var(--plomo);
+  font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-family:"Barlow",sans-serif;
+}
+.ojo:hover{color:var(--rojo-bn)}
+.contador{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--plomo-claro);font-variant-numeric:tabular-nums}
+
+.mensaje{
+  display:none;gap:8px;align-items:flex-start;
+  border-left:3px solid var(--error);background:#fdf3f2;color:var(--error);
+  padding:10px 12px;font-size:13.5px;margin-bottom:18px;
+}
+.mensaje.visible{display:flex}
+.mensaje svg{flex:none;margin-top:2px}
+.mayus{display:none;font-size:12px;color:var(--aviso);margin:-8px 0 16px}
+.mayus.visible{display:block}
+
+button.ingresar{
+  width:100%;height:48px;border:0;border-radius:var(--radio);cursor:pointer;
+  background:var(--rojo-bn);color:#fff;
+  font-family:"Archivo",sans-serif;font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;
+}
+button.ingresar:hover:not(:disabled){background:#b31f22}
+button.ingresar:disabled{background:#d9d2ce;color:#fff;cursor:not-allowed}
+button.ingresar:focus-visible,.ojo:focus-visible{outline:2px solid var(--rojo-vivo);outline-offset:2px}
+.aro{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:girar .8s linear infinite;display:none}
+button.ingresar.cargando .aro{display:block}
+@keyframes girar{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.aro{animation-duration:2.4s}}
+
+.pie{margin-top:auto;padding-top:28px;border-top:1px solid var(--borde);color:var(--plomo-claro);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pie b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--plomo)}
+
+/* ---------- columna institucional ---------- */
+.panel-marca{
+  position:relative;overflow:hidden;
+  background:radial-gradient(120% 90% at 85% 10%,#a81c1f 0%,#7d1516 45%,#3a0d0e 100%);
+  color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:56px;
+}
+.panel-marca::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 64px);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 40%);
+  mask-image:linear-gradient(180deg,transparent,#000 40%);
+}
+.reloj{
+  position:absolute;top:48px;right:56px;text-align:right;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:rgba(255,255,255,.72);
+  font-variant-numeric:tabular-nums;letter-spacing:.06em;
+}
+.reloj strong{display:block;font-size:34px;font-weight:400;color:#fff;letter-spacing:.02em}
+.panel-marca h2{
+  position:relative;font-family:"Archivo",sans-serif;font-weight:700;
+  font-size:clamp(30px,3.4vw,46px);line-height:1.05;margin:0 0 18px;max-width:16ch;text-wrap:balance;
+}
+.panel-marca p{position:relative;margin:0;max-width:44ch;color:rgba(255,255,255,.8)}
+.hitos{position:relative;display:flex;gap:36px;margin-top:40px;padding-top:24px;border-top:1px solid rgba(255,255,255,.2);flex-wrap:wrap}
+.hitos div{font-size:12px;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase}
+.hitos b{display:block;font-family:"Archivo",sans-serif;font-size:15px;letter-spacing:.02em;text-transform:none;color:#fff;margin-top:4px}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .panel-marca{display:none}
+  .panel-form{padding:32px 24px}
+}
+</style>
+</head>
+<body>
+<div class="franja"></div>
+<div class="layout">
+  <section class="panel-form">
+    <div class="membrete">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAsCAYAAAAn4+taAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAN4SURBVHgB7ZnfSxRRFMfPrltBIrYWlBH4Iwp7MIl86UHNMKK3sn8goR4DSXqOpHroLTKTQIiQ8jEhhB4izR6FMqwXIe2HEJi6u7qo68zcPjdXEHR37o5jjbQfONzZ8c6953vPnTlnRpE8efL8F4TEA7FYLFpcXFzJ4XGsAjuklIqGQqHCNd0msQnbtj/Mzc0NRqPRmPxrxsbGduFoC/bAcZyPtLbKBcdBj93L0UXZIowiEo/HSwoLCxtxZDYSiSicKisoKCjj90micJ4uETGnA2vlOluCBGJKsCtE6ptpgFiITgkq+FeOTShzmiSoLC8vnzFVQVR6JMiwxb4bahkQHwmL/4ybdEJIXHzEdyFEZIdhvz4JKrOzs3tYacdtTyHiJ81e8RFfI1JUVNQsBrmJHPIQm179PTw8vANhZYuLi0dp61Kp1AmOD3NsnJ88lSiZ0FkfB6uz9rGsERUKddCvJhwOn+JUado28kUH8DM2gr0iCfdwnSNbiWVZl5U7aHUsbcob41iLbBUMXqHckyGP5eV62pC2RCKxl/Y0dg3rU7lg23fFb/r7+3exwp9cpv6KHck2DhG9oHKrDFrFT8jQj7PNlq7BKkzGop++wePKjGmsQDYLg4RZxc5sM1mpVLdSsWiO47YrQ3i61chmGB0d3UkknmeagCgkmeSqeIB6rUkZQt868QrXl+Do+ywi3qmlpSrxiFp5AJjg6AQsXiBJnc303pE+r1dzU7mJVT5nosK2rF7xQIitdAtnNxpzhr+16ewsPsB4T0yEzM/PV+c0sC4VEDCk1kdAPzVuzszMFItPsBi7GXfSQIf5u4zef6x0BwPPrXE+SfMCa1DqTS7v6UYw3x0DERNEY7/rYHSMsE/b9JZZ9R97y7nrtDk9SnNhKZGoUu6Vc0xRWLoOlr7RvujwsjrP1Er54Gu5vRF68Zhz3EVEYmFhod5owKmpqVIuKBOfq2IX9IPkUTYFiPyRTCZrJciwC267iNB1WqUEGSLhJuIljbek9zfQ9wQinmbbSjSXJMjgYDmOjmYSQSHarfhEK0GGr/LHMn330kmX+6VRggx+RtlKXRmCMIAFW4BG/akC1hWaOvG9JgINEnR4J9/Hfu9Sa7I12+cXkWmnxDggQUcLYKXvpQVoG8L5GyTbg7Jd4K2wlu9Wgzh/H2vW/6KTPHm2N78BieM9OGVQPPAAAAAASUVORK5CYII=" alt="Banco de la Nación" />
+      <div class="nombre">Banco de la Nación<span>Gestión de Recursos Humanos</span></div>
+    </div>
+
+    <form autocomplete="off" novalidate>
+      <h1>Sistema Administrativo de Horas Extra</h1>
+      <p class="bajada">Ingrese con su usuario de red y su clave host institucional.</p>
+
+      <div class="mensaje" id="msgA" role="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span id="msgTextoA"></span>
+      </div>
+
+      <div class="campo">
+        <label for="usuarioA">Usuario <span class="pista">4 letras</span></label>
+        <div class="caja">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg>
+          <input id="usuarioA" name="usuario" type="text" maxlength="4" placeholder="ABCD" spellcheck="false" autocapitalize="characters" />
+          <span class="contador" id="contUsuarioA">0/4</span>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="claveA">Clave host <span class="pista">8 alfanuméricos</span></label>
+        <div class="caja" id="cajaClaveA">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></svg>
+          <input id="claveA" name="clave" type="password" maxlength="8" placeholder="••••••••" spellcheck="false" />
+          <span class="contador" id="contClaveA">0/8</span>
+          <button type="button" class="ojo" id="ojoA" aria-pressed="false">Ver</button>
+        </div>
+      </div>
+      <p class="mayus" id="mayusA">Bloq Mayús está activado.</p>
+
+      <button type="submit" class="ingresar" id="btnA" disabled><span class="aro" aria-hidden="true"></span><span id="btnTextoA">Iniciar sesión</span></button>
+    </form>
+
+    <div class="pie">
+      <span>Autenticación por Sistema de Claves Host · acrónimo <b>NSAH00</b></span>
+      <span>SAHE <b>v1.0.3</b></span>
+    </div>
+  </section>
+
+  <aside class="panel-marca">
+    <div class="reloj"><strong id="horaA">--:--</strong><span id="fechaA">&nbsp;</span></div>
+    <h2>Cada hora extra, registrada y sustentada.</h2>
+    <p>Registro, autorización y consolidado de pago de horas extra y trabajos en día de descanso, conforme a la Directiva BN-DIR-7500-006-04.</p>
+    <div class="hitos">
+      <div>Registro<b>Del trabajador</b></div>
+      <div>Autorización<b>Jefatura y RA</b></div>
+      <div>Consolidado<b>Planilla mensual</b></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var u=document.getElementById('usuarioA'),c=document.getElementById('claveA'),
+      b=document.getElementById('btnA'),bt=document.getElementById('btnTextoA'),
+      cu=document.getElementById('contUsuarioA'),cc=document.getElementById('contClaveA'),
+      msg=document.getElementById('msgA'),mt=document.getElementById('msgTextoA'),
+      mayus=document.getElementById('mayusA'),ojo=document.getElementById('ojoA');
+
+  function pintar(){
+    u.value=u.value.replace(/[^A-Za-z]/g,'').toUpperCase();
+    c.value=c.value.replace(/[^A-Za-z0-9]/g,'');
+    cu.textContent=u.value.length+'/4';
+    cc.textContent=c.value.length+'/8';
+    b.disabled=!(u.value.length===4 && c.value.length===8);
+  }
+  u.addEventListener('input',pintar); c.addEventListener('input',pintar);
+
+  [u,c].forEach(function(el){
+    el.addEventListener('keyup',function(e){
+      if(e.getModifierState) mayus.classList.toggle('visible',e.getModifierState('CapsLock'));
+    });
+  });
+
+  ojo.addEventListener('click',function(){
+    var ver=c.type==='password';
+    c.type=ver?'text':'password';
+    ojo.textContent=ver?'Ocultar':'Ver';
+    ojo.setAttribute('aria-pressed',String(ver));
+    c.focus();
+  });
+
+  document.querySelector('form').addEventListener('submit',function(e){
+    e.preventDefault();
+    msg.classList.remove('visible');
+    b.classList.add('cargando'); b.disabled=true; bt.textContent='Verificando clave host';
+    setTimeout(function(){
+      b.classList.remove('cargando'); bt.textContent='Iniciar sesión';
+      mt.textContent='Usuario o clave incorrectos. Le quedan 2 intentos antes del bloqueo.';
+      msg.classList.add('visible');
+      c.value=''; pintar(); c.focus();
+    },1400);
+  });
+
+  function hora(){
+    var d=new Date(), p=function(n){return (n<10?'0':'')+n;};
+    document.getElementById('horaA').textContent=p(d.getHours())+':'+p(d.getMinutes());
+    document.getElementById('fechaA').textContent=d.toLocaleDateString('es-PE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  }
+  hora(); setInterval(hora,20000);
+  pintar();
+})();
+</script>
+</body>
+</html>

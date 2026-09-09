@@ -1,0 +1,144 @@
+# ============================================================================
+# SAHE - T12 - Tipo de Solicitud de Compensación
+#
+# Formato con campos nombrados. Un registro por línea (también se acepta ¬
+# como separador). Cada registro empieza con su tipo y sigue con pares
+# clave=valor separados por |. Las líneas que empiezan con # son comentarios.
+#
+#   pantalla  titulo, subtitulo, tabla
+#   grilla    columnas, porPagina, filtros, acciones
+#   popup     titulo, ancho, deshabilitar -> a partir de aquí todo va en la
+#                                       ventana de mantenimiento
+#             deshabilitar: qué campos quedan bloqueados según la acción con
+#             que se abre. Grupos 'accion:campo,campo' separados por ; una
+#             lista sin 'accion:' se aplica a todas. Ver bloquea todo siempre.
+#             El campo bloqueado igual viaja en la trama al paquete.
+#   seccion   id, titulo, descripcion
+#   campo     tipo, id, etiqueta, unidad, ayuda, ancho, lupa=<n ayuda>,
+#             contador=si|<n>, y lo propio del tipo. 'contador=si' muestra
+#             debajo del campo cuántos caracteres lleva de los que admite el
+#             'largo'; con un número se fija otro tope.
+#   ayuda     titulo, ancho, porPagina, columnas, destino  -> una por lupa
+#   accion    id, etiqueta, estilo, accion
+#   mapeo     origen, campos         -> origen=cargar: orden en que Oracle
+#                                        devuelve el registro
+#                                        origen=grabar: orden que espera el
+#                                        procedimiento gestionar
+#
+# Lo que devuelve dvpkg_spT12.cargar, en cuatro segmentos separados por ~ :
+#   [0] combos   lista0 ¦ lista1 ...   cada lista: codigo|texto ¬ codigo|texto
+#   [1] datos    fila ¬ fila ...       cada fila: los campos del mapeo cargar
+#   [2] ayudas   ayuda0 ¦ ayuda1 ...   igual que [1], una por lupa
+#   [3] libre    reservado
+# Aquí la lista 0 es el tipo de duración y la 1 el estado: es el índice al que
+# apuntan 'lista=' en los campos y 'combos=' en la grilla.
+#
+# columnas:  titulo[:ancho[:tipo[:lista]]] separadas por coma. Ancho 0 oculta la
+#            columna, que es como se lleva la llave sin mostrarla.
+#            tipo: texto | numero | decimal | fecha. Además de dar formato,
+#            decide la alineación: texto a la izquierda, numero y decimal a la
+#            derecha, fecha centrada.
+# pk:        clave primaria: con qué campos se identifica una fila al pedirla
+#            con Obtener o al borrarla. Separados por coma si son varios. Si
+#            el Id se repite entre filas hay que agregar aquí la secuencia -y
+#            traerla en el mapeo de carga como columna de ancho 0-.
+# uk:        clave única: los campos que no se pueden repetir entre registros.
+#            Antes de grabar se comprueba contra lo que ya está en la grilla y,
+#            si repite, se avisa con los rótulos de la pantalla en vez de dejar
+#            que Oracle devuelva un ORA-00001 con el nombre del índice.
+# rotulo:    campo que identifica a la fila para una persona. Es el que se
+#            nombra en los mensajes, p. ej. al eliminar: "¿Confirma la
+#            eliminación del registro Compensación por 6 horas?".
+# archivo:   nombre del Excel que baja la exportación. Si no se declara, se usa
+#            el título de la pantalla. Se le agrega .xlsx si no trae extensión.
+# acciones:  tope de lo que esta pantalla admite. Quién puede hacer cada una
+#            NO se decide aquí: llega en hdfTabla desde el menú, ya filtrada
+#            por el perfil (getPerfiles solo agrega los códigos en 'S').
+#            Códigos del menú: RE nuevo, EM eliminarMultiple, EX excel,
+#            MO editar, EL eliminar, VE ver.
+# ============================================================================
+
+pantalla|tabla=T12|titulo=Tipo de Solicitud de Compensación|subtitulo=Equivalencias entre las horas extra acumuladas y el descanso compensatorio.
+
+grilla|columnas=Id:0:numero,Código:170,Tipo de duración:130,Justificación:300,Descripción:260,Compensa:90:numero,Estado:90|porPagina=10|filtros=si|combos=2cs0,6cs1|pk=Id|uk=|rotulo=Descripcion|archivo=TipoSolicitudCompensacion.xlsx|acciones=nuevo,eliminarMultiple,excel,editar,eliminar,ver
+
+# ---------------------------------------------------------------------------
+# Ayudas (lupas). El orden es el mismo en que el paquete manda el segmento 2:
+# esta es la ayuda 0, la que declara 'lupa=0' en el campo Código.
+# destino: a qué campo va cada columna, por posición. La columna 0 -el código-
+# cae en Codigo y la 1 -la descripción- en Justificacion.
+# ---------------------------------------------------------------------------
+ayuda|titulo=Búsqueda de justificaciones|ancho=720|porPagina=10|columnas=Código:180,Justificación:420|destino=Codigo,Justificacion
+
+# ---------------------------------------------------------------------------
+# Ventana de mantenimiento
+# ---------------------------------------------------------------------------
+popup|titulo=Tipo de solicitud de compensación|ancho=640|deshabilitar=editar:Codigo,Justificacion,TipoDuracion
+
+seccion|id=datos
+
+# ---------------------------------------------------------------------------
+# El orden de estos campos NO es cosmético: es el orden en que dvpkg_spT12
+# .obtener devuelve el registro, y por lo tanto el orden en que se asignan los
+# valores a los controles. Un oculto en medio de dos visibles conserva su
+# lugar. Si se agrega, quita o mueve un campo aquí, hay que mover también su
+# posición en la consulta.
+#
+#   1 accion          -> CodigoAccion    (oculto)
+#   2 id              -> Id              (oculto)
+#   3 cjustificacion  -> Codigo
+#   4 secuencia       -> Secuencia       (oculto)
+#   5 descripcion     -> Justificacion
+#   6 dduracion       -> TipoDuracion
+#   7 dtiposolicitud  -> Descripcion
+#   8 cantidadhora    -> CantidadHoras
+#   9 estadofuncional -> Estado
+#  10 creadopor       -> CreadoPor       (oculto)
+#  11 fcreacion       -> FechaCreacion   (oculto)
+#  12 actualizadopor  -> ActualizadoPor  (oculto)
+# ---------------------------------------------------------------------------
+
+campo|tipo=oculto|id=CodigoAccion
+campo|tipo=oculto|id=Id|valor=0
+
+# El código va en su propia fila: lleva la lupa y, en la fila siguiente, el
+# nombre de la justificación que devuelve la búsqueda.
+campo|tipo=text|id=Codigo|etiqueta=Código de justificación|largo=60|ancho=total|requerido=si|lupa=0|marcador=COMPENSA_HORA|ayuda=Búsquelo con la lupa; la justificación se completa sola.
+
+campo|tipo=oculto|id=Secuencia|valor=0
+
+campo|tipo=text|id=Justificacion|etiqueta=Justificación|largo=110|ancho=total|soloLectura=si|marcador=Se completa al elegir el código
+
+campo|tipo=select|id=TipoDuracion|etiqueta=Tipo de duración|ancho=medio|requerido=si|origen=cs|lista=0
+
+# La descripción va en otra fila porque puede ser larga.
+campo|tipo=textarea|id=Descripcion|etiqueta=Descripción del tipo de solicitud|filas=2|largo=250|contador=si|ancho=total|requerido=si|marcador=Compensación por 4 horas|ayuda=Es el texto que verá el trabajador al pedir su compensación.
+
+campo|tipo=number|id=CantidadHoras|etiqueta=Compensa|unidad=horas|min=1|max=24|paso=1|ancho=medio|requerido=si|ayuda=La base guarda minutos.
+campo|tipo=select|id=Estado|etiqueta=Estado|ancho=medio|requerido=si|origen=cs|lista=1|ayuda=Inactivo deja de ofrecerse a los trabajadores.
+
+campo|tipo=oculto|id=CreadoPor
+campo|tipo=oculto|id=FechaCreacion
+campo|tipo=oculto|id=ActualizadoPor
+
+accion|id=Grabar|etiqueta=Grabar|estilo=primario|accion=grabar
+accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
+
+# Orden en que dvpkg_spT12.listar devuelve cada registro y en que la grilla
+# muestra sus columnas. Es la única traducción entre la trama posicional de
+# Oracle y los nombres de la pantalla.
+# OJO: hoy dvpkg_spT12.listar manda en la posición 0 el T12_SECUENCIA y no el
+# T12_ID -por eso el 1 aparece dos veces-. Mientras no agregue el T12_ID a la
+# trama, 'pk=Id' toma un valor que no es la llave y Obtener puede traer otro
+# registro. La tabla solo tiene PK por T12_ID y ninguna unique, por eso 'uk='
+# va vacío.
+mapeo|origen=cargar|campos=Id,Codigo,TipoDuracion,Justificacion,Descripcion,CantidadHoras,Estado
+
+# dvpkg_spT12.obtener devuelve UN registro y la ventana ya está construida:
+# solo se asignan valores, en el orden en que la sección 'datos' declara los
+# controles -ver el detalle allí-. Si alguna pantalla necesitara otro orden sin
+# reordenar sus controles, se declara con 'mapeo|origen=obtener|campos=...'.
+
+# Orden que espera dvpkg_spT12.gestionar. La acción va primero porque el
+# paquete la separa antes del primer |; el resto son los campos del registro.
+mapeo|origen=grabar|campos=CodigoAccion,Id,Codigo,Secuencia,TipoDuracion,Descripcion,CantidadHoras,Estado,CreadoPor,ActualizadoPor

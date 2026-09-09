@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE · Ingreso (Prototipo B)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+:root{
+  --rojo-bn:#cf2528;
+  --fondo:#151013;
+  --tarjeta:#ffffff;
+  --tinta:#1c1517;
+  --plomo:#6f6663;
+  --plomo-claro:#a8a09d;
+  --borde:#e4dcd8;
+  --error:#b3261e;
+  --ok:#1f7a4d;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--fondo);color:var(--tinta);
+  font-family:"Barlow",system-ui,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.45;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 20px;gap:26px;position:relative;overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(60% 45% at 50% 0%,rgba(207,37,40,.42),transparent 70%),
+    radial-gradient(45% 40% at 15% 100%,rgba(207,37,40,.16),transparent 70%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(70% 60% at 50% 40%,#000,transparent 75%);
+  mask-image:radial-gradient(70% 60% at 50% 40%,#000,transparent 75%);
+}
+.marca{position:relative;z-index:1;display:flex;align-items:center;gap:12px;color:#fff}
+.marca img{width:38px;height:auto;display:block;filter:brightness(0) invert(1) opacity(.92)}
+.marca span{font-family:"Archivo",sans-serif;font-weight:600;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+
+.tarjeta{
+  position:relative;z-index:1;width:100%;max-width:392px;
+  background:var(--tarjeta);border-radius:10px;
+  box-shadow:0 24px 60px -18px rgba(0,0,0,.65);
+  padding:34px 34px 26px;display:flex;flex-direction:column;
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--rojo-bn);background:#fdf1f1;border-radius:2px;padding:4px 8px;margin-bottom:16px;
+}
+.eyebrow i{width:5px;height:5px;border-radius:50%;background:var(--rojo-bn);display:block}
+h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:25px;line-height:1.15;margin:0 0 6px;text-wrap:balance}
+.bajada{margin:0 0 26px;color:var(--plomo);font-size:14px}
+
+.mensaje{
+  display:none;align-items:flex-start;gap:8px;
+  background:#fdf3f2;color:var(--error);border-radius:4px;
+  padding:10px 12px;font-size:13.5px;margin-bottom:18px;
+}
+.mensaje.visible{display:flex}
+.mensaje svg{flex:none;margin-top:2px}
+
+.campo{position:relative;margin-bottom:14px}
+.campo input{
+  width:100%;height:56px;border:1px solid var(--borde);border-radius:5px;background:#fff;
+  padding:20px 88px 6px 14px;outline:0;color:var(--tinta);
+  font-family:"IBM Plex Mono",monospace;font-size:16px;letter-spacing:.24em;
+  transition:border-color .15s,box-shadow .15s;
+}
+.campo input:focus{border-color:var(--rojo-bn);box-shadow:0 0 0 3px rgba(207,37,40,.13)}
+.campo.mal input{border-color:var(--error)}
+.campo label{
+  position:absolute;left:15px;top:17px;pointer-events:none;color:var(--plomo-claro);
+  font-family:"Barlow",sans-serif;font-size:15px;letter-spacing:0;
+  transition:transform .16s ease,color .16s ease,font-size .16s ease;transform-origin:left top;
+}
+.campo input:focus + label,
+.campo input.lleno + label{
+  transform:translateY(-11px);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--plomo);
+}
+.campo .estado{position:absolute;right:14px;top:0;height:56px;display:flex;align-items:center;gap:10px}
+.puntos{display:flex;gap:4px}
+.puntos i{width:6px;height:6px;border-radius:50%;background:#e6dfdb;display:block;transition:background .12s}
+.puntos i.on{background:var(--rojo-bn)}
+.check{color:var(--ok);display:none}
+.campo.listo .check{display:block}
+.ojo{border:0;background:none;padding:2px;cursor:pointer;color:var(--plomo-claro);display:flex}
+.ojo:hover{color:var(--rojo-bn)}
+#usuarioB{text-transform:uppercase}
+
+.fila{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 20px}
+.recordar{display:flex;align-items:center;gap:8px;color:var(--plomo);font-size:13.5px;cursor:pointer}
+.recordar input{accent-color:var(--rojo-bn);width:15px;height:15px}
+.ayuda{color:var(--rojo-bn);font-size:13.5px;text-decoration:none;font-weight:500}
+.ayuda:hover{text-decoration:underline}
+
+button.ingresar{
+  width:100%;height:50px;border:0;border-radius:5px;cursor:pointer;
+  background:var(--tinta);color:#fff;
+  font-family:"Archivo",sans-serif;font-weight:600;font-size:15px;letter-spacing:.04em;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s,transform .08s;
+}
+button.ingresar:hover:not(:disabled){background:#000}
+button.ingresar:active:not(:disabled){transform:translateY(1px)}
+button.ingresar:disabled{background:#e8e2df;color:#b3aaa6;cursor:not-allowed}
+button.ingresar:focus-visible,.ojo:focus-visible,.ayuda:focus-visible{outline:2px solid var(--rojo-bn);outline-offset:2px}
+.aro{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:girar .8s linear infinite;display:none}
+button.ingresar.cargando .aro{display:block}
+@keyframes girar{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .aro{animation-duration:2.4s}
+  .campo label{transition:none}
+}
+
+.tarjeta .nota{
+  margin:22px -34px -26px;padding:14px 34px;border-top:1px solid #f0eae7;
+  background:#faf7f5;border-radius:0 0 10px 10px;
+  color:var(--plomo);font-size:11.5px;line-height:1.5;
+}
+.tarjeta .nota b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--tinta)}
+.pie{position:relative;z-index:1;color:rgba(255,255,255,.45);font-size:11.5px;text-align:center;letter-spacing:.04em}
+.pie b{font-family:"IBM Plex Mono",monospace;font-weight:400;color:rgba(255,255,255,.68)}
+@media (max-width:480px){
+  body{padding:24px 14px;justify-content:flex-start;gap:20px}
+  .tarjeta{padding:26px 22px 20px}
+  .tarjeta .nota{margin:20px -22px -20px;padding:13px 22px}
+}
+</style>
+</head>
+<body>
+  <div class="marca">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAsCAYAAAAn4+taAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAN4SURBVHgB7ZnfSxRRFMfPrltBIrYWlBH4Iwp7MIl86UHNMKK3sn8goR4DSXqOpHroLTKTQIiQ8jEhhB4izR6FMqwXIe2HEJi6u7qo68zcPjdXEHR37o5jjbQfONzZ8c6953vPnTlnRpE8efL8F4TEA7FYLFpcXFzJ4XGsAjuklIqGQqHCNd0msQnbtj/Mzc0NRqPRmPxrxsbGduFoC/bAcZyPtLbKBcdBj93L0UXZIowiEo/HSwoLCxtxZDYSiSicKisoKCjj90micJ4uETGnA2vlOluCBGJKsCtE6ptpgFiITgkq+FeOTShzmiSoLC8vnzFVQVR6JMiwxb4bahkQHwmL/4ybdEJIXHzEdyFEZIdhvz4JKrOzs3tYacdtTyHiJ81e8RFfI1JUVNQsBrmJHPIQm179PTw8vANhZYuLi0dp61Kp1AmOD3NsnJ88lSiZ0FkfB6uz9rGsERUKddCvJhwOn+JUado28kUH8DM2gr0iCfdwnSNbiWVZl5U7aHUsbcob41iLbBUMXqHckyGP5eV62pC2RCKxl/Y0dg3rU7lg23fFb/r7+3exwp9cpv6KHck2DhG9oHKrDFrFT8jQj7PNlq7BKkzGop++wePKjGmsQDYLg4RZxc5sM1mpVLdSsWiO47YrQ3i61chmGB0d3UkknmeagCgkmeSqeIB6rUkZQt868QrXl+Do+ywi3qmlpSrxiFp5AJjg6AQsXiBJnc303pE+r1dzU7mJVT5nosK2rF7xQIitdAtnNxpzhr+16ewsPsB4T0yEzM/PV+c0sC4VEDCk1kdAPzVuzszMFItPsBi7GXfSQIf5u4zef6x0BwPPrXE+SfMCa1DqTS7v6UYw3x0DERNEY7/rYHSMsE/b9JZZ9R97y7nrtDk9SnNhKZGoUu6Vc0xRWLoOlr7RvujwsjrP1Er54Gu5vRF68Zhz3EVEYmFhod5owKmpqVIuKBOfq2IX9IPkUTYFiPyRTCZrJciwC267iNB1WqUEGSLhJuIljbek9zfQ9wQinmbbSjSXJMjgYDmOjmYSQSHarfhEK0GGr/LHMn330kmX+6VRggx+RtlKXRmCMIAFW4BG/akC1hWaOvG9JgINEnR4J9/Hfu9Sa7I12+cXkWmnxDggQUcLYKXvpQVoG8L5GyTbg7Jd4K2wlu9Wgzh/H2vW/6KTPHm2N78BieM9OGVQPPAAAAAASUVORK5CYII=" alt="Banco de la Nación" />
+    <span>Banco de la Nación</span>
+  </div>
+
+  <form class="tarjeta" autocomplete="off" novalidate>
+    <span class="eyebrow"><i></i> SAHE · Horas Extra</span>
+    <h1>Ingrese a su cuenta</h1>
+    <p class="bajada">Use las mismas credenciales de los aplicativos host del Banco.</p>
+
+    <div class="mensaje" id="msgB" role="alert">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      <span id="msgTextoB"></span>
+    </div>
+
+    <div class="campo" id="campoUsuarioB">
+      <input id="usuarioB" type="text" maxlength="4" spellcheck="false" autocapitalize="characters" placeholder=" " />
+      <label for="usuarioB">Usuario (4 letras)</label>
+      <span class="estado">
+        <svg class="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M20 6.5L9.4 17.5 4 12"/></svg>
+        <span class="puntos" id="puntosUsuarioB" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </span>
+    </div>
+
+    <div class="campo" id="campoClaveB">
+      <input id="claveB" type="password" maxlength="8" spellcheck="false" placeholder=" " />
+      <label for="claveB">Clave host (8 caracteres)</label>
+      <span class="estado">
+        <span class="puntos" id="puntosClaveB" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <button type="button" class="ojo" id="ojoB" aria-label="Mostrar clave" aria-pressed="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+        </button>
+      </span>
+    </div>
+
+    <div class="fila">
+      <label class="recordar"><input type="checkbox" id="recordarB" /> Recordar mi usuario</label>
+      <a class="ayuda" href="#" onclick="return false;">¿Olvidó su clave?</a>
+    </div>
+
+    <button type="submit" class="ingresar" id="btnB" disabled><span class="aro" aria-hidden="true"></span><span id="btnTextoB">Ingresar</span></button>
+
+    <p class="nota">Su clave es administrada por el <b>Sistema de Claves Host</b>. Tras 3 intentos fallidos el usuario se bloquea y debe solicitar desbloqueo a Seguridad de Informática.</p>
+  </form>
+
+  <p class="pie">Sistema Administrativo de Horas Extra · acrónimo <b>NSAH00</b> · versión <b>1.0.3</b></p>
+
+<script>
+(function(){
+  var u=document.getElementById('usuarioB'),c=document.getElementById('claveB'),
+      b=document.getElementById('btnB'),bt=document.getElementById('btnTextoB'),
+      cu=document.getElementById('campoUsuarioB'),cc=document.getElementById('campoClaveB'),
+      pu=document.getElementById('puntosUsuarioB').children,pc=document.getElementById('puntosClaveB').children,
+      msg=document.getElementById('msgB'),mt=document.getElementById('msgTextoB'),
+      ojo=document.getElementById('ojoB');
+
+  function marcar(nodos,n){ for(var i=0;i<nodos.length;i++) nodos[i].className = i<n ? 'on' : ''; }
+
+  function pintar(){
+    u.value=u.value.replace(/[^A-Za-z]/g,'').toUpperCase();
+    c.value=c.value.replace(/[^A-Za-z0-9]/g,'');
+    u.classList.toggle('lleno',u.value.length>0);
+    c.classList.toggle('lleno',c.value.length>0);
+    marcar(pu,u.value.length); marcar(pc,c.value.length);
+    cu.classList.toggle('listo',u.value.length===4);
+    b.disabled=!(u.value.length===4 && c.value.length===8);
+  }
+  u.addEventListener('input',function(){ pintar(); if(u.value.length===4) c.focus(); });
+  c.addEventListener('input',pintar);
+
+  ojo.addEventListener('click',function(){
+    var ver=c.type==='password';
+    c.type=ver?'text':'password';
+    ojo.setAttribute('aria-pressed',String(ver));
+    ojo.setAttribute('aria-label',ver?'Ocultar clave':'Mostrar clave');
+    c.focus();
+  });
+
+  document.querySelector('form').addEventListener('submit',function(e){
+    e.preventDefault();
+    msg.classList.remove('visible'); cc.classList.remove('mal');
+    b.classList.add('cargando'); b.disabled=true; bt.textContent='Validando';
+    setTimeout(function(){
+      b.classList.remove('cargando'); bt.textContent='Ingresar';
+      mt.textContent='La clave no corresponde al usuario ' + u.value + '. Verifíquela e intente de nuevo.';
+      msg.classList.add('visible'); cc.classList.add('mal');
+      c.value=''; pintar(); c.focus();
+    },1400);
+  });
+
+  pintar();
+})();
+</script>
+</body>
+</html>

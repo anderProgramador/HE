@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAHE - Error (Prototipo C)</title>
+<style>
+/* ============================================================================
+   PROTOTIPO C - Orientada al reporte a Soporte
+   Parte de un hecho conocido: cuando el aplicativo falla, el trabajador llama
+   a la mesa de ayuda y no sabe qué datos dar. Aquí el mensaje va a la
+   izquierda y a la derecha queda la ficha de la incidencia lista para copiar
+   y pegar en el correo o el ticket.
+   El detalle técnico se muestra solo si el servidor lo envía; en producción
+   nunca debe traer la traza de la excepción.
+   CSS nativo, Chrome 49: sin Grid (dos columnas con float), sin gap.
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    background: #f5f5f5; color: #221F1F;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+.franja { height: 4px; background-color: #C8102E; }
+
+.hoja { max-width: 940px; margin: 0 auto; padding: 26px 24px 40px; }
+
+.membrete {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    margin-bottom: 26px;
+}
+.membrete .logo {
+    width: 32px; height: 32px; margin-right: 11px; border-radius: 7px;
+    background: #C8102E; color: #FFFFFF; font-weight: 800; font-size: 12px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.membrete span { font-size: 11.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: #78756F; }
+
+/* dos columnas con float: Grid no existe en Chrome 49 */
+.columnas { }
+.columnas:after { content: ""; display: block; clear: both; }
+.principal { float: left; width: 58%; padding-right: 26px; }
+.lateral { float: left; width: 42%; }
+
+.estado {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    margin-bottom: 14px; padding: 5px 12px 5px 8px; border-radius: 14px;
+    background: #FCEBEB; color: #A32D2D; font-size: 11.5px; font-weight: 700;
+    letter-spacing: .8px; text-transform: uppercase;
+}
+.estado svg { margin-right: 7px; }
+
+h1 { font-size: 26px; font-weight: 700; line-height: 1.18; margin-bottom: 10px; }
+.explicacion { color: #5F5C58; font-size: 15px; max-width: 44em; }
+
+h2 {
+    margin: 26px 0 10px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1.3px; text-transform: uppercase; color: #8A8781;
+}
+ol.pasos { margin: 0; padding: 0; list-style: none; counter-reset: paso; }
+ol.pasos li {
+    position: relative; counter-increment: paso;
+    padding: 0 0 12px 34px; font-size: 14px; color: #5F5C58;
+}
+/* Los pasos van numerados porque son una secuencia real: se intenta uno,
+   y solo si falla se pasa al siguiente. */
+ol.pasos li::before {
+    content: counter(paso);
+    position: absolute; left: 0; top: 0;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid #EDEAE5; background: #FFFFFF;
+    color: #C8102E; font-size: 11.5px; font-weight: 700; text-align: center; line-height: 20px;
+}
+ol.pasos li b { color: #221F1F; font-weight: 600; }
+
+.acciones {
+    margin-top: 24px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+}
+.boton {
+    display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    height: 38px; margin: 0 10px 8px 0; padding: 0 18px;
+    border: 1px solid #C8102E; border-radius: 8px;
+    background: #C8102E; color: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    -webkit-transition: background-color .15s ease; transition: background-color .15s ease;
+}
+.boton:hover { background: #A32D2D; border-color: #A32D2D; }
+.boton:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.boton.secundario { background: #FFFFFF; color: #C8102E; }
+.boton.secundario:hover { background: #FCEBEB; }
+.boton svg { margin-right: 7px; }
+
+/* ------------------------------------------------------ ficha lateral --- */
+.ficha { border: 1px solid #EDEAE5; border-radius: 8px; background: #FFFFFF; overflow: hidden; }
+.ficha .cabeza {
+    padding: 11px 16px; border-bottom: 1px solid #EDEAE5; background: #F7F6F3;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #78756F;
+}
+.ficha dl { padding: 6px 16px 12px; margin: 0; }
+.ficha dt {
+    margin-top: 10px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .8px; text-transform: uppercase; color: #A9A6A0;
+}
+.ficha dd {
+    margin: 2px 0 0 0; font-family: Consolas, "Courier New", monospace;
+    font-size: 12.5px; color: #221F1F; word-break: break-all;
+}
+.ficha .pieficha {
+    padding: 12px 16px; border-top: 1px solid #EDEAE5; background: #FFFFFF;
+}
+.ficha .pieficha .boton { width: 100%; margin: 0; -ms-flex-pack: center; justify-content: center; }
+.aviso-copia {
+    display: none; margin-top: 8px; font-size: 11.5px; color: #1F7A4D; text-align: center;
+}
+.aviso-copia.visible { display: block; }
+
+.contacto {
+    margin-top: 14px; padding: 13px 16px;
+    border: 1px solid #EDEAE5; border-left: 3px solid #C8102E; border-radius: 6px;
+    background: #FFFFFF; font-size: 12.5px; color: #5F5C58;
+}
+.contacto b { display: block; color: #221F1F; font-size: 13px; margin-bottom: 2px; }
+
+/* Detalle técnico: colapsado y solo cuando el servidor lo envía */
+.tecnico { margin-top: 14px; }
+.tecnico button {
+    width: 100%; padding: 9px 12px; text-align: left; cursor: pointer;
+    border: 1px solid #EDEAE5; border-radius: 6px; background: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: #78756F;
+}
+.tecnico button:hover { background: #F7F6F3; }
+.tecnico pre {
+    display: none; margin-top: 8px; padding: 12px;
+    border: 1px solid #EDEAE5; border-radius: 6px; background: #221F1F; color: #D8D4CE;
+    font-family: Consolas, "Courier New", monospace; font-size: 11.5px;
+    white-space: pre-wrap; word-break: break-all; max-height: 190px; overflow: auto;
+}
+.tecnico pre.visible { display: block; }
+
+.pie { clear: both; margin-top: 34px; padding-top: 18px; border-top: 1px solid #EDEAE5;
+       font-size: 11.5px; color: #A9A6A0; }
+
+@media screen and (max-width: 820px) {
+    .principal, .lateral { float: none; width: 100%; padding-right: 0; }
+    .lateral { margin-top: 26px; }
+    h1 { font-size: 21px; }
+}
+@media screen and (max-width: 520px) {
+    .hoja { padding: 18px 16px 30px; }
+    .boton { width: 100%; margin-right: 0; -ms-flex-pack: center; justify-content: center; }
+}
+
+/* ---- barra de la demostración: no forma parte del diseño ---- */
+.demo {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 8px 14px; background: #221F1F; color: #C4C1BA;
+    font-size: 11.5px; text-align: center;
+}
+.demo button {
+    margin: 0 3px; padding: 4px 10px; border: 1px solid #4A4643; border-radius: 4px;
+    background: #2F2B29; color: #EDEAE5; font-family: inherit; font-size: 11.5px; cursor: pointer;
+}
+.demo button:hover { background: #3D3835; }
+</style>
+</head>
+<body>
+<div class="franja"></div>
+
+<div class="hoja">
+    <div class="membrete">
+        <span class="logo">BN</span>
+        <span>Banco de la Nación · SAHE</span>
+    </div>
+
+    <div class="columnas">
+        <div class="principal">
+            <span class="estado" id="estado"></span>
+            <h1 id="titulo">No pudimos completar su solicitud</h1>
+            <p class="explicacion" id="explicacion">
+                El aplicativo no logró terminar la operación. Lo que había registrado
+                antes de este mensaje sigue guardado.
+            </p>
+
+            <h2>Qué puede hacer</h2>
+            <ol class="pasos" id="pasos"></ol>
+
+            <div class="acciones" id="acciones"></div>
+        </div>
+
+        <div class="lateral">
+            <div class="ficha">
+                <div class="cabeza">Datos de la incidencia</div>
+                <dl>
+                    <dt>Referencia</dt><dd id="fReferencia">20260903-172735</dd>
+                    <dt>Código</dt><dd id="fCodigo">HTTP 500</dd>
+                    <dt>Pantalla</dt><dd id="fPantalla">SAHE/Consolidado</dd>
+                    <dt>Usuario</dt><dd id="fUsuario">VNDA</dd>
+                    <dt>Fecha y hora</dt><dd id="fFecha">03/09/2026 17:27:35</dd>
+                    <dt>Navegador</dt><dd id="fNavegador">—</dd>
+                </dl>
+                <div class="pieficha">
+                    <button type="button" class="boton secundario" id="btnCopiar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copiar datos para Soporte
+                    </button>
+                    <p class="aviso-copia" id="avisoCopia">Datos copiados. Péguelos en su correo o ticket.</p>
+                </div>
+            </div>
+
+            <div class="contacto">
+                <b>Soporte de Informática</b>
+                Anexo 2000 · mesadeayuda@bn.com.pe<br />
+                Indique la referencia al reportar.
+            </div>
+
+            <div class="tecnico" id="tecnico">
+                <button type="button" id="btnTecnico">Ver detalle técnico</button>
+                <pre id="detalleTecnico">Se muestra solo en el entorno de desarrollo.
+En producción este bloque no se envía al navegador.</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="pie">Sistema Administrativo de Horas Extra · Banco de la Nación</div>
+</div>
+
+<div class="demo">
+    Demostración —
+    <button type="button" data-codigo="404">404</button>
+    <button type="button" data-codigo="500">500</button>
+    <button type="button" data-codigo="403">403</button>
+    <button type="button" data-codigo="401">401</button>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var ICONO_ALERTA = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+    var ICONO_VOLVER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>';
+    var ICONO_REINTENTAR = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path><polyline points="21 3 21 9 15 9"></polyline></svg>';
+
+    var CASOS = {
+        "404": {
+            estado: "Opción no encontrada", codigo: "HTTP 404",
+            titulo: "Esta opción no existe en el aplicativo",
+            texto: "La dirección solicitada no corresponde a ninguna pantalla de SAHE.",
+            pasos: ["Vuelva al escritorio y elija la opción desde el <b>menú</b>, en vez de escribir la dirección.",
+                    "Si llegó por un enlace guardado en Favoritos, elimínelo y vuelva a crearlo desde el menú.",
+                    "Si la opción figura en su menú y aun así aparece este mensaje, repórtelo con la referencia."],
+            acciones: ["escritorio"], tecnico: false
+        },
+        "500": {
+            estado: "Error del sistema", codigo: "HTTP 500",
+            titulo: "No pudimos completar su solicitud",
+            texto: "El aplicativo no logró terminar la operación. Lo que había registrado antes de este mensaje sigue guardado.",
+            pasos: ["Espere un momento y pulse <b>Reintentar</b>.",
+                    "Si vuelve a fallar, cierre la pantalla y entre otra vez desde el menú.",
+                    "Si el error persiste, copie los datos de la incidencia y repórtelos a Soporte."],
+            acciones: ["reintentar", "escritorio"], tecnico: true
+        },
+        "403": {
+            estado: "Acceso denegado", codigo: "HTTP 403",
+            titulo: "Su perfil no tiene acceso a esta opción",
+            texto: "Los permisos de SAHE se asignan por perfil y los autoriza la jefatura de su unidad.",
+            pasos: ["Verifique que eligió la opción correcta del menú.",
+                    "Si necesita esta pantalla para su trabajo, solicite a su jefatura la ampliación del perfil.",
+                    "Adjunte los datos de la incidencia a la solicitud."],
+            acciones: ["escritorio"], tecnico: false
+        },
+        "401": {
+            estado: "Sesión terminada", codigo: "HTTP 401",
+            titulo: "Su sesión expiró por inactividad",
+            texto: "Por seguridad, SAHE cierra la sesión luego de un tiempo sin actividad.",
+            pasos: ["Pulse <b>Ingresar nuevamente</b> y use su usuario y su clave host.",
+                    "Lo que estaba llenando en pantalla no se guardó: tendrá que registrarlo otra vez.",
+                    "Si le ocurre seguido, avise a Soporte con la referencia."],
+            acciones: ["ingresar"], tecnico: false
+        }
+    };
+
+    var BOTONES = {
+        escritorio: "<a class='boton' href='#' data-ir='escritorio'>" + ICONO_VOLVER + "Volver al escritorio</a>",
+        reintentar: "<a class='boton secundario' href='#' data-ir='reintentar'>" + ICONO_REINTENTAR + "Reintentar</a>",
+        ingresar: "<a class='boton' href='#' data-ir='login'>" + ICONO_VOLVER + "Ingresar nuevamente</a>"
+    };
+
+    function pintar(codigo) {
+        var caso = CASOS[codigo] || CASOS["500"], i, html;
+
+        document.getElementById("estado").innerHTML = ICONO_ALERTA + caso.estado;
+        document.getElementById("titulo").innerHTML = caso.titulo;
+        document.getElementById("explicacion").innerHTML = caso.texto;
+        document.getElementById("fCodigo").innerHTML = caso.codigo;
+        document.title = "SAHE - " + caso.estado;
+
+        html = "";
+        for (i = 0; i < caso.pasos.length; i++) html += "<li>" + caso.pasos[i] + "</li>";
+        document.getElementById("pasos").innerHTML = html;
+
+        html = "";
+        for (i = 0; i < caso.acciones.length; i++) html += BOTONES[caso.acciones[i]];
+        document.getElementById("acciones").innerHTML = html;
+
+        document.getElementById("tecnico").style.display = caso.tecnico ? "block" : "none";
+    }
+
+    function textoIncidencia() {
+        var campos = ["fReferencia", "fCodigo", "fPantalla", "fUsuario", "fFecha", "fNavegador"];
+        var rotulos = ["Referencia", "Código", "Pantalla", "Usuario", "Fecha y hora", "Navegador"];
+        var salida = "SAHE - Reporte de incidencia\n", i;
+        for (i = 0; i < campos.length; i++) {
+            salida += rotulos[i] + ": " + document.getElementById(campos[i]).innerHTML + "\n";
+        }
+        return salida;
+    }
+
+    /* Chrome 49 no tiene navigator.clipboard: se copia con execCommand sobre
+       un textarea temporal, que es lo que soporta el parque de equipos.     */
+    function copiar(texto) {
+        var area = document.createElement("textarea");
+        area.value = texto;
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        document.body.appendChild(area);
+        area.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        document.body.removeChild(area);
+        return ok;
+    }
+
+    document.getElementById("btnCopiar").onclick = function () {
+        var aviso = document.getElementById("avisoCopia");
+        if (copiar(textoIncidencia())) {
+            aviso.innerHTML = "Datos copiados. Péguelos en su correo o ticket.";
+            aviso.className = "aviso-copia visible";
+            setTimeout(function () { aviso.className = "aviso-copia"; }, 4000);
+        } else {
+            aviso.innerHTML = "No se pudo copiar. Seleccione los datos y use Ctrl+C.";
+            aviso.className = "aviso-copia visible";
+        }
+    };
+
+    document.getElementById("btnTecnico").onclick = function () {
+        var pre = document.getElementById("detalleTecnico");
+        var abierto = pre.className.indexOf("visible") !== -1;
+        pre.className = abierto ? "" : "visible";
+        this.innerHTML = abierto ? "Ver detalle técnico" : "Ocultar detalle técnico";
+    };
+
+    document.getElementById("acciones").onclick = function (e) {
+        e = e || window.event;
+        var destino = e.target || e.srcElement;
+        while (destino && !destino.getAttribute) destino = destino.parentNode;
+        var ir = destino ? destino.getAttribute("data-ir") : null;
+        if (!ir) return;
+        if (e.preventDefault) e.preventDefault(); else e.returnValue = false;
+        alert("Ir a: " + ir + " (demostración)");
+    };
+
+    var botones = document.querySelectorAll(".demo button");
+    for (var i = 0; i < botones.length; i++) {
+        botones[i].onclick = function () { pintar(this.getAttribute("data-codigo")); };
+    }
+
+    /* El navegador es dato del cliente; el resto lo envía la vista. */
+    document.getElementById("fNavegador").innerHTML = navigator.userAgent.substring(0, 90);
+    pintar("500");
+})();
+</script>
+</body>
+</html>
