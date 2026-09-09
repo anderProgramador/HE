@@ -611,3 +611,45 @@ input.control.Derecha { text-align: right; }
 }
 .resumen__lleno { height: 100%; background: #C8102E; }
 .resumen__lleno--excedido { background: #B3261E; }
+
+
+/* --------------------------------------------------------------------------
+   El filtro y la tarjeta, en una sola fila.
+
+   Son dos secciones -así las declara el txt- pero una sola línea de lectura:
+   el periodo se elige a la izquierda y a la derecha se ve la cuenta de ESE
+   periodo. Apiladas, cada una se llevaba el ancho entero de la pantalla para
+   un desplegable y tres cifras, y la grilla -que es lo que se viene a mirar-
+   empezaba más abajo del pliegue.
+
+   Las clases las pone Sistema.js y no se ponen por id: 'secbusqueda' lo tiene
+   también T01, que sí quiere su filtro entero porque son cuatro campos.
+
+   Sin flex en el contenedor: las dos secciones son hijas de
+   'pantalla__cuerpo', donde están además la grilla y los campos ocultos.
+   Emparejarlas con inline-block no obliga a tocar lo que tienen al lado, y
+   Chrome 49 lo tiene desde siempre.
+   -------------------------------------------------------------------------- */
+.seccion--filtro, .seccion--resumen {
+    display: inline-block; vertical-align: top; width: 100%;
+}
+
+/* La tarjeta ya es una caja con su marco: la sección que la envuelve deja de
+   ser otra. Una dentro de la otra se veían dos bordes redondeados y el de
+   fuera no decía nada. */
+.seccion--resumen { padding: 0; border: 0; background: none; }
+.seccion--resumen .resumen { width: 100%; margin-bottom: 0; }
+/* La tarjeta se estira, las cifras no: repartidas por todo el ancho quedaban
+   a un palmo unas de otras y dejaban de leerse como una sola cuenta. Se
+   agrupan a la izquierda y la barra sí ocupa lo que hay. */
+.seccion--resumen .resumen__cifras { max-width: 460px; }
+
+/* Emparejadas solo cuando hay ancho para las dos; por debajo vuelven a
+   apilarse, que es como se leen en una pantalla angosta. */
+@media screen and (min-width: 861px) {
+    .seccion--filtro { width: 36%; margin-right: 2%; }
+    .seccion--resumen { width: 61%; }
+    /* El desplegable del periodo no baja de aquí: en una columna estrecha el
+       25% de 'ancho=corto' dejaba 'aaaamm' sin sitio. */
+    .seccion--filtro .campo--corto, .seccion--filtro .campo--medio { min-width: 150px; }
+}

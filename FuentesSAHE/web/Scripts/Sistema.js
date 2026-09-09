@@ -457,8 +457,37 @@ var Sistema = (function () {
             caja.setAttribute("data-default", propia);
         }
 
+        /* El filtro y la tarjeta, uno al lado del otro. El txt las declara
+           como dos secciones y la librería las apila, que es lo correcto para
+           dos bloques de campos; aquí no lo son: a la izquierda se elige el
+           periodo y a la derecha se lee la cuenta de ESE periodo, así que van
+           en la misma fila. Apiladas se llevaban media pantalla entre las dos
+           y la grilla -que es lo que se viene a mirar- empezaba más abajo.
+
+           Se marcan por clase y no por id en la hoja de estilos porque
+           'secbusqueda' lo tiene también T01, que sí quiere su filtro entero:
+           son cuatro campos y no uno. Los anchos están en Sistema.css, junto
+           al resto de la tarjeta. */
+        function emparejarFiltroYResumen() {
+            marcarSeccion("secbusqueda", "seccion--filtro");
+            marcarSeccion("secresumen", "seccion--resumen");
+        }
+
+        function marcarSeccion(id, clase) {
+            var nodo = document.getElementById(id);
+            if (!nodo) {
+                Ventana.registrar("La plantilla de " + TABLA + " no declara la sección '" +
+                                  id + "'; el filtro y el resumen quedan apilados.");
+                return;
+            }
+            if ((" " + nodo.className + " ").indexOf(" " + clase + " ") === -1) {
+                nodo.className += " " + clase;
+            }
+        }
+
         function alConstruir() {
             fijarOficinaPadre();
+            emparejarFiltroYResumen();
             enlazarCampo("cboReplicar", function () { replicaSegunPeriodo(true); });
 
             /* La ventana se abre siempre por el mismo sitio -alta, modificar y
