@@ -1,0 +1,215 @@
+@charset "utf-8";
+/* =========================================================================
+   SAHE - Solicitud de Horas Extra
+   Lo que estos tres prototipos agregan sobre _comun.css: la cinta de
+   contexto, la línea del día, el calendario del mes y la fila de alta.
+
+   Misma paleta que Sistema.css y Grilla.css. CSS nativo para Chrome 49:
+   sin Grid, sin gap en flexbox, sin clamp, sin sticky, sin variables.
+   ========================================================================= */
+
+/* ------------------------------------------------------- cinta de contexto --
+   Quién pide, con qué horario y cuánto lleva del mes. Va arriba de todo y
+   en las tres pantallas: son los datos que la ventana de hoy pregunta -la
+   oficina- o esconde -la cuota-, y ninguno de los dos se decide aquí.
+   Con floats y no con flex por costumbre de la casa; el clearfix del final
+   es lo que cierra la caja. */
+.contexto {
+    padding: 11px 14px; margin-bottom: 16px;
+    border: 1px solid #EDEAE5; border-left: 4px solid #C8102E; border-radius: 8px;
+    background: #FFFFFF;
+}
+.contexto--excedida { border-left-color: #B3261E; background: #FFF7F7; }
+.contexto:after { content: ""; display: block; clear: both; }
+.contexto__quien { float: left; max-width: 62%; font-size: 13px; color: #5F5C58; }
+.contexto__quien b { color: #221F1F; }
+.contexto__sep { margin: 0 9px; color: #D5D0C9; }
+.contexto__horario { margin-top: 3px; font-size: 12px; color: #8A8781; }
+.contexto__cuota { float: right; width: 210px; text-align: right; }
+.contexto__rotulo {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #8A8781;
+}
+.contexto__cifra {
+    font-size: 17px; font-weight: 700; color: #221F1F;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+.contexto__cifra small { font-size: 12px; font-weight: 400; color: #8A8781; }
+.contexto__cifra--roja { color: #B3261E; }
+
+.barrita { height: 6px; margin-top: 6px; border-radius: 4px; background: #EDEAE5; overflow: hidden; }
+.barrita__lleno { height: 100%; background: #C8102E; }
+.barrita__lleno--excedido { background: #B3261E; }
+
+/* ---------------------------------------------------------------- pastillas --
+   El estado se lee de un golpe y no se elige: es la jefatura quien lo
+   mueve. Por eso es una pastilla y no un desplegable. */
+.pastilla {
+    display: inline-block; padding: 1px 9px; border-radius: 11px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.pastilla--espera { background: #FFF6E5; color: #8A5300; }
+.pastilla--ok { background: #EAF6EF; color: #1B5E3C; }
+.pastilla--no { background: #FCEBEB; color: #8E1F19; }
+
+/* ------------------------------------------------------------ línea del día --
+   La jornada y lo que se pide, a escala, sobre las 24 horas. Es lo que
+   convierte 'de 17:30 a 19:30' en algo que se entiende sin leerlo: el
+   bloque gris es la jornada que ya se paga y el rojo lo que se está
+   pidiendo. Posicionado en porcentaje sobre el ancho: 100% son 24 horas. */
+.dia {
+    position: relative; height: 34px; margin: 8px 0 4px;
+    border: 1px solid #EDEAE5; border-radius: 6px; background: #FBFAF9; overflow: hidden;
+}
+.dia__jornada {
+    position: absolute; top: 0; height: 100%;
+    background: #E4E1DC; border-left: 1px solid #D5D0C9; border-right: 1px solid #D5D0C9;
+}
+.dia__pedido { position: absolute; top: 0; height: 100%; background: #C8102E; opacity: .82; }
+.dia__pedido--cruce { background: #8A5300; }
+.dia__previa { position: absolute; top: 0; height: 100%; background: #A9A6A0; opacity: .55; }
+.dia__marca {
+    position: absolute; top: 0; width: 1px; height: 100%; background: #D5D0C9;
+}
+.dia__horas { font-size: 11px; color: #8A8781; }
+.dia__horas span { display: inline-block; width: 12.5%; }
+.dia__leyenda { margin-top: 4px; font-size: 12px; color: #5F5C58; }
+.dia__leyenda i {
+    display: inline-block; width: 10px; height: 10px; margin: 0 5px 0 12px;
+    border-radius: 2px; vertical-align: middle;
+}
+.dia__leyenda i:first-child { margin-left: 0; }
+.i-jornada { background: #E4E1DC; border: 1px solid #D5D0C9; }
+.i-pedido { background: #C8102E; }
+.i-previa { background: #A9A6A0; }
+
+/* ------------------------------------------------------------------ atajos --
+   Las duraciones de siempre. Casi toda solicitud es 'me quedé una, dos o
+   tres horas después de mi salida', y eso no merece escribir dos horas del
+   reloj. */
+.atajos { margin-top: 6px; }
+.atajo {
+    display: inline-block; padding: 3px 11px; margin: 0 6px 6px 0;
+    border: 1px solid #D5D0C9; border-radius: 14px;
+    background: #FFFFFF; font-family: inherit; font-size: 12.5px; color: #5F5C58; cursor: pointer;
+}
+.atajo:hover { border-color: #C8102E; background: #FCEBEB; color: #8E1F19; }
+.atajo--activo { border-color: #C8102E; background: #C8102E; color: #FFFFFF; font-weight: 600; }
+
+/* -------------------------------------------------------------- calendario --
+   El mes entero, para marcar varios días de una vez. Siete columnas con
+   inline-block al 14.28%: es lo que hay sin Grid. El borde blanco hace de
+   separación, así que no hace falta gap. */
+.calendario { margin-bottom: 6px; font-size: 0; }
+.calendario__cabecera { font-size: 0; margin-bottom: 2px; }
+.calendario__dia, .calendario__nombre {
+    display: inline-block; width: 14.28%; vertical-align: top;
+    border: 2px solid #FFFFFF;
+}
+.calendario__nombre {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+    color: #8A8781; text-align: center; padding: 2px 0;
+}
+.calendario__celda {
+    height: 62px; padding: 5px 6px; border: 1px solid #EDEAE5; border-radius: 6px;
+    background: #FFFFFF; font-size: 13px; text-align: left; width: 100%;
+    font-family: inherit; color: #221F1F; cursor: pointer;
+}
+.calendario__celda:hover { border-color: #E4B9BE; background: #FDF7F7; }
+.calendario__celda[disabled] { background: #F7F6F3; color: #C5C2BC; cursor: default; }
+.calendario__celda[disabled]:hover { border-color: #EDEAE5; background: #F7F6F3; }
+.calendario__numero { font-weight: 700; }
+.calendario__celda--finde .calendario__numero { color: #8A8781; }
+.calendario__celda--marcado {
+    border-color: #C8102E; background: #FCEBEB;
+    -webkit-box-shadow: inset 0 0 0 1px #C8102E; box-shadow: inset 0 0 0 1px #C8102E;
+}
+.calendario__celda--conSolicitud { border-left: 4px solid #A9A6A0; }
+.calendario__nota { margin-top: 4px; font-size: 11px; color: #8A8781; line-height: 1.3; }
+.calendario__celda--marcado .calendario__nota { color: #8E1F19; font-weight: 600; }
+.calendario__hueco { display: inline-block; width: 14.28%; height: 1px; }
+
+/* ------------------------------------------------------------ lote a pedir --
+   Lo que se va a mandar, contado antes de mandarlo. */
+.lote {
+    padding: 12px 14px; margin-bottom: 14px;
+    border: 1px solid #E4E1DC; border-left: 4px solid #C8102E; border-radius: 6px; background: #FBFAF9;
+}
+.lote__titulo { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.lote__titulo b { -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+.lote__vacio { font-size: 12.5px; color: #8A8781; }
+.lote__linea {
+    padding: 5px 0; border-top: 1px solid #EDEAE5; font-size: 12.5px; color: #5F5C58;
+}
+.lote__linea:first-child { border-top: 0; }
+.lote__linea b { color: #221F1F; }
+.lote__quitar {
+    float: right; border: 0; background: transparent; color: #A9A6A0;
+    font-family: inherit; font-size: 15px; line-height: 1; cursor: pointer; padding: 0 2px;
+}
+.lote__quitar:hover { color: #B3261E; }
+.lote__linea:after { content: ""; display: block; clear: both; }
+
+/* ------------------------------------------------------------ fila de alta --
+   El prototipo C no tiene ventana: la primera fila de la grilla ES el
+   formulario. Se pinta distinta para que no se confunda con un registro. */
+tr.alta td { background: #FCEBEB; border-bottom: 2px solid #C8102E; padding: 7px 8px; }
+tr.alta .control { height: 30px; font-size: 13px; }
+tr.alta .control--error { border-color: #B3261E; background: #FFFFFF; }
+.alta__reparo {
+    padding: 7px 10px; margin-bottom: 0;
+    background: #FCEBEB; border-bottom: 1px solid #E4B9BE;
+    font-size: 12.5px; font-weight: 600; color: #8E1F19;
+}
+.alta__par { font-size: 0; }
+.alta__par .control { display: inline-block; width: 47%; }
+.alta__par span { display: inline-block; width: 6%; text-align: center; font-size: 12px; color: #8A8781; }
+
+/* -------------------------------------------------------------- resultados */
+.hallazgo { margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #5F5C58; }
+.hallazgo b { color: #221F1F; }
+
+.col-fecha { width: 150px; }
+/* Dos cajas de hora, la palabra 'a' entre ellas y, en algunos idiomas del
+   navegador, un 'PM' detrás de cada una: por debajo de esto el prototipo C
+   las corta. */
+.col-tramo { width: 240px; }
+.col-tiempo { width: 110px; }
+.col-cobro { width: 140px; }
+.col-estado { width: 120px; }
+.col-motivo { min-width: 200px; }
+
+/* --------------------------------------------------------------- las notas --
+   Solo del prototipo: explica en la propia página qué se está mirando y
+   qué problema del modelo actual resuelve. */
+.nota {
+    margin: 22px 0 0; padding: 12px 14px; border-left: 4px solid #D5D0C9;
+    background: #F7F6F3; font-size: 12.5px; color: #5F5C58; line-height: 1.55;
+}
+.nota b { color: #221F1F; }
+.nota ul { margin: 6px 0 0 18px; }
+.nota li { margin-bottom: 3px; }
+.nota__cambia { margin-top: 8px; padding-top: 8px; border-top: 1px solid #E4E1DC; }
+
+/* La barra de las tres alternativas, para saltar de una a otra sin volver
+   a la carpeta. */
+.saltos { margin-bottom: 14px; font-size: 12.5px; }
+.saltos a {
+    display: inline-block; padding: 3px 11px; margin-right: 6px;
+    border: 1px solid #D5D0C9; border-radius: 14px;
+    background: #FFFFFF; color: #5F5C58; text-decoration: none;
+}
+.saltos a:hover { border-color: #C8102E; color: #C8102E; }
+.saltos a.saltos--aqui { background: #C8102E; border-color: #C8102E; color: #FFFFFF; font-weight: 600; }
+
+/* ------------------------------------------------------------ dos columnas --
+   El mes a la izquierda y lo que se va a pedir a la derecha, siempre a la
+   vista: marcar un día y no ver crecer el total sería marcar a ciegas.
+   Con inline-block y el 'font-size:0' del padre para comerse el espacio en
+   blanco entre los dos bloques, que en inline-block sí ocupa. */
+.par { margin: 0 -8px; font-size: 0; }
+.par__izq, .par__der { display: inline-block; vertical-align: top; padding: 0 8px; font-size: 14px; }
+.par__izq { width: 60%; }
+.par__der { width: 40%; }
+@media screen and (max-width: 980px) {
+    .par__izq, .par__der { width: 100%; }
+}

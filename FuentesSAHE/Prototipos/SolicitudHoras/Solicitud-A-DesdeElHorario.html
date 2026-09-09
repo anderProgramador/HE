@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - Solicitud de Horas Extra - A - Desde el horario</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_sol.css">
+</head>
+<body>
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Solicitudes de Horas Extras</h1>
+        <p>Pida que le reconozcan el tiempo que se quedó fuera de su jornada. Su horario, su oficina
+           y el estado en que nace la solicitud no se preguntan: ya los sabe el sistema.</p>
+    </div>
+
+    <div class="saltos">
+        <a href="Solicitud-A-DesdeElHorario.html" class="saltos--aqui">A · Desde el horario</a>
+        <a href="Solicitud-B-VariosDias.html">B · Varios días de una vez</a>
+        <a href="Solicitud-C-EnLinea.html">C · En línea, sin ventana</a>
+    </div>
+
+    <div id="contexto"></div>
+
+    <!-- El filtro, igual que hoy: un rango de fechas y Buscar. -->
+    <div class="fila">
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta" for="fDesde">Fecha Inicio</label>
+            <input type="date" class="control" id="fDesde" value="2026-09-01">
+        </div>
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta" for="fHasta">Fecha Fin</label>
+            <input type="date" class="control" id="fHasta" value="2026-09-30">
+        </div>
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta">&nbsp;</label>
+            <button type="button" class="boton boton--secundario" id="btnBuscar">Buscar</button>
+        </div>
+    </div>
+
+    <div class="barra">
+        <div class="barra__titulo">Lo pedido en el periodo</div>
+        <div class="barra__cuenta">Registros encontrados: <b id="cuenta">0</b></div>
+        <button type="button" class="boton boton--primario" id="btnNuevo">Nuevo</button>
+    </div>
+
+    <div class="rejilla">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th class="col-fecha">Fecha</th>
+                    <th class="col-tramo">Se quedó de</th>
+                    <th class="der col-tiempo">Tiempo</th>
+                    <th class="col-cobro">Modo de Cobro</th>
+                    <th class="col-estado">Estado</th>
+                    <th class="col-motivo">Motivo</th>
+                    <th class="cen col-accion">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">Total del periodo</td>
+                    <td class="der" id="total">0:00</td>
+                    <td colspan="4"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="nota">
+        <b>Alternativa A — se pregunta el reloj, no la calculadora.</b>
+        <ul>
+            <li>La ventana de hoy pide <i>Tiempo de Hora(s)</i> y <i>Tiempo de Minuto(s)</i> en dos cajas.
+                Aquí se pide <b>desde qué hora y hasta qué hora</b> se quedó, y la cantidad se calcula sola.
+                Es el dato que la persona sí tiene: nadie recuerda «2:30», recuerda «me fui a las ocho».</li>
+            <li>Con las dos horas del reloj se puede <b>avisar de un cruce</b>: un tramo que cae dentro de la
+                jornada -que ya se paga- o que se pisa con otra solicitud del mismo día. Con una cantidad
+                suelta eso no se puede revisar, porque nunca se supo a qué parte del día correspondía.</li>
+            <li>La <b>línea del día</b> pone la jornada y lo pedido a escala. Un error de turno -pedir de
+                09:00 a 11:00 un martes- se ve antes de leerlo.</li>
+            <li>Los <b>atajos</b> resuelven el caso normal de un toque: casi toda solicitud es «me quedé una,
+                dos o tres horas después de mi salida».</li>
+        </ul>
+        <div class="nota__cambia"><b>Lo que desaparece de la ventana:</b> <i>Estado de la Solicitud</i>
+            -nace Solicitado y lo mueve la jefatura, no quien pide-, <i>Código Oficina</i> y <i>Oficina</i>
+            -son los de la persona; por eso las tres filas de la lista dicen siempre lo mismo- y la caja de
+            minutos, que se volvió parte del reloj.</div>
+    </div>
+
+</div>
+
+<!-- --------------------------------------------- ventana de mantenimiento -->
+<div class="velo" id="velo">
+    <div class="ventana">
+        <div class="ventana__barra">
+            <div class="ventana__titulo" id="tituloVentana">Nueva solicitud</div>
+            <button type="button" class="ventana__cerrar" id="btnCerrar" title="Cerrar">&times;</button>
+        </div>
+
+        <div class="ventana__cuerpo">
+            <div class="resumen-cabecera" id="cintillo"></div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mFecha">Fecha a solicitar<span class="campo__obligatorio">*</span></label>
+                    <input type="date" class="control" id="mFecha">
+                </div>
+                <div class="campo campo--medio">
+                    <label class="campo__etiqueta">Su horario ese día</label>
+                    <input type="text" class="control" id="mHorario" readonly>
+                </div>
+            </div>
+
+            <!-- La línea del día: la jornada en gris, lo ya pedido en plomo y
+                 lo que se está pidiendo en rojo. -->
+            <label class="campo__etiqueta">El día, de 0:00 a 24:00</label>
+            <div class="dia" id="dia"></div>
+            <div class="dia__horas">
+                <span>0</span><span>3</span><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span>
+            </div>
+            <div class="dia__leyenda">
+                <i class="i-jornada"></i>Su jornada
+                <i class="i-pedido"></i>Lo que está pidiendo
+                <i class="i-previa"></i>Ya pedido ese día
+            </div>
+
+            <div class="atajos" id="atajos"></div>
+
+            <div class="fila" style="margin-top:12px">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mDesde">Se quedó desde<span class="campo__obligatorio">*</span></label>
+                    <input type="time" class="control" id="mDesde">
+                </div>
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mHasta">Hasta<span class="campo__obligatorio">*</span></label>
+                    <input type="time" class="control" id="mHasta">
+                </div>
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta">Tiempo solicitado</label>
+                    <input type="text" class="control control--numero" id="mTiempo" readonly>
+                    <p class="campo__ayuda">Sale de las dos horas de arriba.</p>
+                </div>
+            </div>
+
+            <div class="fila">
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mCobro">Modo de cobro<span class="campo__obligatorio">*</span></label>
+                    <select class="control" id="mCobro"></select>
+                </div>
+                <div class="campo campo--corto">
+                    <label class="campo__etiqueta" for="mModalidad">Modalidad de trabajo</label>
+                    <select class="control" id="mModalidad"></select>
+                </div>
+            </div>
+
+            <div class="fila">
+                <div class="campo campo--largo">
+                    <label class="campo__etiqueta" for="mMotivo">Motivo
+                        <span class="campo__obligatorio">*</span>
+                        <span class="campo__cuenta" id="cuentaMotivo">0/250</span></label>
+                    <textarea class="control" id="mMotivo" maxlength="250"
+                              placeholder="Qué hizo en ese tiempo. Es lo que va a leer su jefatura."></textarea>
+                </div>
+            </div>
+
+            <p class="campo__error" id="error"></p>
+        </div>
+
+        <div class="ventana__pie">
+            <button type="button" class="boton boton--secundario" id="btnCancelar">Cancelar</button>
+            <button type="button" class="boton boton--primario" id="btnGrabar">Solicitar</button>
+        </div>
+    </div>
+</div>
+
+<script src="_sol.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var enEdicion = null;
+
+    /* ------------------------------------------------------------- la lista */
+    function pintar() {
+        var cuerpo = Sol.porId("cuerpo");
+        var lista = Sol.solicitudes, filas = "", i, s, editable;
+
+        for (i = 0; i < lista.length; i++) {
+            s = lista[i];
+            editable = Sol.editable(s);
+            filas +=
+                "<tr>" +
+                    "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
+                        '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
+                    "<td>" + Sol.texto(s.desde) + " a " + Sol.texto(s.hasta) + "</td>" +
+                    '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                    "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
+                    "<td>" + Sol.pastilla(s.estado) + "</td>" +
+                    '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
+                    '<td class="cen">' +
+                        '<button type="button" class="boton-fila" data-editar="' + s.id + '"' +
+                            (editable ? "" : " disabled") + ' title="Modificar">&#9998;</button>' +
+                        '<button type="button" class="boton-fila" data-borrar="' + s.id + '"' +
+                            (editable ? "" : " disabled") + ' title="Anular">&times;</button>' +
+                    "</td>" +
+                "</tr>";
+        }
+        if (filas === "") {
+            filas = '<tr class="sin-datos"><td colspan="7">No hay solicitudes en el rango elegido.</td></tr>';
+        }
+        cuerpo.innerHTML = filas;
+        Sol.porId("cuenta").textContent = String(lista.length);
+        Sol.porId("total").textContent = Sol.formatear(Sol.acumulado(lista));
+        Sol.pintarContexto("contexto", lista);
+        enlazarFilas();
+    }
+
+    function enlazarFilas() {
+        var botones = Sol.porId("cuerpo").getElementsByTagName("button"), i, id;
+        for (i = 0; i < botones.length; i++) {
+            id = botones[i].getAttribute("data-editar");
+            if (id) { botones[i].onclick = abrirPara(Number(id)); continue; }
+            id = botones[i].getAttribute("data-borrar");
+            if (id) botones[i].onclick = borrarPara(Number(id));
+        }
+    }
+
+    function abrirPara(id) { return function () { abrir(porId(id)); }; }
+    function borrarPara(id) {
+        return function () {
+            var i;
+            for (i = 0; i < Sol.solicitudes.length; i++) {
+                if (Sol.solicitudes[i].id === id) { Sol.solicitudes.splice(i, 1); break; }
+            }
+            pintar();
+        };
+    }
+
+    function porId(id) {
+        var i;
+        for (i = 0; i < Sol.solicitudes.length; i++) if (Sol.solicitudes[i].id === id) return Sol.solicitudes[i];
+        return null;
+    }
+
+    /* --------------------------------------------------------- la línea del día
+       Todo en porcentaje sobre las 24 horas. Un tramo que cruza la
+       medianoche se corta a las 24:00 para dibujarlo: la parte del día
+       siguiente no cabe en la línea de este día, y estirarla mentiría. */
+    function tramo(clase, desde, hasta) {
+        var a = Sol.aMinutos(desde), b = Sol.aMinutos(hasta);
+        if (b <= a) b = 24 * 60;
+        return '<div class="' + clase + '" style="left:' + (a / 14.4) + "%;width:" + ((b - a) / 14.4) + '%"></div>';
+    }
+
+    function pintarDia() {
+        var t = Sol.trabajador;
+        var fecha = Sol.porId("mFecha").value;
+        var desde = Sol.porId("mDesde").value, hasta = Sol.porId("mHasta").value;
+        var vecinas = fecha ? Sol.delDia(Sol.solicitudes, fecha, enEdicion ? enEdicion.id : 0) : [];
+        var html = "", i, cruza;
+
+        /* La jornada solo existe de lunes a viernes: un sábado, la línea no
+           tiene bloque gris y toda la hora es extra. */
+        if (fecha && !Sol.esFinDeSemana(fecha)) html += tramo("dia__jornada", t.entrada, t.salida);
+        for (i = 0; i < vecinas.length; i++) html += tramo("dia__previa", vecinas[i].desde, vecinas[i].hasta);
+
+        if (desde && hasta) {
+            cruza = fecha && !Sol.esFinDeSemana(fecha) && Sol.seCruzan(desde, hasta, t.entrada, t.salida);
+            html += tramo("dia__pedido" + (cruza ? " dia__pedido--cruce" : ""), desde, hasta);
+        }
+        Sol.porId("dia").innerHTML = html;
+        Sol.porId("mTiempo").value = (desde && hasta) ? Sol.formatear(Sol.duracion(desde, hasta)) : "";
+        marcarAtajo(desde, hasta);
+    }
+
+    /* ------------------------------------------------------------- los atajos
+       Se cuentan desde el fin de la jornada, que es donde empieza la hora
+       extra de un día normal. En sábado se cuentan desde la hora de
+       entrada: no hay jornada de la cual salir. */
+    var ATAJOS = [60, 120, 180, 240];
+
+    function inicioNatural() {
+        var fecha = Sol.porId("mFecha").value;
+        var t = Sol.trabajador;
+        return (fecha && Sol.esFinDeSemana(fecha)) ? t.entrada : t.salida;
+    }
+
+    function pintarAtajos() {
+        var caja = Sol.porId("atajos"), html = "", i;
+        for (i = 0; i < ATAJOS.length; i++) {
+            html += '<button type="button" class="atajo" data-min="' + ATAJOS[i] + '">' +
+                    Sol.formatear(ATAJOS[i]) + " desde las " + inicioNatural() + "</button>";
+        }
+        caja.innerHTML = html;
+        enlazarAtajos();
+    }
+
+    function enlazarAtajos() {
+        var botones = Sol.porId("atajos").getElementsByTagName("button"), i;
+        for (i = 0; i < botones.length; i++) botones[i].onclick = aplicarAtajo;
+    }
+
+    function aplicarAtajo() {
+        var minutos = Number(this.getAttribute("data-min"));
+        var inicio = inicioNatural();
+        Sol.porId("mDesde").value = inicio;
+        Sol.porId("mHasta").value = Sol.reloj(Sol.aMinutos(inicio) + minutos);
+        pintarDia();
+    }
+
+    function marcarAtajo(desde, hasta) {
+        var botones = Sol.porId("atajos").getElementsByTagName("button"), i, activo;
+        for (i = 0; i < botones.length; i++) {
+            activo = desde === inicioNatural() && hasta !== "" &&
+                     Sol.duracion(desde, hasta) === Number(botones[i].getAttribute("data-min"));
+            botones[i].className = activo ? "atajo atajo--activo" : "atajo";
+        }
+    }
+
+    /* --------------------------------------------------------------- ventana */
+    function abrir(s) {
+        var t = Sol.trabajador;
+        enEdicion = s || null;
+
+        Sol.porId("tituloVentana").textContent = s ? "Modificar solicitud" : "Nueva solicitud";
+        Sol.porId("cintillo").innerHTML =
+            "Se registra a nombre de <b>" + Sol.texto(t.nombre) + "</b>, en <b>" +
+            Sol.texto(t.oficina) + " - " + Sol.texto(t.dOficina) + "</b>." +
+            '<div class="campo__ayuda">Nace como <b>Solicitado</b>. El estado lo mueve su jefatura.</div>';
+
+        Sol.porId("mFecha").value = s ? s.fecha : Sol.periodo.hasta;
+        Sol.porId("mHorario").value = t.horario;
+        Sol.porId("mDesde").value = s ? s.desde : "";
+        Sol.porId("mHasta").value = s ? s.hasta : "";
+        Sol.porId("mCobro").value = s ? s.cobro : "";
+        Sol.porId("mModalidad").value = s ? s.modalidad : "P";
+        Sol.porId("mMotivo").value = s ? s.motivo : "";
+        Sol.porId("error").textContent = "";
+        contarMotivo();
+        pintarAtajos();
+        pintarDia();
+        Sol.porId("velo").className = "velo abierto";
+    }
+
+    function cerrar() { Sol.porId("velo").className = "velo"; }
+
+    function contarMotivo() {
+        Sol.porId("cuentaMotivo").textContent = Sol.porId("mMotivo").value.length + "/250";
+    }
+
+    function grabar() {
+        var s = {
+            id: enEdicion ? enEdicion.id : new Date().getTime(),
+            fecha: Sol.porId("mFecha").value,
+            desde: Sol.porId("mDesde").value,
+            hasta: Sol.porId("mHasta").value,
+            cobro: Sol.porId("mCobro").value,
+            modalidad: Sol.porId("mModalidad").value,
+            estado: "S",
+            motivo: Sol.porId("mMotivo").value.replace(/^\s+|\s+$/g, "")
+        };
+        var reparo = Sol.revisar(Sol.solicitudes, s);
+
+        if (reparo !== "") { Sol.porId("error").textContent = reparo; return; }
+
+        if (enEdicion) {
+            enEdicion.fecha = s.fecha; enEdicion.desde = s.desde; enEdicion.hasta = s.hasta;
+            enEdicion.cobro = s.cobro; enEdicion.modalidad = s.modalidad; enEdicion.motivo = s.motivo;
+        } else {
+            Sol.solicitudes.push(s);
+        }
+        cerrar();
+        pintar();
+    }
+
+    /* ------------------------------------------------------------- arranque */
+    Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
+    Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
+
+    Sol.porId("btnNuevo").onclick = function () { abrir(null); };
+    Sol.porId("btnCerrar").onclick = cerrar;
+    Sol.porId("btnCancelar").onclick = cerrar;
+    Sol.porId("btnGrabar").onclick = grabar;
+    Sol.porId("btnBuscar").onclick = pintar;
+    Sol.porId("mFecha").onchange = function () { pintarAtajos(); pintarDia(); };
+    Sol.porId("mDesde").onchange = pintarDia;
+    Sol.porId("mHasta").onchange = pintarDia;
+    Sol.porId("mMotivo").oninput = contarMotivo;
+
+    pintar();
+})();
+</script>
+</body>
+</html>
