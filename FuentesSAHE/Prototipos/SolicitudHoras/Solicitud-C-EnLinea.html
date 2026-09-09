@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAHE - Solicitud de Horas Extra - C - En línea, sin ventana</title>
+<link rel="stylesheet" href="../Cuotas/_comun.css">
+<link rel="stylesheet" href="_sol.css">
+</head>
+<body>
+<div class="marco">
+
+    <div class="cabecera">
+        <h1>Solicitudes de Horas Extras</h1>
+        <p>Escriba la solicitud en la misma lista donde la va a ver. Sin ventana, sin velo y sin perder
+           de vista lo que ya pidió.</p>
+    </div>
+
+    <div class="saltos">
+        <a href="Solicitud-A-DesdeElHorario.html">A · Desde el horario</a>
+        <a href="Solicitud-B-VariosDias.html">B · Varios días de una vez</a>
+        <a href="Solicitud-C-EnLinea.html" class="saltos--aqui">C · En línea, sin ventana</a>
+    </div>
+
+    <div id="contexto"></div>
+
+    <div class="fila">
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta" for="fDesde">Fecha Inicio</label>
+            <input type="date" class="control" id="fDesde" value="2026-09-01">
+        </div>
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta" for="fHasta">Fecha Fin</label>
+            <input type="date" class="control" id="fHasta" value="2026-09-30">
+        </div>
+        <div class="campo campo--corto">
+            <label class="campo__etiqueta">&nbsp;</label>
+            <button type="button" class="boton boton--secundario" id="btnBuscar">Buscar</button>
+        </div>
+    </div>
+
+    <div class="barra">
+        <div class="barra__titulo">Lo pedido en el periodo</div>
+        <div class="barra__cuenta">Registros encontrados: <b id="cuenta">0</b></div>
+    </div>
+
+    <!-- El reparo va pegado encima de la grilla, no en un diálogo: el campo
+         que hay que corregir queda a la vista mientras se lee. -->
+    <div class="alta__reparo" id="reparo" style="display:none"></div>
+
+    <div class="rejilla">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th class="col-fecha">Fecha</th>
+                    <th class="col-tramo">Se quedó de</th>
+                    <th class="der col-tiempo">Tiempo</th>
+                    <th class="col-cobro">Modo de Cobro</th>
+                    <th class="col-motivo">Motivo</th>
+                    <th class="col-estado">Estado</th>
+                    <th class="cen col-accion">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- LA FILA DE ALTA. No es un registro: es el formulario, y por
+                     eso se pinta distinta y vive arriba de todo. -->
+                <tr class="alta">
+                    <td><input type="date" class="control" id="nFecha"></td>
+                    <td class="alta__par">
+                        <input type="time" class="control" id="nDesde"><span>a</span><input type="time" class="control" id="nHasta">
+                    </td>
+                    <td class="der" id="nTiempo">&mdash;</td>
+                    <td><select class="control" id="nCobro"></select></td>
+                    <td><input type="text" class="control" id="nMotivo" maxlength="250" placeholder="Motivo"></td>
+                    <td><span class="pastilla pastilla--espera">Solicitado</span></td>
+                    <td class="cen">
+                        <button type="button" class="boton boton--primario" id="btnAgregar"
+                                style="height:30px;padding:0 12px">Agregar</button>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody id="cuerpo"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">Total del periodo</td>
+                    <td class="der" id="total">0:00</td>
+                    <td colspan="4"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p class="campo__ayuda" style="margin-top:8px">
+        La modalidad de trabajo se toma de su horario (<b id="pieModalidad"></b>) y solo se cambia
+        al modificar una solicitud. Es lo mismo en el 95% de los casos y no merece una columna.
+    </p>
+
+    <div class="nota">
+        <b>Alternativa C — la lista es el formulario.</b>
+        <ul>
+            <li>No hay ventana. La primera fila de la grilla <b>es</b> el alta: se escribe de izquierda a
+                derecha y con <b>Enter</b> se agrega, quedando lista para la siguiente. Quien pide horas todas
+                las semanas deja de abrir y cerrar un diálogo cada vez.</li>
+            <li>Lo que ya se pidió <b>no se tapa</b>. En la pantalla de hoy, el velo esconde justo la lista que
+                haría falta consultar para no repetir un día.</li>
+            <li>Las solicitudes en <i>Solicitado</i> se corrigen <b>en su propia fila</b>: es el mismo gesto
+                que crearlas. Las que la jefatura ya decidió quedan de solo lectura, con su estado a la
+                vista.</li>
+            <li>El reparo aparece <b>sobre la grilla</b> y el campo culpable se marca en rojo, sin sacar al
+                usuario de donde estaba escribiendo.</li>
+        </ul>
+        <div class="nota__cambia"><b>El precio:</b> caben menos campos que en una ventana. Modalidad y
+            adjunto no entran en la fila y se resuelven al modificar. Si mañana la solicitud pide tres datos
+            más, esta alternativa es la primera que se rompe.</div>
+    </div>
+
+</div>
+
+<script src="_sol.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    /* Qué fila se está editando en línea, o 0 si ninguna. */
+    var editando = 0;
+
+    /* ------------------------------------------------------------- la lista */
+    function pintar() {
+        var cuerpo = Sol.porId("cuerpo");
+        var lista = Sol.solicitudes, filas = "", i;
+
+        for (i = 0; i < lista.length; i++) {
+            filas += (lista[i].id === editando) ? filaEditable(lista[i]) : filaNormal(lista[i]);
+        }
+        if (filas === "") {
+            filas = '<tr class="sin-datos"><td colspan="7">Todavía no hay solicitudes en el rango.</td></tr>';
+        }
+        cuerpo.innerHTML = filas;
+        Sol.porId("cuenta").textContent = String(lista.length);
+        Sol.porId("total").textContent = Sol.formatear(Sol.acumulado(lista));
+        Sol.pintarContexto("contexto", lista);
+        enlazarFilas();
+    }
+
+    function filaNormal(s) {
+        var editable = Sol.editable(s);
+        return "<tr>" +
+                "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
+                    '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
+                "<td>" + Sol.texto(s.desde) + " a " + Sol.texto(s.hasta) + "</td>" +
+                '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
+                '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
+                "<td>" + Sol.pastilla(s.estado) + "</td>" +
+                '<td class="cen">' +
+                    '<button type="button" class="boton-fila" data-editar="' + s.id + '"' +
+                        (editable ? "" : " disabled") + ' title="Modificar">&#9998;</button>' +
+                    '<button type="button" class="boton-fila" data-borrar="' + s.id + '"' +
+                        (editable ? "" : " disabled") + ' title="Anular">&times;</button>' +
+                "</td>" +
+            "</tr>";
+    }
+
+    /* La misma fila, con sus datos abiertos. No se abre otra cosa en otro
+       sitio: se edita donde se estaba mirando. */
+    function filaEditable(s) {
+        return '<tr class="alta">' +
+                '<td><input type="date" class="control" id="eFecha" value="' + Sol.texto(s.fecha) + '"></td>' +
+                '<td class="alta__par">' +
+                    '<input type="time" class="control" id="eDesde" value="' + Sol.texto(s.desde) + '">' +
+                    "<span>a</span>" +
+                    '<input type="time" class="control" id="eHasta" value="' + Sol.texto(s.hasta) + '"></td>' +
+                '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                '<td><select class="control" id="eCobro"></select></td>' +
+                '<td><input type="text" class="control" id="eMotivo" maxlength="250" value="' +
+                    Sol.texto(s.motivo) + '"></td>' +
+                '<td>' + Sol.pastilla(s.estado) + "</td>" +
+                '<td class="cen">' +
+                    '<button type="button" class="boton-fila" data-guardar="' + s.id + '" title="Guardar">&#10003;</button>' +
+                    '<button type="button" class="boton-fila" data-cancelar="1" title="Cancelar">&times;</button>' +
+                "</td>" +
+            "</tr>";
+    }
+
+    function enlazarFilas() {
+        var botones = Sol.porId("cuerpo").getElementsByTagName("button"), i, id, sel;
+
+        for (i = 0; i < botones.length; i++) {
+            id = botones[i].getAttribute("data-editar");
+            if (id) { botones[i].onclick = abrirFila(Number(id)); continue; }
+            id = botones[i].getAttribute("data-borrar");
+            if (id) { botones[i].onclick = anularFila(Number(id)); continue; }
+            id = botones[i].getAttribute("data-guardar");
+            if (id) { botones[i].onclick = guardarFila(Number(id)); continue; }
+            if (botones[i].getAttribute("data-cancelar")) {
+                botones[i].onclick = function () { editando = 0; pintar(); };
+            }
+        }
+
+        /* El desplegable de la fila abierta se llena después de pintarla:
+           su valor no cabe en el HTML de arriba sin repetir las opciones. */
+        sel = Sol.porId("eCobro");
+        if (sel) {
+            Sol.llenarSelect(sel, Sol.cobros, "");
+            sel.value = porId(editando).cobro;
+        }
+    }
+
+    function porId(id) {
+        var i;
+        for (i = 0; i < Sol.solicitudes.length; i++) if (Sol.solicitudes[i].id === id) return Sol.solicitudes[i];
+        return null;
+    }
+
+    function abrirFila(id) { return function () { editando = id; avisar(""); pintar(); }; }
+
+    function anularFila(id) {
+        return function () {
+            var i;
+            for (i = 0; i < Sol.solicitudes.length; i++) {
+                if (Sol.solicitudes[i].id === id) { Sol.solicitudes.splice(i, 1); break; }
+            }
+            editando = 0;
+            pintar();
+        };
+    }
+
+    function guardarFila(id) {
+        return function () {
+            var s = porId(id);
+            var cambiada = {
+                id: id,
+                fecha: Sol.porId("eFecha").value,
+                desde: Sol.porId("eDesde").value,
+                hasta: Sol.porId("eHasta").value,
+                cobro: Sol.porId("eCobro").value,
+                modalidad: s.modalidad,
+                estado: s.estado,
+                motivo: Sol.porId("eMotivo").value.replace(/^\s+|\s+$/g, "")
+            };
+            var reparo = Sol.revisar(Sol.solicitudes, cambiada);
+
+            if (reparo !== "") { avisar(reparo); return; }
+
+            s.fecha = cambiada.fecha; s.desde = cambiada.desde; s.hasta = cambiada.hasta;
+            s.cobro = cambiada.cobro; s.motivo = cambiada.motivo;
+            editando = 0;
+            avisar("");
+            pintar();
+        };
+    }
+
+    /* --------------------------------------------------------- la fila de alta */
+    function tiempoDelAlta() {
+        var d = Sol.porId("nDesde").value, h = Sol.porId("nHasta").value;
+        Sol.porId("nTiempo").innerHTML = (d && h) ? Sol.formatear(Sol.duracion(d, h)) : "&mdash;";
+    }
+
+    function agregar() {
+        var s = {
+            id: new Date().getTime(),
+            fecha: Sol.porId("nFecha").value,
+            desde: Sol.porId("nDesde").value,
+            hasta: Sol.porId("nHasta").value,
+            cobro: Sol.porId("nCobro").value,
+            modalidad: "P",
+            estado: "S",
+            motivo: Sol.porId("nMotivo").value.replace(/^\s+|\s+$/g, "")
+        };
+        var reparo = Sol.revisar(Sol.solicitudes, s);
+
+        limpiarMarcas();
+        if (reparo !== "") { avisar(reparo); marcarCulpable(reparo); return; }
+
+        Sol.solicitudes.push(s);
+        Sol.solicitudes.sort(function (a, b) { return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0); });
+
+        /* La fecha y el horario NO se limpian: quien pide dos días seguidos
+           vuelve a escribir casi lo mismo. Se limpia el motivo, que es lo
+           único que cambia de verdad, y ahí queda el foco. */
+        Sol.porId("nMotivo").value = "";
+        avisar("");
+        pintar();
+        Sol.porId("nMotivo").focus();
+    }
+
+    function avisar(texto) {
+        var caja = Sol.porId("reparo");
+        caja.textContent = texto;
+        caja.style.display = texto === "" ? "none" : "block";
+    }
+
+    /* Marcar el campo del que habla el reparo. Se mira el texto y no un
+       código porque el reparo lo arma 'Sol.revisar', que es de los tres
+       prototipos: darle un código solo para esta pantalla sería pedirle que
+       sepa de una fila que no conoce. */
+    function marcarCulpable(reparo) {
+        if (reparo.indexOf("fecha") >= 0) marcar("nFecha");
+        else if (reparo.indexOf("motivo") >= 0 || reparo.indexOf("Explique") >= 0) marcar("nMotivo");
+        else if (reparo.indexOf("cobrar") >= 0) marcar("nCobro");
+        else { marcar("nDesde"); marcar("nHasta"); }
+    }
+
+    function marcar(id) { Sol.porId(id).className = "control control--error"; }
+
+    function limpiarMarcas() {
+        var ids = ["nFecha", "nDesde", "nHasta", "nCobro", "nMotivo"], i;
+        for (i = 0; i < ids.length; i++) Sol.porId(ids[i]).className = "control";
+    }
+
+    /* Enter agrega desde cualquier caja de la fila: es el gesto que hace que
+       esto sea más rápido que una ventana. */
+    function alTeclear(e) {
+        if ((e || window.event).keyCode === 13) agregar();
+    }
+
+    /* ------------------------------------------------------------- arranque */
+    Sol.llenarSelect(Sol.porId("nCobro"), Sol.cobros, "Cobro");
+    Sol.porId("nFecha").value = Sol.periodo.hasta;
+    Sol.porId("nDesde").value = Sol.trabajador.salida;
+    Sol.porId("nHasta").value = Sol.reloj(Sol.aMinutos(Sol.trabajador.salida) + 120);
+    Sol.porId("pieModalidad").textContent = Sol.modalidades[0].nombre;
+
+    Sol.porId("btnAgregar").onclick = agregar;
+    Sol.porId("btnBuscar").onclick = pintar;
+    Sol.porId("nDesde").onchange = tiempoDelAlta;
+    Sol.porId("nHasta").onchange = tiempoDelAlta;
+    Sol.porId("nFecha").onkeypress = alTeclear;
+    Sol.porId("nMotivo").onkeypress = alTeclear;
+
+    tiempoDelAlta();
+    pintar();
+})();
+</script>
+</body>
+</html>
