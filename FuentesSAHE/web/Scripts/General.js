@@ -5076,6 +5076,15 @@ var Ventana = (function () {
                 if (modelo && typeof modelo.alCargar === "function") modelo.alCargar(lectura);
             } else {
                 pintarConsulta(tabla, filasDeConsulta(lectura));
+                /* Un gancho aparte del de la carga y del del grabado, y solo
+                   para la pantalla que lo declare. Es para el caso en que el
+                   paquete contesta una consulta con algo más que las filas
+                   -T01FUN manda detrás el resumen de la cuota-. La pantalla
+                   que no lo declara no se entera de nada y sigue
+                   comportándose como siempre. */
+                if (modelo && typeof modelo.alConsultar === "function") {
+                    modelo.alConsultar(lectura);
+                }
             }
 
             if (lectura.tipo !== "") Formulario.avisar(tabla, lectura.tipo, lectura.mensaje);
