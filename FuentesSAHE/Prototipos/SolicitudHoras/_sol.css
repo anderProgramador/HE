@@ -36,6 +36,30 @@
 .contexto__cifra small { font-size: 12px; font-weight: 400; color: #8A8781; }
 .contexto__cifra--roja { color: #B3261E; }
 
+/* Las dos reglas del aplicativo, debajo de la cinta y separadas por una
+   línea: no son datos de la persona sino condiciones de la pantalla. */
+.contexto__reglas {
+    clear: both; padding-top: 8px; margin-top: 10px;
+    border-top: 1px solid #EDEAE5; font-size: 12px; color: #8A8781;
+}
+.contexto__reglas b { color: #5F5C58; }
+
+/* El horario se muestra, no manda. La marca lo dice para que nadie espere
+   que la pantalla lo haga cumplir. */
+.contexto__marca {
+    display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 9px;
+    background: #F1EFEC; color: #8A8781;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+}
+
+/* Una advertencia que NO impide grabar: el aviso del horario. Se distingue
+   del reparo -que sí rechaza- por el color, ámbar y no rojo. */
+.advertencia {
+    padding: 7px 11px; margin-top: 8px; border-radius: 6px;
+    border-left: 3px solid #C77700; background: #FFF6E5;
+    font-size: 12.5px; color: #8A5300;
+}
+
 .barrita { height: 6px; margin-top: 6px; border-radius: 4px; background: #EDEAE5; overflow: hidden; }
 .barrita__lleno { height: 100%; background: #C8102E; }
 .barrita__lleno--excedido { background: #B3261E; }
@@ -81,6 +105,7 @@
 .i-jornada { background: #E4E1DC; border: 1px solid #D5D0C9; }
 .i-pedido { background: #C8102E; }
 .i-previa { background: #A9A6A0; }
+.i-vencido { background: #F7F6F3; border: 1px solid #D5D0C9; }
 
 /* ------------------------------------------------------------------ atajos --
    Las duraciones de siempre. Casi toda solicitud es 'me quedé una, dos o
@@ -128,6 +153,22 @@
 .calendario__celda--marcado .calendario__nota { color: #8E1F19; font-weight: 600; }
 .calendario__hueco { display: inline-block; width: 14.28%; height: 1px; }
 
+/* Fuera del plazo. No se esconde: que el día se vea apagado explica por qué
+   no se puede marcar mejor que una casilla ausente. */
+.calendario__celda--vencido { background: #F7F6F3; color: #C5C2BC; }
+.calendario__celda--vencido .calendario__numero { color: #C5C2BC; }
+/* El primero de cada mes lo dice, porque la ventana del plazo cruza meses. */
+.calendario__mes {
+    display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .3px; color: #C8102E;
+}
+.calendario__celda--hoy { border-color: #221F1F; }
+.calendario__hoy {
+    display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 8px;
+    background: #221F1F; color: #FFFFFF; font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .3px;
+}
+
 /* ------------------------------------------------------------ lote a pedir --
    Lo que se va a mandar, contado antes de mandarlo. */
 .lote {
@@ -163,6 +204,9 @@ tr.alta .control--error { border-color: #B3261E; background: #FFFFFF; }
 .alta__par { font-size: 0; }
 .alta__par .control { display: inline-block; width: 47%; }
 .alta__par span { display: inline-block; width: 6%; text-align: center; font-size: 12px; color: #8A8781; }
+/* El tiempo que no cuadra con el múltiplo. En una celda de la grilla no cabe
+   un texto de ayuda, así que lo dice el propio dato. */
+.tiempo--fuera { color: #B3261E; font-weight: 700; }
 
 /* -------------------------------------------------------------- resultados */
 .hallazgo { margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #5F5C58; }

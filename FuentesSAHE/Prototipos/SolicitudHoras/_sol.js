@@ -45,6 +45,23 @@ var Sol = (function () {
 
     Sol.periodo = { desde: "2026-09-01", hasta: "2026-09-30", etiqueta: "Setiembre 2026" };
 
+    /* ------------------------------------------------- lo que ya configuran --
+       Dos parámetros del aplicativo. NO son constantes de la pantalla: hoy
+       valen 15 y 26, mañana el administrador los cambia y todo lo que
+       depende de ellos -el paso de las cajas de hora, los atajos, el mínimo
+       del calendario, los reparos- tiene que moverse solo. Por eso se leen
+       de aquí y no hay un 15 ni un 26 escrito en ninguna otra parte.
+
+         multiplo  de cuánto en cuánto suben los minutos que se piden. Con
+                   15, una solicitud dura 0:15, 0:30, 0:45, 1:00... y 2:20
+                   no existe. Puesto a 10, sube de diez en diez.
+
+         plazo     cuántos días hacia atrás se pueden registrar, CONTANDO
+                   hoy. Con 26 se llega hasta 25 días antes; puesto a 1,
+                   solo queda el día de hoy. Hacia adelante no hay nada que
+                   elegir: una hora extra se pide después de haberla hecho. */
+    Sol.parametros = { multiplo: 15, plazo: 26 };
+
     /* El tope del mes. No es un invento del prototipo: es la cuota que la
        jefatura repartió en T01FUN y contra la que se rinde este mes. Que
        esté a la vista mientras se pide es la diferencia entre enterarse
@@ -117,6 +134,41 @@ var Sol = (function () {
         var a = Sol.aMinutos(desde), b = Sol.aMinutos(hasta);
         if (b <= a) b += 24 * 60;
         return b - a;
+    };
+
+    /* ------------------------------------------------------- el múltiplo ---
+       Lo que se pide sube de 'multiplo' en 'multiplo'. Redondear por lo
+       bajo y callar sería quitarle minutos a alguien sin decírselo, así que
+       aquí solo se pregunta y se ofrecen los dos vecinos; quien decide es
+       la persona. */
+    Sol.esMultiplo = function (minutos) {
+        var m = Sol.parametros.multiplo;
+        return m <= 0 || (minutos % m) === 0;
+    };
+
+    /* El múltiplo más cercano por debajo y por arriba. El de abajo puede
+       quedar en cero -pedir 0:07 con múltiplo de 15-, y entonces no es una
+       alternativa que ofrecer. */
+    Sol.vecinos = function (minutos) {
+        var m = Sol.parametros.multiplo;
+        var abajo = Math.floor(minutos / m) * m;
+        return { abajo: abajo, arriba: abajo + m };
+    };
+
+    /* ------------------------------------------------------------ el plazo --
+       'hoy' sale del reloj del navegador y no de una constante: un plazo
+       que se cuenta desde una fecha escrita a mano deja de ser un plazo al
+       día siguiente. */
+    Sol.hoy = function () { return Sol.aIso(new Date()); };
+
+    Sol.primerDiaRegistrable = function () {
+        var f = new Date();
+        f.setDate(f.getDate() - (Sol.parametros.plazo - 1));
+        return Sol.aIso(f);
+    };
+
+    Sol.enPlazo = function (iso) {
+        return iso >= Sol.primerDiaRegistrable() && iso <= Sol.hoy();
     };
 
     /* ------------------------------------------------------- el calendario --
@@ -193,24 +245,46 @@ var Sol = (function () {
        dato, no en qué se acepta. Devuelve el reparo en palabras o "" si
        está conforme. */
     Sol.revisar = function (lista, s) {
-        var t = Sol.trabajador;
         var minutos = Sol.duracion(s.desde, s.hasta);
-        var vecinas, i;
+        var vecinas, cerca, i;
 
         if (!s.fecha) return "Indique la fecha.";
+
+        /* El plazo. Se dice el rango entero y no solo 'fuera de plazo':
+           quien se equivocó de día necesita saber cuál sí puede elegir. */
+        if (!Sol.enPlazo(s.fecha)) {
+            if (s.fecha > Sol.hoy()) {
+                return "No se puede pedir un día que todavía no ocurrió. El último es hoy, " +
+                       Sol.enTexto(Sol.hoy()) + ".";
+            }
+            return "Ese día ya venció. Se puede registrar del " +
+                   Sol.enTexto(Sol.primerDiaRegistrable()) + " al " + Sol.enTexto(Sol.hoy()) +
+                   " (" + Sol.parametros.plazo + " días).";
+        }
+
         if (!s.desde || !s.hasta) return "Indique desde y hasta qué hora se quedó.";
         if (minutos === 0) return "El desde y el hasta son la misma hora.";
         if (minutos > 8 * 60) return "Son " + Sol.formatear(minutos) + " en un día. Revise la hora de salida.";
+
+        /* El múltiplo. El reparo trae los dos vecinos porque decir 'no es
+           múltiplo de 15' obliga a la persona a hacer la cuenta que la
+           pantalla acaba de hacer. */
+        if (!Sol.esMultiplo(minutos)) {
+            cerca = Sol.vecinos(minutos);
+            return "Son " + Sol.formatear(minutos) + " y el tiempo sube de " +
+                   Sol.formatear(Sol.parametros.multiplo) + " en " + Sol.formatear(Sol.parametros.multiplo) +
+                   ". Lo más cerca es " +
+                   (cerca.abajo > 0 ? Sol.formatear(cerca.abajo) + " o " : "") +
+                   Sol.formatear(cerca.arriba) + ".";
+        }
+
         if (!s.cobro) return "Indique cómo desea cobrarlo.";
         if (!s.motivo || s.motivo.length < 5) return "Explique el motivo: es lo que va a leer su jefatura.";
 
-        /* Dentro de la jornada no hay hora extra que reconocer: esas horas
-           ya se pagan. Es el reparo que hoy nadie hace porque la pantalla
-           no sabe a qué hora del día se refiere la cantidad. */
-        if (!Sol.esFinDeSemana(s.fecha) && Sol.seCruzan(s.desde, s.hasta, t.entrada, t.salida)) {
-            return "Ese tramo cae dentro de su jornada (" + t.entrada + " a " + t.salida + ").";
-        }
-
+        /* Lo que sí impide pedir: haber pedido ya esas mismas horas. No es
+           una regla del horario sino de la propia lista -dos solicitudes
+           que se pisan son la misma hora cobrada dos veces- y por eso esta
+           sí rechaza. */
         vecinas = Sol.delDia(lista, s.fecha, s.id);
         for (i = 0; i < vecinas.length; i++) {
             if (Sol.seCruzan(s.desde, s.hasta, vecinas[i].desde, vecinas[i].hasta)) {
@@ -218,6 +292,21 @@ var Sol = (function () {
             }
         }
         return "";
+    };
+
+    /* El horario es INFORMATIVO: se muestra para que la persona se ubique,
+       y no decide nada. Que un tramo caiga dentro de la jornada se cuenta
+       -por si se equivocó de hora- pero no impide pedir, así que esto
+       devuelve una advertencia y vive aparte de 'revisar', que es la que
+       rechaza. Confundir las dos era convertir un dato de referencia en una
+       regla que nadie pidió. */
+    Sol.avisoHorario = function (s) {
+        var t = Sol.trabajador;
+        if (!s.fecha || !s.desde || !s.hasta) return "";
+        if (Sol.esFinDeSemana(s.fecha)) return "";
+        if (!Sol.seCruzan(s.desde, s.hasta, t.entrada, t.salida)) return "";
+        return "Ese tramo se cruza con su horario (" + t.entrada + " a " + t.salida +
+               "). Es solo un dato: puede pedirlo igual.";
     };
 
     /* ------------------------------------------------------------ atajos ---- */
@@ -255,6 +344,51 @@ var Sol = (function () {
         }
     };
 
+    /* --------------------------------------------- los parámetros en la caja --
+       Los dos parámetros no se cuentan solo en los reparos: se aplican a
+       los controles, que es donde evitan el error en vez de anunciarlo.
+
+       'step' en un <input type="time"> va en SEGUNDOS, de ahí el por 60. No
+       impide teclear un valor fuera de paso -el navegador solo lo usa para
+       las flechas y para su propia validación-, así que 'revisar' sigue
+       haciendo falta: esto es la comodidad, aquello es la regla. */
+    Sol.prepararHora = function (input) {
+        if (input) input.step = String(Sol.parametros.multiplo * 60);
+    };
+
+    /* El calendario del navegador se abre ya recortado al plazo: los días
+       vencidos no se pueden ni elegir. */
+    Sol.prepararFecha = function (input) {
+        if (!input) return;
+        input.min = Sol.primerDiaRegistrable();
+        input.max = Sol.hoy();
+    };
+
+    /* Los atajos que se ofrecen, en minutos. Se parte de una, dos, tres y
+       cuatro horas -que es lo que pide la gente- y cada una se lleva al
+       múltiplo más cercano: con 15 o con 10 quedan iguales; con uno de 45,
+       la de una hora pasa a 0:45 y así no se ofrece un tiempo que la propia
+       pantalla iba a rechazar. Los repetidos se descartan. */
+    Sol.atajos = function () {
+        var m = Sol.parametros.multiplo;
+        var base = [60, 120, 180, 240], salida = [], i, v;
+
+        for (i = 0; i < base.length; i++) {
+            v = m > 0 ? Math.max(m, Math.round(base[i] / m) * m) : base[i];
+            if (salida.length === 0 || salida[salida.length - 1] !== v) salida.push(v);
+        }
+        return salida;
+    };
+
+    /* Las dos reglas en una línea, para que estén a la vista mientras se
+       pide y no solo cuando algo se rechaza. */
+    Sol.reglasEnTexto = function () {
+        return "Puede registrar del <b>" + Sol.enTexto(Sol.primerDiaRegistrable()) +
+               "</b> al <b>" + Sol.enTexto(Sol.hoy()) + "</b> (" + Sol.parametros.plazo +
+               " días) · el tiempo sube de <b>" + Sol.formatear(Sol.parametros.multiplo) +
+               "</b> en " + Sol.formatear(Sol.parametros.multiplo);
+    };
+
     /* La cinta de contexto: quién pide, con qué horario y cuánto lleva del
        mes. Es igual en los tres, así que se arma una vez. */
     Sol.pintarContexto = function (id, lista) {
@@ -267,14 +401,16 @@ var Sol = (function () {
         caja.innerHTML =
             '<div class="contexto__quien"><b>' + Sol.texto(t.nombre) + "</b>" +
                 '<span class="contexto__sep">|</span>' + Sol.texto(t.oficina) + " - " + Sol.texto(t.dOficina) +
-                '<div class="contexto__horario">' + Sol.texto(t.horario) + "</div></div>" +
+                '<div class="contexto__horario">' + Sol.texto(t.horario) +
+                    ' <span class="contexto__marca">referencia</span></div></div>' +
             '<div class="contexto__cuota">' +
                 '<div class="contexto__rotulo">' + Sol.texto(Sol.periodo.etiqueta) + "</div>" +
                 '<div class="contexto__cifra' + (pasado ? " contexto__cifra--roja" : "") + '">' +
                     Sol.formatear(s.usado) + " <small>de " + Sol.texto(Sol.cuota.asignada) + "</small></div>" +
                 '<div class="barrita"><div class="barrita__lleno' + (pasado ? " barrita__lleno--excedido" : "") +
                     '" style="width:' + lleno + '%"></div></div>' +
-            "</div>";
+            "</div>" +
+            '<div class="contexto__reglas">' + Sol.reglasEnTexto() + "</div>";
     };
 
     return Sol;

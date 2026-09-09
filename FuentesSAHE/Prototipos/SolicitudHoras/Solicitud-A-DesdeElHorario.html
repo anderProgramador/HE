@@ -75,14 +75,23 @@
             <li>La ventana de hoy pide <i>Tiempo de Hora(s)</i> y <i>Tiempo de Minuto(s)</i> en dos cajas.
                 Aquí se pide <b>desde qué hora y hasta qué hora</b> se quedó, y la cantidad se calcula sola.
                 Es el dato que la persona sí tiene: nadie recuerda «2:30», recuerda «me fui a las ocho».</li>
-            <li>Con las dos horas del reloj se puede <b>avisar de un cruce</b>: un tramo que cae dentro de la
-                jornada -que ya se paga- o que se pisa con otra solicitud del mismo día. Con una cantidad
-                suelta eso no se puede revisar, porque nunca se supo a qué parte del día correspondía.</li>
-            <li>La <b>línea del día</b> pone la jornada y lo pedido a escala. Un error de turno -pedir de
+            <li>Con las dos horas del reloj se puede <b>avisar de un cruce</b> con otra solicitud del mismo
+                día. Con una cantidad suelta eso no se puede revisar, porque nunca se supo a qué parte del
+                día correspondía.</li>
+            <li>La <b>línea del día</b> pone el horario y lo pedido a escala. Un error de turno -pedir de
                 09:00 a 11:00 un martes- se ve antes de leerlo.</li>
             <li>Los <b>atajos</b> resuelven el caso normal de un toque: casi toda solicitud es «me quedé una,
                 dos o tres horas después de mi salida».</li>
         </ul>
+        <div class="nota__cambia"><b>Los dos parámetros del aplicativo mandan sobre los controles, no solo
+            sobre los reparos.</b> El <i>múltiplo</i> es el <code>step</code> de las cajas de hora y la fuente
+            de los atajos, y debajo del tiempo se cuenta si lo escrito cuadra; el <i>plazo</i> es el mínimo y
+            el máximo del calendario, que se abre ya recortado. Cambiar 15 por 10, o 26 por 1, mueve las dos
+            cosas sin tocar la pantalla: no hay ningún 15 ni ningún 26 escrito aquí.</div>
+        <div class="nota__cambia"><b>El horario es de referencia.</b> Se muestra y se dibuja para que la
+            persona se ubique, y si el tramo se cruza con él sale una advertencia ámbar -suele ser un
+            dedazo-, pero <b>no impide pedir</b>. Lo único que rechaza por cruce es haber pedido ya esas
+            mismas horas, que es una regla de la lista y no del horario.</div>
         <div class="nota__cambia"><b>Lo que desaparece de la ventana:</b> <i>Estado de la Solicitud</i>
             -nace Solicitado y lo mueve la jefatura, no quien pide-, <i>Código Oficina</i> y <i>Oficina</i>
             -son los de la persona; por eso las tres filas de la lista dicen siempre lo mismo- y la caja de
@@ -108,8 +117,10 @@
                     <input type="date" class="control" id="mFecha">
                 </div>
                 <div class="campo campo--medio">
-                    <label class="campo__etiqueta">Su horario ese día</label>
+                    <label class="campo__etiqueta">Su horario ese día
+                        <span class="contexto__marca">referencia</span></label>
                     <input type="text" class="control" id="mHorario" readonly>
+                    <p class="campo__ayuda">Se muestra para ubicarse; no limita lo que puede pedir.</p>
                 </div>
             </div>
 
@@ -140,7 +151,7 @@
                 <div class="campo campo--corto">
                     <label class="campo__etiqueta">Tiempo solicitado</label>
                     <input type="text" class="control control--numero" id="mTiempo" readonly>
-                    <p class="campo__ayuda">Sale de las dos horas de arriba.</p>
+                    <p class="campo__ayuda" id="ayudaTiempo"></p>
                 </div>
             </div>
 
@@ -165,6 +176,9 @@
                 </div>
             </div>
 
+            <!-- Dos cosas distintas y por eso dos sitios: la advertencia del
+                 horario informa y deja pasar; el reparo rechaza. -->
+            <div class="advertencia" id="aviso" style="display:none"></div>
             <p class="campo__error" id="error"></p>
         </div>
 
@@ -267,20 +281,49 @@
         for (i = 0; i < vecinas.length; i++) html += tramo("dia__previa", vecinas[i].desde, vecinas[i].hasta);
 
         if (desde && hasta) {
+            /* Ámbar y no rojo: el cruce con el horario se señala porque
+               suele ser un dedazo, pero no impide nada. */
             cruza = fecha && !Sol.esFinDeSemana(fecha) && Sol.seCruzan(desde, hasta, t.entrada, t.salida);
             html += tramo("dia__pedido" + (cruza ? " dia__pedido--cruce" : ""), desde, hasta);
         }
         Sol.porId("dia").innerHTML = html;
         Sol.porId("mTiempo").value = (desde && hasta) ? Sol.formatear(Sol.duracion(desde, hasta)) : "";
+        pintarAyudaTiempo(desde, hasta);
+        pintarAviso();
         marcarAtajo(desde, hasta);
+    }
+
+    /* El múltiplo, contado debajo de la caja mientras se escribe: enterarse
+       al grabar de que 2:20 no vale es enterarse tarde. */
+    function pintarAyudaTiempo(desde, hasta) {
+        var paso = Sol.formatear(Sol.parametros.multiplo);
+        var caja = Sol.porId("ayudaTiempo"), minutos, cerca;
+
+        if (!desde || !hasta) { caja.textContent = "Sube de " + paso + " en " + paso + "."; return; }
+        minutos = Sol.duracion(desde, hasta);
+        if (Sol.esMultiplo(minutos)) { caja.textContent = "Múltiplo de " + paso + ": conforme."; return; }
+        cerca = Sol.vecinos(minutos);
+        caja.textContent = "No es múltiplo de " + paso + ". Lo más cerca: " +
+            (cerca.abajo > 0 ? Sol.formatear(cerca.abajo) + " o " : "") + Sol.formatear(cerca.arriba) + ".";
+    }
+
+    /* La advertencia del horario. Aparece y desaparece con lo escrito, y
+       nunca impide grabar: el horario es un dato de referencia. */
+    function pintarAviso() {
+        var caja = Sol.porId("aviso");
+        var texto = Sol.avisoHorario({
+            fecha: Sol.porId("mFecha").value,
+            desde: Sol.porId("mDesde").value,
+            hasta: Sol.porId("mHasta").value
+        });
+        caja.textContent = texto;
+        caja.style.display = texto === "" ? "none" : "block";
     }
 
     /* ------------------------------------------------------------- los atajos
        Se cuentan desde el fin de la jornada, que es donde empieza la hora
        extra de un día normal. En sábado se cuentan desde la hora de
        entrada: no hay jornada de la cual salir. */
-    var ATAJOS = [60, 120, 180, 240];
-
     function inicioNatural() {
         var fecha = Sol.porId("mFecha").value;
         var t = Sol.trabajador;
@@ -288,10 +331,12 @@
     }
 
     function pintarAtajos() {
-        var caja = Sol.porId("atajos"), html = "", i;
-        for (i = 0; i < ATAJOS.length; i++) {
-            html += '<button type="button" class="atajo" data-min="' + ATAJOS[i] + '">' +
-                    Sol.formatear(ATAJOS[i]) + " desde las " + inicioNatural() + "</button>";
+        var caja = Sol.porId("atajos"), atajos = Sol.atajos(), html = "", i;
+        /* Los atajos los da la librería: son múltiplos del parámetro, así
+           que ninguno ofrece un tiempo que después se vaya a rechazar. */
+        for (i = 0; i < atajos.length; i++) {
+            html += '<button type="button" class="atajo" data-min="' + atajos[i] + '">' +
+                    Sol.formatear(atajos[i]) + " desde las " + inicioNatural() + "</button>";
         }
         caja.innerHTML = html;
         enlazarAtajos();
@@ -328,9 +373,11 @@
         Sol.porId("cintillo").innerHTML =
             "Se registra a nombre de <b>" + Sol.texto(t.nombre) + "</b>, en <b>" +
             Sol.texto(t.oficina) + " - " + Sol.texto(t.dOficina) + "</b>." +
-            '<div class="campo__ayuda">Nace como <b>Solicitado</b>. El estado lo mueve su jefatura.</div>';
+            '<div class="campo__ayuda">Nace como <b>Solicitado</b>. El estado lo mueve su jefatura.</div>' +
+            '<div class="campo__ayuda">' + Sol.reglasEnTexto() + ".</div>";
 
-        Sol.porId("mFecha").value = s ? s.fecha : Sol.periodo.hasta;
+        /* Hoy, no el fin del periodo: hacia adelante no hay nada que pedir. */
+        Sol.porId("mFecha").value = s ? s.fecha : Sol.hoy();
         Sol.porId("mHorario").value = t.horario;
         Sol.porId("mDesde").value = s ? s.desde : "";
         Sol.porId("mHasta").value = s ? s.hasta : "";
@@ -338,6 +385,10 @@
         Sol.porId("mModalidad").value = s ? s.modalidad : "P";
         Sol.porId("mMotivo").value = s ? s.motivo : "";
         Sol.porId("error").textContent = "";
+        /* Los topes del calendario se ponen al abrir y no al cargar la
+           página: si la pestaña quedó abierta de ayer, el plazo de hoy es
+           otro. */
+        Sol.prepararFecha(Sol.porId("mFecha"));
         contarMotivo();
         pintarAtajos();
         pintarDia();
@@ -376,6 +427,8 @@
     }
 
     /* ------------------------------------------------------------- arranque */
+    Sol.prepararHora(Sol.porId("mDesde"));
+    Sol.prepararHora(Sol.porId("mHasta"));
     Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
     Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
 

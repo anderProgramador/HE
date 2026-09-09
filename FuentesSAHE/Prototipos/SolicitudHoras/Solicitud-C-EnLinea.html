@@ -92,6 +92,7 @@
     <p class="campo__ayuda" style="margin-top:8px">
         La modalidad de trabajo se toma de su horario (<b id="pieModalidad"></b>) y solo se cambia
         al modificar una solicitud. Es lo mismo en el 95% de los casos y no merece una columna.
+        <br><span id="pieReglas"></span>.
     </p>
 
     <div class="nota">
@@ -108,6 +109,11 @@
             <li>El reparo aparece <b>sobre la grilla</b> y el campo culpable se marca en rojo, sin sacar al
                 usuario de donde estaba escribiendo.</li>
         </ul>
+        <div class="nota__cambia"><b>Los parámetros, en una fila estrecha.</b> El plazo recorta el
+            calendario de la celda de fecha y el múltiplo es el paso de las dos cajas de hora. Donde no cabe
+            un texto de ayuda, el aviso lo da el propio dato: el tiempo sale en rojo con un asterisco cuando
+            no cuadra con el múltiplo. La fila que se abre para modificar lleva los mismos topes: corregir no
+            es una puerta trasera para saltárselos.</div>
         <div class="nota__cambia"><b>El precio:</b> caben menos campos que en una ventana. Modalidad y
             adjunto no entran en la fila y se resuelven al modificar. Si mañana la solicitud pide tres datos
             más, esta alternativa es la primera que se rompe.</div>
@@ -202,6 +208,12 @@
         if (sel) {
             Sol.llenarSelect(sel, Sol.cobros, "");
             sel.value = porId(editando).cobro;
+            /* La fila abierta se acaba de pintar, así que sus controles
+               también necesitan el plazo y el múltiplo: modificar no es una
+               puerta trasera para saltarse los parámetros. */
+            Sol.prepararFecha(Sol.porId("eFecha"));
+            Sol.prepararHora(Sol.porId("eDesde"));
+            Sol.prepararHora(Sol.porId("eHasta"));
         }
     }
 
@@ -250,9 +262,20 @@
     }
 
     /* --------------------------------------------------------- la fila de alta */
+    /* En la fila no cabe un texto de ayuda, así que el propio tiempo dice
+       si cuadra con el múltiplo: en rojo y con un asterisco cuando no. Es
+       lo único que se puede decir en una celda de esa anchura. */
     function tiempoDelAlta() {
         var d = Sol.porId("nDesde").value, h = Sol.porId("nHasta").value;
-        Sol.porId("nTiempo").innerHTML = (d && h) ? Sol.formatear(Sol.duracion(d, h)) : "&mdash;";
+        var caja = Sol.porId("nTiempo"), minutos;
+
+        if (!d || !h) { caja.innerHTML = "&mdash;"; caja.className = "der"; return; }
+        minutos = Sol.duracion(d, h);
+        caja.className = Sol.esMultiplo(minutos) ? "der" : "der tiempo--fuera";
+        caja.innerHTML = Sol.formatear(minutos) + (Sol.esMultiplo(minutos) ? "" : " *");
+        caja.title = Sol.esMultiplo(minutos) ? "" :
+            "El tiempo sube de " + Sol.formatear(Sol.parametros.multiplo) + " en " +
+            Sol.formatear(Sol.parametros.multiplo) + ".";
     }
 
     function agregar() {
@@ -294,7 +317,8 @@
        prototipos: darle un código solo para esta pantalla sería pedirle que
        sepa de una fila que no conoce. */
     function marcarCulpable(reparo) {
-        if (reparo.indexOf("fecha") >= 0) marcar("nFecha");
+        if (reparo.indexOf("fecha") >= 0 || reparo.indexOf("día") >= 0 ||
+            reparo.indexOf("venció") >= 0 || reparo.indexOf("ocurrió") >= 0) marcar("nFecha");
         else if (reparo.indexOf("motivo") >= 0 || reparo.indexOf("Explique") >= 0) marcar("nMotivo");
         else if (reparo.indexOf("cobrar") >= 0) marcar("nCobro");
         else { marcar("nDesde"); marcar("nHasta"); }
@@ -315,10 +339,17 @@
 
     /* ------------------------------------------------------------- arranque */
     Sol.llenarSelect(Sol.porId("nCobro"), Sol.cobros, "Cobro");
-    Sol.porId("nFecha").value = Sol.periodo.hasta;
+    /* Los dos parámetros, puestos sobre los controles de la fila: el
+       calendario se abre recortado al plazo y las cajas de hora suben de
+       múltiplo en múltiplo. */
+    Sol.prepararFecha(Sol.porId("nFecha"));
+    Sol.prepararHora(Sol.porId("nDesde"));
+    Sol.prepararHora(Sol.porId("nHasta"));
+    Sol.porId("nFecha").value = Sol.hoy();
     Sol.porId("nDesde").value = Sol.trabajador.salida;
     Sol.porId("nHasta").value = Sol.reloj(Sol.aMinutos(Sol.trabajador.salida) + 120);
     Sol.porId("pieModalidad").textContent = Sol.modalidades[0].nombre;
+    Sol.porId("pieReglas").innerHTML = Sol.reglasEnTexto();
 
     Sol.porId("btnAgregar").onclick = agregar;
     Sol.porId("btnBuscar").onclick = pintar;
