@@ -66,16 +66,21 @@ var Sistema = (function () {
         if (propio && typeof propio.alCargar === "function") propio.alCargar(lectura);
     }
 
-    /* Y lo propio de después de grabar o eliminar, para la pantalla que
-       declare 'alGestionar'. Son dos ganchos y no uno porque las dos
-       respuestas no traen los segmentos en el mismo sitio: en una carga el [0]
-       son los combos y en un grabado es el mensaje de la acción. La pantalla
-       que no lo declara -T01, T05, T12...- no se entera de nada y sigue
-       comportándose como siempre. */
+    /* Y lo propio de después de consultar y de después de grabar o eliminar,
+       para la pantalla que los declare. Son tres ganchos y no uno porque las
+       tres respuestas no traen los segmentos en el mismo sitio: en una carga
+       el [0] son los combos, en una consulta son ya las filas y en un grabado
+       es el mensaje de la acción. La pantalla que no los declara -T01, T05,
+       T12...- no se entera de nada y sigue comportándose como siempre. */
     function engancharGestion(modelo) {
         var propio = particular[tabla];
-        if (!modelo || !propio || typeof propio.alGestionar !== "function") return;
-        modelo.alGestionar = function (lectura) { propio.alGestionar(lectura); };
+        if (!modelo || !propio) return;
+        if (typeof propio.alGestionar === "function") {
+            modelo.alGestionar = function (lectura) { propio.alGestionar(lectura); };
+        }
+        if (typeof propio.alConsultar === "function") {
+            modelo.alConsultar = function (lectura) { propio.alConsultar(lectura); };
+        }
     }
 
     /* ------------------------------------------------- de uso compartido -- */
@@ -324,18 +329,27 @@ var Sistema = (function () {
 
                <asignada>|<repartida>|<pendiente>
 
-           Detrás de las filas en las dos respuestas, pero no en el mismo
-           número de segmento: en una carga el 0 son los combos y el resumen es
-           el [4]; en un grabado el 0 es el mensaje, las filas el [1] y el
-           resumen el [2]. Por eso el aviso dice de dónde viene en vez de que
-           esto lo adivine contando segmentos.
+           Detrás de las filas en las tres respuestas, pero no en el mismo
+           número de segmento, porque delante de las filas no siempre va lo
+           mismo:
+
+               carga     [0] combos, [1] filas ... y el resumen en el [4]
+               consulta  [0] filas,  [1] resumen
+               gestión   [0] mensaje, [1] filas, [2] resumen
+
+           Una consulta no trae combos ni ayudas ni valores por omisión -eso
+           ya está puesto desde la carga y volver a pisarlo le movería al
+           usuario los filtros que acaba de elegir-, así que contesta pelada:
+           las filas y detrás el resumen del periodo que se pidió. Por eso el
+           aviso dice de dónde viene en vez de que esto lo adivine contando
+           segmentos.
 
            No se recalcula con las filas de la grilla: la pantalla ve un
            periodo por vez, y una cuenta armada con lo que está a la vista
            miente en cuanto algo queda fuera de la vista. */
         function segmentoResumen(lectura, origen) {
             var segmentos = (lectura && lectura.segmentos) ? lectura.segmentos : [];
-            var i = (origen === "gestion") ? 2 : 4;
+            var i = (origen === "gestion") ? 2 : (origen === "consulta" ? 1 : 4);
             return String(segmentos[i] || "");
         }
 
@@ -469,11 +483,26 @@ var Sistema = (function () {
             nodo.oninput = fn;
         }
 
-        /* Vale para la carga y para cada consulta: el botón declara
-           'devuelve=todo' justamente para que el resumen cambie con el
-           periodo. */
+        /* La carga: el resumen viene detrás de los combos, las filas, la
+           ayuda y los valores por omisión. */
         function alCargar(lectura) {
             pintarResumen(lectura, "carga");
+            bloquearSiEsPasado();
+        }
+
+        /* Lo que devuelve el paquete al consultar:
+
+               <filas de la grilla> ~ <resumen>
+
+           La librería ya repintó la grilla con el segmento [0]; lo que falta
+           es la tarjeta, que va en el [1]. El resumen tiene que cambiar con el
+           periodo -es de UN periodo, el que se acaba de pedir-, así que viaja
+           con las filas y en el mismo viaje, sin pedir nada más.
+
+           Y con el periodo cambia también lo que se puede hacer: uno cerrado
+           se mira y no se toca. */
+        function alConsultar(lectura) {
+            pintarResumen(lectura, "consulta");
             bloquearSiEsPasado();
         }
 
@@ -490,7 +519,12 @@ var Sistema = (function () {
             bloquearSiEsPasado();
         }
 
-        return { alConstruir: alConstruir, alCargar: alCargar, alGestionar: alGestionar };
+        return {
+            alConstruir: alConstruir,
+            alCargar: alCargar,
+            alConsultar: alConsultar,
+            alGestionar: alGestionar
+        };
     })();
 
     return {
