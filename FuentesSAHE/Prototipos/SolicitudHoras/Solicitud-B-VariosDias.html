@@ -17,19 +17,20 @@
     </div>
 
     <div class="saltos">
-        <a href="Solicitud-A-DesdeElHorario.html">A · Desde el horario</a>
+        <a href="Solicitud-A-DesdeElHorario.html">A · Ventana con lupa</a>
         <a href="Solicitud-B-VariosDias.html" class="saltos--aqui">B · Varios días de una vez</a>
         <a href="Solicitud-C-EnLinea.html">C · En línea, sin ventana</a>
     </div>
 
     <div id="contexto"></div>
+    <div class="cuotas" id="cuotas"></div>
 
     <div class="par">
-        <!-- --------------------------------------------------- el mes ----- -->
+        <!-- ------------------------------------------ los días del plazo --- -->
         <div class="par__izq">
             <div class="barra">
                 <div class="barra__titulo" id="tituloMes"></div>
-                <button type="button" class="boton boton--secundario" id="btnLaborables">Marcar lo que vence</button>
+                <button type="button" class="boton boton--secundario" id="btnVence">Marcar lo que vence</button>
             </div>
 
             <div class="calendario__cabecera">
@@ -42,7 +43,7 @@
 
             <div class="dia__leyenda">
                 <i class="i-pedido"></i>Marcado para pedir
-                <i class="i-previa"></i>Ya tiene solicitud
+                <i class="i-previa"></i>Ya tiene solicitud en esa oficina
                 <i class="i-vencido"></i>Fuera de plazo
             </div>
         </div>
@@ -55,35 +56,44 @@
 
             <!-- Un solo juego de datos para todos los días marcados. Es la
                  apuesta de esta alternativa: quien se queda tres días de un
-                 cierre se queda por lo mismo y a la misma hora. -->
-            <!-- Una hora y una duración, no dos horas: la duración sale de una
-                 lista de múltiplos, así que ninguno de los días del lote puede
-                 llevar un tiempo que después se rechace. -->
+                 cierre se queda por lo mismo, en la misma oficina y por el
+                 mismo motivo. -->
             <div class="fila">
-                <div class="campo campo--medio">
-                    <label class="campo__etiqueta" for="mDesde">Desde<span class="campo__obligatorio">*</span></label>
-                    <input type="time" class="control" id="mDesde" value="17:30">
-                </div>
-                <div class="campo campo--medio">
-                    <label class="campo__etiqueta" for="mDuracion">Cuánto<span class="campo__obligatorio">*</span></label>
-                    <div class="duracion">
-                        <button type="button" class="duracion__paso" id="btnMenos" title="Menos">&minus;</button>
-                        <select class="control" id="mDuracion"></select>
-                        <button type="button" class="duracion__paso" id="btnMas" title="Más">+</button>
+                <div class="campo campo--largo">
+                    <label class="campo__etiqueta" for="mCodigo">Ubicación<span class="campo__obligatorio">*</span></label>
+                    <div class="oficina">
+                        <div class="oficina__codigo">
+                            <div class="campo__control">
+                                <input type="text" class="control control--conLupa" id="mCodigo" readonly placeholder="0000">
+                                <button type="button" class="lupa" id="btnLupa" title="Buscar oficina">&#128269;</button>
+                            </div>
+                        </div>
+                        <div class="oficina__nombre">
+                            <input type="text" class="control" id="mNombre" readonly placeholder="Elija con la lupa">
+                        </div>
                     </div>
+                    <div class="oficina__saldo" id="saldoOficina"></div>
                 </div>
             </div>
-            <p class="campo__ayuda" id="ayudaHasta"></p>
 
-            <div class="atajos" id="atajos"></div>
-
-            <div class="fila" style="margin-top:10px">
+            <div class="fila">
                 <div class="campo campo--medio">
-                    <label class="campo__etiqueta" for="mCobro">Modo de cobro<span class="campo__obligatorio">*</span></label>
-                    <select class="control" id="mCobro"></select>
+                    <label class="campo__etiqueta" for="mTiempo">Tiempo por día<span class="campo__obligatorio">*</span></label>
+                    <div class="tiempo">
+                        <button type="button" class="tiempo__paso" id="btnMenos" title="Menos">&minus;</button>
+                        <select class="control" id="mTiempo"></select>
+                        <button type="button" class="tiempo__paso" id="btnMas" title="Más">+</button>
+                    </div>
                 </div>
                 <div class="campo campo--medio">
-                    <label class="campo__etiqueta" for="mModalidad">Modalidad</label>
+                    <label class="campo__etiqueta" for="mCobro">Tipo de cobro<span class="campo__obligatorio">*</span></label>
+                    <select class="control" id="mCobro"></select>
+                </div>
+            </div>
+
+            <div class="fila">
+                <div class="campo campo--medio">
+                    <label class="campo__etiqueta" for="mModalidad">Modalidad<span class="campo__obligatorio">*</span></label>
                     <select class="control" id="mModalidad"></select>
                 </div>
             </div>
@@ -100,6 +110,7 @@
 
             <div class="lote" id="lote"></div>
 
+            <div class="advertencia" id="aviso" style="display:none"></div>
             <p class="campo__error" id="error"></p>
 
             <button type="button" class="boton boton--primario" id="btnSolicitar" disabled>Solicitar</button>
@@ -117,19 +128,19 @@
         <table class="tabla">
             <thead>
                 <tr>
-                    <th class="col-fecha">Fecha</th>
-                    <th class="col-tramo">Se quedó de</th>
-                    <th class="der col-tiempo">Tiempo</th>
-                    <th class="col-cobro">Modo de Cobro</th>
+                    <th class="col-ubicacion">Ubicación</th>
+                    <th class="col-fecha">Fecha de Solicitud</th>
+                    <th class="der col-tiempo">Tiempo Solicitado</th>
+                    <th class="col-cobro">Tipo de Cobro</th>
+                    <th class="col-modalidad">Modalidad</th>
                     <th class="col-estado">Estado</th>
-                    <th class="col-motivo">Motivo</th>
                     <th class="cen col-accion">Acciones</th>
                 </tr>
             </thead>
             <tbody id="cuerpo"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2">Total del periodo</td>
+                    <td colspan="2">Total solicitado</td>
                     <td class="der" id="total">0:00</td>
                     <td colspan="4"></td>
                 </tr>
@@ -138,32 +149,29 @@
     </div>
 
     <div class="nota">
-        <b>Alternativa B — el mes es el formulario.</b>
+        <b>Alternativa B — el calendario es el formulario.</b>
         <ul>
             <li>Hoy, tres días de horas extra son <b>tres veces la misma ventana</b>: abrir, elegir fecha,
-                repetir el horario, repetir el motivo, grabar, cerrar. Aquí se marcan los tres días en el
-                calendario y se manda una vez.</li>
-            <li>El calendario <b>muestra lo que ya se pidió</b>, así que no hace falta recordar si el día 2 ya
-                estaba: el día lo dice. Un día ya pedido no se puede volver a marcar.</li>
+                buscar la oficina con la lupa, repetir el tiempo, repetir el motivo, grabar, cerrar. Aquí se
+                elige la oficina <b>una vez</b>, se marcan los tres días y se manda.</li>
+            <li>El calendario <b>muestra lo que ya se pidió en esa oficina</b>, así que no hace falta
+                recordar si el día 2 ya estaba. Al cambiar de oficina el calendario se rehace: un día ocupado
+                en una puede estar libre en otra.</li>
             <li>Y muestra <b>hasta dónde llega el plazo</b>. Es donde más se nota el parámetro: el calendario
                 deja de ser «el mes» y pasa a ser «lo que todavía puede registrar», que con 26 días cruza dos
                 meses. Los días vencidos se ven apagados en vez de desaparecer, porque una casilla ausente no
                 explica por qué no se puede pedir.</li>
-            <li>Los días <b>avisan de su propio vencimiento</b>. Con 26 días de plazo, los del principio de la
-                ventana se caen esta semana, y eso no se ve en un rango escrito arriba. «Marcar lo que vence»
-                los selecciona todos de un toque: antes ese botón marcaba los sábados, que era una corazonada
-                sobre cuándo se hacen horas extra; esto no adivina nada.</li>
-            <li>El total del lote <b>se cuenta antes de mandarlo</b>, contra la cuota del mes. Pasarse deja de
-                ser una sorpresa del final.</li>
+            <li>Los días <b>avisan de su propio vencimiento</b>. «Marcar lo que vence» selecciona de un toque
+                los que se pierden esta semana.</li>
+            <li>El total del lote <b>se cuenta contra lo asignado a esa oficina</b> antes de mandarlo.
+                Pasarse deja de ser una sorpresa del final.</li>
             <li>Cada día creado sigue siendo <b>una solicitud independiente</b>: la jefatura puede aprobar dos
-                y rechazar uno. El lote es una comodidad para pedir, no una unidad de decisión.</li>
+                y rechazar uno, y cada una se modifica por su cuenta. El lote es una comodidad para pedir, no
+                una unidad de decisión.</li>
         </ul>
-        <div class="nota__cambia"><b>Con el plazo en 1</b> esta alternativa se queda sin razón de ser: un
-            calendario de un solo día no es un calendario. Es el precio de apoyarse en el parámetro; con 26
-            es la que menos trabajo pide.</div>
-        <div class="nota__cambia"><b>Cuándo es peor que la A:</b> si los días no comparten horario ni motivo.
-            Para un día suelto, la A pide menos. Esta alternativa gana cuando el mismo esfuerzo se repite,
-            que es el caso de los cierres.</div>
+        <div class="nota__cambia"><b>Cuándo es peor que la A:</b> si los días no comparten oficina, tiempo ni
+            motivo. Para un día suelto, la A pide menos. Y <b>con el plazo en 1</b> se queda sin razón de
+            ser: un calendario de un solo día no es un calendario.</div>
     </div>
 
 </div>
@@ -174,8 +182,8 @@
     "use strict";
 
     /* Los días marcados, como 'aaaa-mm-dd'. No se guarda un objeto por día
-       hasta el final: mientras se marca, todos comparten el mismo horario y
-       el mismo motivo, así que basta con la fecha. */
+       hasta el final: mientras se marca, todos comparten oficina, tiempo y
+       motivo, así que basta con la fecha. */
     var marcados = [];
 
     function estaMarcado(iso) { return indice(iso) >= 0; }
@@ -195,29 +203,40 @@
         pintarLote();
     }
 
-    /* ----------------------------------------------------------- el mes ---- */
-    /* El calendario NO es un mes: es la ventana que deja abierta el plazo,
+    function oficina() { return Sol.porId("mCodigo").value; }
+    function tiempo() { return Number(Sol.porId("mTiempo").value || 0); }
+
+    /* Lo ya pedido ese día EN LA OFICINA ELEGIDA. La oficina es parte de la
+       pregunta: un día ocupado en una puede estar libre en otra. */
+    function previasDe(iso) {
+        var salida = [], i, s;
+        for (i = 0; i < Sol.solicitudes.length; i++) {
+            s = Sol.solicitudes[i];
+            if (s.fecha === iso && s.ubicacion === oficina()) salida.push(s);
+        }
+        return salida;
+    }
+
+    /* ------------------------------------------------ los días del plazo ---
+       El calendario NO es un mes: es la ventana que deja abierta el plazo,
        de 'primerDiaRegistrable' a hoy. Con 26 días cruza dos meses, así que
        se pintan semanas enteras -del domingo de la primera al sábado de la
-       última- y los días que quedan fuera salen apagados. Se ven, pero no
-       se marcan: un día ausente no explica por qué no se puede pedir. */
+       última- y los días de fuera salen apagados. Se ven, pero no se marcan:
+       un día ausente no explica por qué no se puede pedir. */
     function pintarCalendario() {
         var caja = Sol.porId("calendario");
         var minimo = Sol.primerDiaRegistrable(), hoy = Sol.hoy();
         var inicio = Sol.aFecha(minimo), fin = Sol.aFecha(hoy);
         var html = "", f, iso, previas, clases, fuera, ocupado, urge;
 
-        /* Se retrocede al domingo de esa semana y se avanza hasta el sábado
-           de la última: así las columnas cuadran con la cabecera. */
         inicio.setDate(inicio.getDate() - inicio.getDay());
         fin.setDate(fin.getDate() + (6 - fin.getDay()));
 
         for (f = inicio; f <= fin; f.setDate(f.getDate() + 1)) {
             iso = Sol.aIso(f);
-            previas = Sol.delDia(Sol.solicitudes, iso, 0);
+            previas = previasDe(iso);
             fuera = !Sol.enPlazo(iso);
             ocupado = previas.length > 0;
-
             urge = (!fuera && !ocupado) ? Sol.urgenciaDe(iso) : null;
 
             clases = "calendario__celda";
@@ -231,13 +250,10 @@
             html += '<div class="calendario__dia">' +
                     '<button type="button" class="' + clases + '" data-dia="' + iso + '"' +
                         (fuera || ocupado ? " disabled" : "") + ">" +
-                        (f.getDate() === 1 ? '<span class="calendario__mes">' + mesCorto(f) + "</span>" : "") +
+                        (f.getDate() === 1 ? '<span class="calendario__mes">' + Sol.mesCorto(f) + "</span>" : "") +
                         '<span class="calendario__numero">' + f.getDate() + "</span>" +
                         (iso === hoy ? '<span class="calendario__hoy">hoy</span>' : "") +
                         '<div class="calendario__nota">' + notaDelDia(iso, previas, fuera) + "</div>" +
-                        /* El plazo, en el día que le toca. Es lo que
-                           convierte el calendario en algo que se mira todos
-                           los días: 'a estos se les acaba el tiempo'. */
                         (urge && urge.aprieta && !estaMarcado(iso)
                             ? '<div class="calendario__urge">' + urge.texto + "</div>" : "") +
                     "</button></div>";
@@ -248,19 +264,14 @@
         enlazarDias();
     }
 
-    var MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun",
-                        "jul", "ago", "set", "oct", "nov", "dic"];
-
-    function mesCorto(f) { return MESES_CORTOS[f.getMonth()]; }
-
     function notaDelDia(iso, previas, fuera) {
         var total = 0, i;
         if (previas.length > 0) {
-            for (i = 0; i < previas.length; i++) total += Sol.minutosDe(previas[i]);
+            for (i = 0; i < previas.length; i++) total += previas[i].minutos;
             return "ya: " + Sol.formatear(total);
         }
         if (fuera) return "";
-        if (estaMarcado(iso)) return Sol.formatear(duracionElegida());
+        if (estaMarcado(iso)) return Sol.formatear(tiempo());
         return "";
     }
 
@@ -271,104 +282,70 @@
 
     function alPulsarDia() { marcar(this.getAttribute("data-dia")); }
 
-    /* --------------------------------------------------------- los atajos -- */
-    function pintarAtajos() {
-        var caja = Sol.porId("atajos"), atajos = Sol.atajos(), html = "", i, activo;
-        for (i = 0; i < atajos.length; i++) {
-            activo = Sol.porId("mDesde").value === Sol.trabajador.salida &&
-                     duracionElegida() === atajos[i];
-            html += '<button type="button" class="atajo' + (activo ? " atajo--activo" : "") +
-                    '" data-min="' + atajos[i] + '">' + Sol.formatear(atajos[i]) + "</button>";
-        }
-        caja.innerHTML = html;
-        enlazarAtajos();
-    }
-
-    function enlazarAtajos() {
-        var botones = Sol.porId("atajos").getElementsByTagName("button"), i;
-        for (i = 0; i < botones.length; i++) botones[i].onclick = aplicarAtajo;
-    }
-
-    function aplicarAtajo() {
-        Sol.porId("mDesde").value = Sol.trabajador.salida;
-        Sol.porId("mDuracion").value = String(this.getAttribute("data-min"));
-        alCambiarHora();
-    }
-
-    function duracionElegida() { return Number(Sol.porId("mDuracion").value || 0); }
-
-    function hastaActual() {
-        var d = Sol.porId("mDesde").value;
-        return d ? Sol.hastaDe(d, duracionElegida()) : "";
-    }
-
-    function alCambiarHora() {
-        var d = Sol.porId("mDesde").value, sel = Sol.porId("mDuracion");
-
-        Sol.porId("ayudaHasta").textContent = d
-            ? "Cada día marcado: de " + d + " a " + hastaActual() + "."
-            : "Indique desde qué hora.";
-        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
-        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
-
-        pintarAtajos();
-        pintarCalendario();
-        pintarLote();
-    }
-
-    function mover(cuanto) {
-        var sel = Sol.porId("mDuracion");
-        var i = sel.selectedIndex + cuanto;
-        if (i < 0 || i >= sel.options.length) return;
-        sel.selectedIndex = i;
-        alCambiarHora();
-    }
-
-    /* ------------------------------------------------------------- el lote -- */
+    /* ------------------------------------------------------------- el lote */
     function pintarLote() {
         var caja = Sol.porId("lote");
-        var unidad = duracionElegida();
-        var total = unidad * marcados.length;
-        var saldo = Sol.saldo(Sol.solicitudes);
-        var html, i, pasa;
+        var total = tiempo() * marcados.length;
+        var saldo = oficina() ? Sol.saldoDe(Sol.solicitudes, oficina()) : null;
+        var html, i, u;
 
-        Sol.porId("btnSolicitar").disabled = marcados.length === 0;
+        Sol.porId("btnSolicitar").disabled = marcados.length === 0 || !oficina();
+        pintarSaldoOficina();
+        pintarBotones();
+        Sol.pintarCuotas("cuotas", Sol.solicitudes, oficina());
 
         if (marcados.length === 0) {
-            caja.innerHTML = '<div class="lote__vacio">Marque en el calendario los días que se quedó.</div>';
+            caja.innerHTML = '<div class="lote__vacio">' +
+                (oficina() ? "Marque en el calendario los días que se quedó."
+                           : "Elija primero la oficina: el calendario muestra lo ya pedido en ella.") +
+                "</div>";
+            avisar([]);
             return;
         }
 
-        pasa = total > saldo.queda;
         html = '<div class="lote__titulo">' + marcados.length +
                (marcados.length === 1 ? " día · " : " días · ") + "<b>" + Sol.formatear(total) + "</b></div>";
 
-
         for (i = 0; i < marcados.length; i++) {
+            u = Sol.urgenciaDe(marcados[i]);
             html += '<div class="lote__linea">' +
                         '<button type="button" class="lote__quitar" data-quitar="' + marcados[i] +
                             '" title="Quitar">&times;</button>' +
-                        "<b>" + Sol.texto(Sol.enLetra(marcados[i])) + "</b> · " +
-                        Sol.texto(Sol.porId("mDesde").value) + " a " + Sol.texto(hastaActual()) +
-                        avisoUrgencia(marcados[i]) +
+                        "<b>" + Sol.texto(Sol.enLetra(marcados[i])) + "</b> · " + Sol.formatear(tiempo()) +
+                        (u.aprieta ? ' <span class="urge ' + u.clase + '">' + u.texto + "</span>" : "") +
                     "</div>";
-        }
-
-        /* El aviso de la cuota se da AQUÍ y no al grabar: marcar un día más
-           de los que caben tiene que notarse mientras se marca. */
-        if (pasa) {
-            html += '<div class="lote__linea" style="color:#8E1F19">Con esto se pasa de su cuota del mes: ' +
-                    "quedan <b>" + Sol.formatear(Math.max(0, saldo.queda)) + "</b>.</div>";
         }
         caja.innerHTML = html;
         enlazarQuitar();
+
+        /* El aviso de la cuota se da AQUÍ y no al grabar: marcar un día más
+           de los que caben tiene que notarse mientras se marca. Avisa y deja
+           pasar, como en las otras dos. */
+        avisar(saldo && total > saldo.queda
+            ? ["Con esto se pasa de lo asignado a " + Sol.nombreUbicacion(oficina()) +
+               ": quedan " + Sol.formatear(Math.max(0, saldo.queda)) + ". Puede pedirlo igual."]
+            : []);
     }
 
-    /* Un día del lote que además está por vencer se marca: si el lote se
-       queda a medias, ese es el que no puede esperar a mañana. */
-    function avisoUrgencia(iso) {
-        var u = Sol.urgenciaDe(iso);
-        return u.aprieta ? ' <span class="urge ' + u.clase + '">' + u.texto + "</span>" : "";
+    function avisar(lista) {
+        var caja = Sol.porId("aviso");
+        caja.innerHTML = lista.join("<br>");
+        caja.style.display = lista.length === 0 ? "none" : "block";
+    }
+
+    function pintarSaldoOficina() {
+        var caja = Sol.porId("saldoOficina"), saldo;
+        if (!oficina()) { caja.innerHTML = "A cuya cuota se cargan todos los días del lote."; return; }
+        saldo = Sol.saldoDe(Sol.solicitudes, oficina());
+        caja.innerHTML = "Asignado <b>" + Sol.formatear(saldo.tope) + "</b> · solicitado <b>" +
+                         Sol.formatear(saldo.usado) + "</b> · queda <b>" +
+                         Sol.formatear(Math.max(0, saldo.queda)) + "</b>";
+    }
+
+    function pintarBotones() {
+        var sel = Sol.porId("mTiempo");
+        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
+        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
     }
 
     function enlazarQuitar() {
@@ -378,20 +355,37 @@
 
     function alQuitar() { marcar(this.getAttribute("data-quitar")); }
 
+    function mover(cuanto) {
+        var sel = Sol.porId("mTiempo");
+        var i = sel.selectedIndex + cuanto;
+        if (i < 0 || i >= sel.options.length) return;
+        sel.selectedIndex = i;
+        alCambiar();
+    }
+
+    function alCambiar() { pintarCalendario(); pintarLote(); }
+
     /* ------------------------------------------------------------- solicitar */
     function solicitar() {
-        var desde = Sol.porId("mDesde").value, hasta = hastaActual();
-        var cobro = Sol.porId("mCobro").value;
-        var modalidad = Sol.porId("mModalidad").value;
-        var motivo = Sol.porId("mMotivo").value.replace(/^\s+|\s+$/g, "");
-        var nuevas = [], reparo = "", i, s;
+        var base = {
+            ubicacion: oficina(),
+            minutos: tiempo(),
+            cobro: Sol.porId("mCobro").value,
+            modalidad: Sol.porId("mModalidad").value,
+            estado: "S",
+            motivo: Sol.porId("mMotivo").value.replace(/^\s+|\s+$/g, "")
+        };
+        var nuevas = [], reparo, i, s;
 
         /* Se revisan TODAS antes de crear ninguna. Crear las tres primeras y
            reventar en la cuarta dejaría al usuario sin saber qué quedó
            pedido y qué no. */
         for (i = 0; i < marcados.length; i++) {
-            s = { id: new Date().getTime() + i, fecha: marcados[i], desde: desde, hasta: hasta,
-                  cobro: cobro, modalidad: modalidad, estado: "S", motivo: motivo };
+            s = {
+                id: new Date().getTime() + i, fecha: marcados[i], ubicacion: base.ubicacion,
+                minutos: base.minutos, cobro: base.cobro, modalidad: base.modalidad,
+                estado: "S", motivo: base.motivo
+            };
             reparo = Sol.revisar(Sol.solicitudes, s);
             if (reparo !== "") {
                 Sol.porId("error").textContent = Sol.enLetra(marcados[i]) + ": " + reparo;
@@ -412,36 +406,35 @@
     /* ------------------------------------------------------------- la lista */
     function pintar() {
         var cuerpo = Sol.porId("cuerpo");
-        var lista = Sol.solicitudes, filas = "", i, s, editable;
+        var lista = Sol.solicitudes, filas = "", i, s;
 
         for (i = 0; i < lista.length; i++) {
             s = lista[i];
-            editable = Sol.editable(s);
             filas +=
                 "<tr>" +
+                    "<td>" + Sol.texto(Sol.nombreUbicacion(s.ubicacion)) +
+                        '<div class="tenue">' + Sol.texto(s.ubicacion) + "</div></td>" +
                     "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
                         '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
-                    "<td>" + Sol.texto(s.desde) + " a " + Sol.texto(s.hasta) + "</td>" +
-                    '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                    '<td class="der">' + Sol.formatear(s.minutos) + "</td>" +
                     "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
+                    "<td>" + Sol.texto(Sol.nombreDe(Sol.modalidades, s.modalidad)) + "</td>" +
                     "<td>" + Sol.pastilla(s.estado) + "</td>" +
-                    '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
                     '<td class="cen">' +
                         '<button type="button" class="boton-fila" data-borrar="' + s.id + '"' +
-                            (editable ? "" : " disabled") + ' title="Anular">&times;</button>' +
+                            (Sol.editable(s) ? "" : " disabled") + ' title="Anular">&times;</button>' +
                     "</td>" +
                 "</tr>";
         }
         if (filas === "") {
-            filas = '<tr class="sin-datos"><td colspan="7">Todavía no hay solicitudes este mes.</td></tr>';
+            filas = '<tr class="sin-datos"><td colspan="7">Todavía no hay solicitudes.</td></tr>';
         }
         cuerpo.innerHTML = filas;
         Sol.porId("cuenta").textContent = String(lista.length);
-        Sol.porId("total").textContent = Sol.formatear(Sol.acumulado(lista));
-        Sol.pintarContexto("contexto", lista);
+        Sol.porId("total").textContent = Sol.formatear(Sol.totalDe(lista));
+        Sol.pintarContexto("contexto");
         enlazarFilas();
-        pintarCalendario();
-        pintarLote();
+        alCambiar();
     }
 
     function enlazarFilas() {
@@ -457,12 +450,8 @@
         pintar();
     }
 
-    /* Los sábados del mes que todavía no tienen solicitud: el caso de un
-       cierre suele ser justo ese. */
-    /* Los días libres a los que se les acaba el plazo. Antes este botón
-       marcaba los sábados, que era una corazonada sobre cuándo se hacen
-       horas extra; esto no adivina nada: marca lo que se va a perder si no
-       se registra ya. */
+    /* Los días libres a los que se les acaba el plazo. No adivina cuándo se
+       hacen horas extra: marca lo que se va a perder si no se registra ya. */
     function marcarPorVencer() {
         var f = Sol.aFecha(Sol.primerDiaRegistrable());
         var fin = Sol.aFecha(Sol.hoy());
@@ -471,29 +460,38 @@
         marcados = [];
         for (; f <= fin; f.setDate(f.getDate() + 1)) {
             iso = Sol.aIso(f);
-            if (Sol.delDia(Sol.solicitudes, iso, 0).length > 0) continue;
+            if (previasDe(iso).length > 0) continue;
             if (Sol.urgenciaDe(iso).aprieta) marcados.push(iso);
         }
-        pintarCalendario();
-        pintarLote();
+        alCambiar();
     }
 
     /* ------------------------------------------------------------- arranque */
-    Sol.prepararHora(Sol.porId("mDesde"));
-    Sol.llenarDuracion(Sol.porId("mDuracion"), 0);
+    Sol.Lupa.montar();
+    Sol.llenarTiempo(Sol.porId("mTiempo"), 0);
     Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
-    Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
+    Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "Seleccione");
 
-    Sol.porId("mDesde").onchange = alCambiarHora;
-    Sol.porId("mDuracion").onchange = alCambiarHora;
+    Sol.porId("btnLupa").onclick = function () {
+        Sol.Lupa.abrir(function (u) {
+            Sol.porId("mCodigo").value = u.codigo;
+            Sol.porId("mNombre").value = u.nombre;
+            /* Cambiar de oficina rehace el calendario y vacía las marcas:
+               los días marcados lo estaban contra la oficina anterior, y
+               arrastrarlos sería pedir en una cuota lo que se pensó para
+               otra. */
+            marcados = [];
+            alCambiar();
+        });
+    };
+    Sol.porId("mTiempo").onchange = alCambiar;
     Sol.porId("btnMenos").onclick = function () { mover(-1); };
     Sol.porId("btnMas").onclick = function () { mover(1); };
     Sol.porId("btnSolicitar").onclick = solicitar;
-    Sol.porId("btnLaborables").onclick = marcarPorVencer;
-    Sol.porId("btnLimpiar").onclick = function () { marcados = []; pintarCalendario(); pintarLote(); };
+    Sol.porId("btnVence").onclick = marcarPorVencer;
+    Sol.porId("btnLimpiar").onclick = function () { marcados = []; alCambiar(); };
 
     pintar();
-    alCambiarHora();
 })();
 </script>
 </body>

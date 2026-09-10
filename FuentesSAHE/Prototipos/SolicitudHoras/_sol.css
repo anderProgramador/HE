@@ -25,16 +25,38 @@
 .contexto__quien b { color: #221F1F; }
 .contexto__sep { margin: 0 9px; color: #D5D0C9; }
 .contexto__horario { margin-top: 3px; font-size: 12px; color: #8A8781; }
-.contexto__cuota { float: right; width: 210px; text-align: right; }
-.contexto__rotulo {
-    font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #8A8781;
+
+/* ------------------------------------------------- la cuota de cada oficina --
+   Una ficha por ubicación con lo asignado, lo pedido y lo que queda. Son
+   cuentas independientes -lo que sobra en una no se gasta en otra-, así que
+   son fichas separadas y no una sola cifra. Inline-block al 24%: cuatro por
+   fila sin Grid. */
+.cuotas { margin-bottom: 16px; font-size: 0; }
+.cuota {
+    display: inline-block; vertical-align: top; width: 24%; margin: 0 1% 10px 0;
+    padding: 9px 11px; border: 1px solid #EDEAE5; border-left: 4px solid #D5D0C9;
+    border-radius: 8px; background: #FFFFFF; font-size: 14px;
 }
-.contexto__cifra {
-    font-size: 17px; font-weight: 700; color: #221F1F;
+.cuota--elegida { border-left-color: #C8102E; background: #FCEBEB; }
+.cuota--excedida { border-left-color: #B3261E; background: #FFF7F7; }
+.cuota__nombre {
+    font-size: 11.5px; font-weight: 700; line-height: 1.25; color: #221F1F;
+    height: 29px; overflow: hidden;
+}
+.cuota__codigo { font-weight: 400; color: #8A8781; }
+.cuota__cifras { margin-top: 6px; font-size: 0; }
+.cuota__dato { display: inline-block; width: 33%; vertical-align: top; }
+.cuota__rotulo {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .3px; color: #8A8781;
+}
+.cuota__valor {
+    font-size: 14px; font-weight: 700; color: #221F1F;
     -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
 }
-.contexto__cifra small { font-size: 12px; font-weight: 400; color: #8A8781; }
-.contexto__cifra--roja { color: #B3261E; }
+.cuota__valor--verde { color: #1E7A46; }
+.cuota__valor--rojo { color: #B3261E; }
+@media screen and (max-width: 1100px) { .cuota { width: 49%; } }
+@media screen and (max-width: 700px) { .cuota { width: 100%; margin-right: 0; } }
 
 /* Las dos reglas del aplicativo, debajo de la cinta y separadas por una
    línea: no son datos de la persona sino condiciones de la pantalla. */
@@ -75,82 +97,27 @@
 .pastilla--ok { background: #EAF6EF; color: #1B5E3C; }
 .pastilla--no { background: #FCEBEB; color: #8E1F19; }
 
-/* ------------------------------------------------------------ línea del día --
-   La jornada y lo que se pide, a escala, sobre las 24 horas. Es lo que
-   convierte 'de 17:30 a 19:30' en algo que se entiende sin leerlo: el
-   bloque gris es la jornada que ya se paga y el rojo lo que se está
-   pidiendo. Posicionado en porcentaje sobre el ancho: 100% son 24 horas. */
-.dia {
-    position: relative; height: 34px; margin: 8px 0 4px;
-    border: 1px solid #EDEAE5; border-radius: 6px; background: #FBFAF9; overflow: hidden;
-}
-.dia__jornada {
-    position: absolute; top: 0; height: 100%;
-    background: #E4E1DC; border-left: 1px solid #D5D0C9; border-right: 1px solid #D5D0C9;
-}
-.dia__pedido { position: absolute; top: 0; height: 100%; background: #C8102E; opacity: .82; }
-.dia__pedido--cruce { background: #8A5300; }
-.dia__previa { position: absolute; top: 0; height: 100%; background: #A9A6A0; opacity: .55; }
-.dia__marca {
-    position: absolute; top: 0; width: 1px; height: 100%; background: #D5D0C9;
-}
-.dia__horas { font-size: 11px; color: #8A8781; }
-.dia__horas span { display: inline-block; width: 12.5%; }
-.dia__leyenda { margin-top: 4px; font-size: 12px; color: #5F5C58; }
-.dia__leyenda i {
-    display: inline-block; width: 10px; height: 10px; margin: 0 5px 0 12px;
-    border-radius: 2px; vertical-align: middle;
-}
-.dia__leyenda i:first-child { margin-left: 0; }
-.i-jornada { background: #E4E1DC; border: 1px solid #D5D0C9; }
-.i-pedido { background: #C8102E; }
-.i-previa { background: #A9A6A0; }
-.i-vencido { background: #F7F6F3; border: 1px solid #D5D0C9; }
-
-/* ------------------------------------------------------------------ atajos --
-   Las duraciones de siempre. Casi toda solicitud es 'me quedé una, dos o
-   tres horas después de mi salida', y eso no merece escribir dos horas del
-   reloj. */
-.atajos { margin-top: 6px; }
-.atajo {
-    display: inline-block; padding: 3px 11px; margin: 0 6px 6px 0;
-    border: 1px solid #D5D0C9; border-radius: 14px;
-    background: #FFFFFF; font-family: inherit; font-size: 12.5px; color: #5F5C58; cursor: pointer;
-}
-.atajo:hover { border-color: #C8102E; background: #FCEBEB; color: #8E1F19; }
-.atajo--activo { border-color: #C8102E; background: #C8102E; color: #FFFFFF; font-weight: 600; }
-
-/* ----------------------------------------------------- duración en pasos --
-   La duración se elige, no se teclea: es una lista de múltiplos con dos
+/* ------------------------------------------------ el tiempo, en múltiplos --
+   El tiempo se elige, no se teclea: es una lista de múltiplos con dos
    botones para moverse de uno en uno. Así el parámetro deja de ser una
    regla que se revisa y pasa a ser la forma del control. */
-.duracion {
+.tiempo {
     display: -webkit-box; display: -ms-flexbox; display: flex;
     -webkit-box-align: center; -ms-flex-align: center; align-items: center;
 }
-.duracion__paso {
+.tiempo__paso {
     -webkit-box-flex: 0; -ms-flex: none; flex: none;
     width: 32px; height: 34px;
     border: 1px solid #D5D0C9; background: #F7F6F3; color: #5F5C58;
     font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;
 }
-.duracion__paso:first-child { border-radius: 5px 0 0 5px; }
-.duracion__paso:last-child { border-radius: 0 5px 5px 0; }
-.duracion__paso:hover { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
-.duracion__paso[disabled] { background: #F1EFEC; color: #C5C2BC; cursor: default; }
-.duracion__paso[disabled]:hover { background: #F1EFEC; border-color: #D5D0C9; color: #C5C2BC; }
-.duracion .control {
+.tiempo__paso:first-child { border-radius: 5px 0 0 5px; }
+.tiempo__paso:last-child { border-radius: 0 5px 5px 0; }
+.tiempo__paso:hover { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.tiempo__paso[disabled] { background: #F1EFEC; color: #C5C2BC; cursor: default; }
+.tiempo__paso[disabled]:hover { background: #F1EFEC; border-color: #D5D0C9; color: #C5C2BC; }
+.tiempo .control {
     border-radius: 0; margin: 0 -1px; text-align: center;
-    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
-}
-
-/* El 'hasta', que ya no se escribe: sale de la hora de inicio más la
-   duración. Se muestra porque es lo que la persona va a reconocer -'me fui
-   a las siete y media'- pero no es un campo. */
-.calculado {
-    height: 34px; padding: 0 10px;
-    border: 1px dashed #D5D0C9; border-radius: 5px; background: #FBFAF9;
-    font-size: 15px; font-weight: 700; color: #221F1F; line-height: 32px;
     -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
 }
 
@@ -261,15 +228,13 @@ tr.alta .control--error { border-color: #B3261E; background: #FFFFFF; }
 .hallazgo b { color: #221F1F; }
 
 .col-fecha { width: 150px; }
-/* Dos cajas de hora, la palabra 'a' entre ellas y, en algunos idiomas del
-   navegador, un 'PM' detrás de cada una: por debajo de esto el prototipo C
-   las corta. */
-.col-tramo { width: 240px; }
-.col-tiempo { width: 110px; }
-.col-hora { width: 96px; }
+.col-ubicacion { min-width: 250px; }
+.col-tiempo { width: 120px; }
 .col-cobro { width: 140px; }
+.col-modalidad { width: 130px; }
 .col-estado { width: 120px; }
-.col-motivo { min-width: 200px; }
+.col-motivo { min-width: 180px; }
+.col-codigo { width: 110px; }
 
 /* --------------------------------------------------------------- las notas --
    Solo del prototipo: explica en la propia página qué se está mirando y
