@@ -70,11 +70,16 @@
     </div>
 
     <div class="nota">
-        <b>Alternativa A — se pregunta el reloj, no la calculadora.</b>
+        <b>Alternativa A — una hora y una duración; el resto se calcula.</b>
         <ul>
-            <li>La ventana de hoy pide <i>Tiempo de Hora(s)</i> y <i>Tiempo de Minuto(s)</i> en dos cajas.
-                Aquí se pide <b>desde qué hora y hasta qué hora</b> se quedó, y la cantidad se calcula sola.
-                Es el dato que la persona sí tiene: nadie recuerda «2:30», recuerda «me fui a las ocho».</li>
+            <li>La ventana de hoy pide <i>Tiempo de Hora(s)</i> y <i>Tiempo de Minuto(s)</i> en dos cajas y
+                después revisa si la suma cuadra con el múltiplo. Aquí se pide <b>a qué hora empezó</b>
+                -que nace en su hora de salida y es lo que la persona recuerda- y <b>cuánto se quedó</b>,
+                elegido de una lista de múltiplos. La hora de salida se calcula y se muestra.</li>
+            <li>Con eso, <b>un tiempo que no cuadre con el parámetro no se puede ni teclear</b>. El reparo
+                del múltiplo sigue existiendo por debajo, para el día en que alguien mande la trama desde
+                fuera, pero ya no le aparece a nadie. Es la diferencia entre una pantalla que avisa del
+                error y una en la que el error no cabe.</li>
             <li>Con las dos horas del reloj se puede <b>avisar de un cruce</b> con otra solicitud del mismo
                 día. Con una cantidad suelta eso no se puede revisar, porque nunca se supo a qué parte del
                 día correspondía.</li>
@@ -82,12 +87,14 @@
                 09:00 a 11:00 un martes- se ve antes de leerlo.</li>
             <li>Los <b>atajos</b> resuelven el caso normal de un toque: casi toda solicitud es «me quedé una,
                 dos o tres horas después de mi salida».</li>
+            <li>Debajo de la fecha, <b>lo que le queda de plazo a ESE día</b>. El rango entero está arriba
+                y es un dato; «vence mañana» es lo que hace actuar.</li>
         </ul>
-        <div class="nota__cambia"><b>Los dos parámetros del aplicativo mandan sobre los controles, no solo
-            sobre los reparos.</b> El <i>múltiplo</i> es el <code>step</code> de las cajas de hora y la fuente
-            de los atajos, y debajo del tiempo se cuenta si lo escrito cuadra; el <i>plazo</i> es el mínimo y
-            el máximo del calendario, que se abre ya recortado. Cambiar 15 por 10, o 26 por 1, mueve las dos
-            cosas sin tocar la pantalla: no hay ningún 15 ni ningún 26 escrito aquí.</div>
+        <div class="nota__cambia"><b>Los dos parámetros no se revisan: se dibujan.</b> El <i>múltiplo</i>
+            es la lista de duraciones y el salto de los botones &minus;/+; el <i>plazo</i> es el mínimo y el
+            máximo del calendario -que se abre ya recortado- y la cuenta de días que aparece debajo. Cambiar
+            15 por 10, o 26 por 1, mueve las dos cosas sin tocar la pantalla: no hay ningún 15 ni ningún 26
+            escrito aquí.</div>
         <div class="nota__cambia"><b>El horario es de referencia.</b> Se muestra y se dibuja para que la
             persona se ubique, y si el tramo se cruza con él sale una advertencia ámbar -suele ser un
             dedazo-, pero <b>no impide pedir</b>. Lo único que rechaza por cruce es haber pedido ya esas
@@ -115,6 +122,7 @@
                 <div class="campo campo--corto">
                     <label class="campo__etiqueta" for="mFecha">Fecha a solicitar<span class="campo__obligatorio">*</span></label>
                     <input type="date" class="control" id="mFecha">
+                    <p class="campo__ayuda" id="ayudaFecha"></p>
                 </div>
                 <div class="campo campo--medio">
                     <label class="campo__etiqueta">Su horario ese día
@@ -139,19 +147,29 @@
 
             <div class="atajos" id="atajos"></div>
 
+            <!-- Se pregunta UNA hora y una duración, no dos horas. La hora es
+                 la que la persona recuerda -'me quedé desde que salí'- y la
+                 duración se elige de una lista de múltiplos, así que un
+                 tiempo que no cuadre con el parámetro no se puede ni
+                 teclear. El 'hasta' se calcula y se muestra. -->
             <div class="fila" style="margin-top:12px">
                 <div class="campo campo--corto">
                     <label class="campo__etiqueta" for="mDesde">Se quedó desde<span class="campo__obligatorio">*</span></label>
                     <input type="time" class="control" id="mDesde">
                 </div>
                 <div class="campo campo--corto">
-                    <label class="campo__etiqueta" for="mHasta">Hasta<span class="campo__obligatorio">*</span></label>
-                    <input type="time" class="control" id="mHasta">
+                    <label class="campo__etiqueta" for="mDuracion">Cuánto tiempo<span class="campo__obligatorio">*</span></label>
+                    <div class="duracion">
+                        <button type="button" class="duracion__paso" id="btnMenos" title="Menos">&minus;</button>
+                        <select class="control" id="mDuracion"></select>
+                        <button type="button" class="duracion__paso" id="btnMas" title="Más">+</button>
+                    </div>
+                    <p class="campo__ayuda" id="ayudaTiempo"></p>
                 </div>
                 <div class="campo campo--corto">
-                    <label class="campo__etiqueta">Tiempo solicitado</label>
-                    <input type="text" class="control control--numero" id="mTiempo" readonly>
-                    <p class="campo__ayuda" id="ayudaTiempo"></p>
+                    <label class="campo__etiqueta">Se fue a las</label>
+                    <div class="calculado" id="mHasta">&mdash;</div>
+                    <p class="campo__ayuda">Sale de las dos cajas de al lado.</p>
                 </div>
             </div>
 
@@ -268,10 +286,17 @@
         return '<div class="' + clase + '" style="left:' + (a / 14.4) + "%;width:" + ((b - a) / 14.4) + '%"></div>';
     }
 
+    /* La hora de salida, que ya no se teclea. Una sola fuente para toda la
+       pantalla: la calculan el dibujo, el aviso y el grabado. */
+    function hastaActual() {
+        var desde = Sol.porId("mDesde").value;
+        return desde ? Sol.hastaDe(desde, Sol.porId("mDuracion").value) : "";
+    }
+
     function pintarDia() {
         var t = Sol.trabajador;
         var fecha = Sol.porId("mFecha").value;
-        var desde = Sol.porId("mDesde").value, hasta = Sol.porId("mHasta").value;
+        var desde = Sol.porId("mDesde").value, hasta = hastaActual();
         var vecinas = fecha ? Sol.delDia(Sol.solicitudes, fecha, enEdicion ? enEdicion.id : 0) : [];
         var html = "", i, cruza;
 
@@ -287,24 +312,50 @@
             html += tramo("dia__pedido" + (cruza ? " dia__pedido--cruce" : ""), desde, hasta);
         }
         Sol.porId("dia").innerHTML = html;
-        Sol.porId("mTiempo").value = (desde && hasta) ? Sol.formatear(Sol.duracion(desde, hasta)) : "";
-        pintarAyudaTiempo(desde, hasta);
+        Sol.porId("mHasta").innerHTML = hasta ? Sol.texto(hasta) : "&mdash;";
+        pintarAyudaTiempo();
+        pintarAyudaFecha();
         pintarAviso();
         marcarAtajo(desde, hasta);
+        marcarPasos();
     }
 
-    /* El múltiplo, contado debajo de la caja mientras se escribe: enterarse
-       al grabar de que 2:20 no vale es enterarse tarde. */
-    function pintarAyudaTiempo(desde, hasta) {
+    /* Ya no hay nada que corregir: la duración sale de una lista de
+       múltiplos. La ayuda solo cuenta de cuánto es el paso, que es el dato
+       que explica por qué la lista salta así. */
+    function pintarAyudaTiempo() {
         var paso = Sol.formatear(Sol.parametros.multiplo);
-        var caja = Sol.porId("ayudaTiempo"), minutos, cerca;
+        Sol.porId("ayudaTiempo").textContent = "De " + paso + " en " + paso + ".";
+    }
 
-        if (!desde || !hasta) { caja.textContent = "Sube de " + paso + " en " + paso + "."; return; }
-        minutos = Sol.duracion(desde, hasta);
-        if (Sol.esMultiplo(minutos)) { caja.textContent = "Múltiplo de " + paso + ": conforme."; return; }
-        cerca = Sol.vecinos(minutos);
-        caja.textContent = "No es múltiplo de " + paso + ". Lo más cerca: " +
-            (cerca.abajo > 0 ? Sol.formatear(cerca.abajo) + " o " : "") + Sol.formatear(cerca.arriba) + ".";
+    /* El plazo, aplicado al día elegido. El rango entero ya está en la
+       cinta de arriba; aquí interesa lo otro: cuánto le queda a ESTE día.
+       Solo se dice cuando aprieta. */
+    function pintarAyudaFecha() {
+        var caja = Sol.porId("ayudaFecha");
+        var fecha = Sol.porId("mFecha").value, u;
+
+        if (!fecha || !Sol.enPlazo(fecha)) { caja.innerHTML = ""; return; }
+        u = Sol.urgenciaDe(fecha);
+        caja.innerHTML = u.aprieta
+            ? '<span class="urge ' + u.clase + '">' + u.texto + "</span>"
+            : "Le " + u.texto + " para registrarlo.";
+    }
+
+    /* Los dos botones se apagan en los extremos de la lista en vez de no
+       hacer nada al pulsarlos. */
+    function marcarPasos() {
+        var sel = Sol.porId("mDuracion");
+        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
+        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
+    }
+
+    function mover(cuanto) {
+        var sel = Sol.porId("mDuracion");
+        var i = sel.selectedIndex + cuanto;
+        if (i < 0 || i >= sel.options.length) return;
+        sel.selectedIndex = i;
+        pintarDia();
     }
 
     /* La advertencia del horario. Aparece y desaparece con lo escrito, y
@@ -314,7 +365,7 @@
         var texto = Sol.avisoHorario({
             fecha: Sol.porId("mFecha").value,
             desde: Sol.porId("mDesde").value,
-            hasta: Sol.porId("mHasta").value
+            hasta: hastaActual()
         });
         caja.textContent = texto;
         caja.style.display = texto === "" ? "none" : "block";
@@ -347,19 +398,20 @@
         for (i = 0; i < botones.length; i++) botones[i].onclick = aplicarAtajo;
     }
 
+    /* Un atajo ya no escribe dos horas: pone la de inicio y elige la
+       duración en la lista. Es el mismo gesto que haría la persona. */
     function aplicarAtajo() {
-        var minutos = Number(this.getAttribute("data-min"));
-        var inicio = inicioNatural();
-        Sol.porId("mDesde").value = inicio;
-        Sol.porId("mHasta").value = Sol.reloj(Sol.aMinutos(inicio) + minutos);
+        var minutos = String(this.getAttribute("data-min"));
+        Sol.porId("mDesde").value = inicioNatural();
+        Sol.porId("mDuracion").value = minutos;
         pintarDia();
     }
 
-    function marcarAtajo(desde, hasta) {
-        var botones = Sol.porId("atajos").getElementsByTagName("button"), i, activo;
+    function marcarAtajo(desde) {
+        var botones = Sol.porId("atajos").getElementsByTagName("button");
+        var elegida = Number(Sol.porId("mDuracion").value), i, activo;
         for (i = 0; i < botones.length; i++) {
-            activo = desde === inicioNatural() && hasta !== "" &&
-                     Sol.duracion(desde, hasta) === Number(botones[i].getAttribute("data-min"));
+            activo = desde === inicioNatural() && elegida === Number(botones[i].getAttribute("data-min"));
             botones[i].className = activo ? "atajo atajo--activo" : "atajo";
         }
     }
@@ -379,8 +431,12 @@
         /* Hoy, no el fin del periodo: hacia adelante no hay nada que pedir. */
         Sol.porId("mFecha").value = s ? s.fecha : Sol.hoy();
         Sol.porId("mHorario").value = t.horario;
-        Sol.porId("mDesde").value = s ? s.desde : "";
-        Sol.porId("mHasta").value = s ? s.hasta : "";
+        /* Al dar de alta, la hora de inicio nace en la salida del horario:
+           es de donde arranca la hora extra de un día normal y es lo que la
+           persona iba a escribir. Sigue siendo editable -el horario es una
+           referencia, no un tope-. */
+        Sol.porId("mDesde").value = s ? s.desde : Sol.trabajador.salida;
+        Sol.llenarDuracion(Sol.porId("mDuracion"), s ? Sol.minutosDe(s) : 0);
         Sol.porId("mCobro").value = s ? s.cobro : "";
         Sol.porId("mModalidad").value = s ? s.modalidad : "P";
         Sol.porId("mMotivo").value = s ? s.motivo : "";
@@ -406,7 +462,7 @@
             id: enEdicion ? enEdicion.id : new Date().getTime(),
             fecha: Sol.porId("mFecha").value,
             desde: Sol.porId("mDesde").value,
-            hasta: Sol.porId("mHasta").value,
+            hasta: hastaActual(),
             cobro: Sol.porId("mCobro").value,
             modalidad: Sol.porId("mModalidad").value,
             estado: "S",
@@ -428,7 +484,6 @@
 
     /* ------------------------------------------------------------- arranque */
     Sol.prepararHora(Sol.porId("mDesde"));
-    Sol.prepararHora(Sol.porId("mHasta"));
     Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
     Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
 
@@ -439,7 +494,9 @@
     Sol.porId("btnBuscar").onclick = pintar;
     Sol.porId("mFecha").onchange = function () { pintarAtajos(); pintarDia(); };
     Sol.porId("mDesde").onchange = pintarDia;
-    Sol.porId("mHasta").onchange = pintarDia;
+    Sol.porId("mDuracion").onchange = pintarDia;
+    Sol.porId("btnMenos").onclick = function () { mover(-1); };
+    Sol.porId("btnMas").onclick = function () { mover(1); };
     Sol.porId("mMotivo").oninput = contarMotivo;
 
     pintar();

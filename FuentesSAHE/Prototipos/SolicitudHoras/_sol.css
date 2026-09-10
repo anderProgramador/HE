@@ -120,6 +120,54 @@
 .atajo:hover { border-color: #C8102E; background: #FCEBEB; color: #8E1F19; }
 .atajo--activo { border-color: #C8102E; background: #C8102E; color: #FFFFFF; font-weight: 600; }
 
+/* ----------------------------------------------------- duración en pasos --
+   La duración se elige, no se teclea: es una lista de múltiplos con dos
+   botones para moverse de uno en uno. Así el parámetro deja de ser una
+   regla que se revisa y pasa a ser la forma del control. */
+.duracion {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+.duracion__paso {
+    -webkit-box-flex: 0; -ms-flex: none; flex: none;
+    width: 32px; height: 34px;
+    border: 1px solid #D5D0C9; background: #F7F6F3; color: #5F5C58;
+    font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.duracion__paso:first-child { border-radius: 5px 0 0 5px; }
+.duracion__paso:last-child { border-radius: 0 5px 5px 0; }
+.duracion__paso:hover { background: #C8102E; border-color: #C8102E; color: #FFFFFF; }
+.duracion__paso[disabled] { background: #F1EFEC; color: #C5C2BC; cursor: default; }
+.duracion__paso[disabled]:hover { background: #F1EFEC; border-color: #D5D0C9; color: #C5C2BC; }
+.duracion .control {
+    border-radius: 0; margin: 0 -1px; text-align: center;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+
+/* El 'hasta', que ya no se escribe: sale de la hora de inicio más la
+   duración. Se muestra porque es lo que la persona va a reconocer -'me fui
+   a las siete y media'- pero no es un campo. */
+.calculado {
+    height: 34px; padding: 0 10px;
+    border: 1px dashed #D5D0C9; border-radius: 5px; background: #FBFAF9;
+    font-size: 15px; font-weight: 700; color: #221F1F; line-height: 32px;
+    -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum";
+}
+
+/* ------------------------------------------------------------- urgencia --
+   Lo que va a vencer. El plazo en el rango es un dato; el plazo en un día
+   concreto es un aviso, y solo se pinta cuando aprieta. */
+.urge {
+    display: inline-block; padding: 0 8px; border-radius: 10px;
+    background: #F1EFEC; color: #8A8781;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+}
+.urge--pronto { background: #FFF6E5; color: #8A5300; }
+.urge--hoy { background: #FCEBEB; color: #8E1F19; }
+.urge--fuera { background: #F1EFEC; color: #C5C2BC; }
+.calendario__celda--urge { border-color: #E4B9BE; }
+.calendario__urge { margin-top: 3px; font-size: 10px; font-weight: 700; color: #8E1F19; }
+
 /* -------------------------------------------------------------- calendario --
    El mes entero, para marcar varios días de una vez. Siete columnas con
    inline-block al 14.28%: es lo que hay sin Grid. El borde blanco hace de
@@ -218,6 +266,7 @@ tr.alta .control--error { border-color: #B3261E; background: #FFFFFF; }
    las corta. */
 .col-tramo { width: 240px; }
 .col-tiempo { width: 110px; }
+.col-hora { width: 96px; }
 .col-cobro { width: 140px; }
 .col-estado { width: 120px; }
 .col-motivo { min-width: 200px; }
