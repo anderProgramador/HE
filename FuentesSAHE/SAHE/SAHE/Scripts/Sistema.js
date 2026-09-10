@@ -596,6 +596,14 @@ var Sistema = (function () {
         var AYUDA_EN_CARGA = 3;
         var POR_DEFECTO_EN_CARGA = 4;
 
+        /* El tope del desplegable de tiempo. No es una regla del negocio: es
+           el día, que es lo único que se puede afirmar sin un parámetro. La
+           carga no manda un máximo por solicitud -las dos 'cantidades' que
+           trae son días de plazo, no horas-, así que se lista todo múltiplo
+           que cabe en un día. Si algún día se configura un tope por
+           solicitud, es cambiar esta línea por el dato que llegue. */
+        var TOPE = 24 * 60;
+
         var abrirOriginal = null;
         var modeloPantalla = null;
         /* Lo que trajo el [4], ya partido. Se guarda porque la ventana lo
@@ -622,8 +630,13 @@ var Sistema = (function () {
                 fechaInicio: c[1] || "",
                 fechaFin: c[2] || "",
                 fechaInicioPop: c[3] || "",
-                minimo: enMinutos(c[4]),
-                maximo: enMinutos(c[5]),
+                /* DÍAS, no cantidades de tiempo: son los dos extremos del
+                   plazo, contados hacia atrás desde hoy. La 'mínima' es la
+                   fecha más antigua que se puede registrar -el plazo de
+                   siempre, 26 días- y la 'máxima' la más reciente, que en 0
+                   es hoy. */
+                diasAtras: entero(c[4]),
+                diasAdelante: entero(c[5]),
                 multiplo: enMinutos(c[6]),
                 horario: c[7] || ""
             };
@@ -631,6 +644,11 @@ var Sistema = (function () {
                 Ventana.registrar("La carga de " + TABLA + " no trajo el segmento de valores " +
                                   "por defecto; el filtro nace vacío y el tiempo sin límites.");
             }
+        }
+
+        function entero(valor) {
+            var n = parseInt(String(valor === undefined ? "" : valor), 10);
+            return isNaN(n) ? -1 : n;
         }
 
         /* Una cantidad puede venir en minutos -'15'- o en hh:mm -'00:15'-.
@@ -701,26 +719,67 @@ var Sistema = (function () {
             if (caja && valor !== "") caja.value = valor;
         }
 
-        /* Desde qué día se puede registrar. Es el plazo hecho fecha: lo
-           calcula el paquete y aquí solo se pone como mínimo del calendario,
-           que así se abre ya recortado y un día vencido no se puede ni
-           elegir. El máximo es hoy: una hora extra se pide después de
-           haberla hecho. */
+        /* El plazo, puesto sobre el calendario de la ventana. Los dos
+           extremos llegan como CANTIDAD DE DÍAS hacia atrás desde hoy, no
+           como fechas: 'cantidadMinimaRegistro' es el día más antiguo que se
+           puede registrar y 'cantidadMaximaRegistro' el más reciente, que en
+           0 es hoy.
+
+           Se cuentan aquí y no se guardan hechos fecha porque un plazo
+           contado al cargar deja de ser el plazo al día siguiente, y esta
+           pantalla se queda abierta. Por eso se recalcula cada vez que se
+           abre la ventana.
+
+           Los dos se ordenan antes de usarlos: cuál de las dos cantidades es
+           la mayor lo decide la configuración, y si algún día vinieran al
+           revés el campo seguiría teniendo un rango con sentido en vez de uno
+           imposible. */
         function recortarFecha() {
             var caja = document.getElementById("datFechaPop");
-            var desde = enIsoTexto(ajustes ? ajustes.fechaInicioPop : "");
+            var ayuda = document.getElementById("ayuFechaPop");
+            var uno, otro, desde, hasta;
 
-            if (!caja) return;
-            caja.max = hoy();
-            if (desde === "") {
-                Ventana.registrar("La carga de " + TABLA + " no trajo 'fechaInicioPop'; " +
-                                  "la fecha queda sin mínimo y quien decide qué día se " +
+            if (!caja || !ajustes) return;
+            if (ajustes.diasAtras < 0) {
+                if (ayuda) ayuda.textContent = "";
+                Ventana.registrar("La carga de " + TABLA + " no trajo los días de plazo; " +
+                                  "la fecha queda sin recortar y quien decide qué día se " +
                                   "acepta es la base.");
                 return;
             }
+
+            uno = haceDias(ajustes.diasAtras);
+            otro = haceDias(ajustes.diasAdelante < 0 ? 0 : ajustes.diasAdelante);
+            desde = uno < otro ? uno : otro;
+            hasta = uno < otro ? otro : uno;
+
             caja.min = desde;
-            document.getElementById("ayuFechaPop").textContent =
-                "Se puede registrar desde el " + enTexto(desde) + ".";
+            caja.max = hasta;
+            if (ayuda) {
+                ayuda.textContent = "Se puede registrar del " + enTexto(desde) +
+                                    " al " + enTexto(hasta) + ".";
+            }
+        }
+
+        /* La fecha de hace n días, en 'aaaa-mm-dd'. */
+        function haceDias(n) {
+            var f = new Date();
+            f.setDate(f.getDate() - n);
+            return enIso(f);
+        }
+
+        /* La fecha con que se abre un ALTA. Al modificar no se toca: ahí el
+           valor lo trajo Obtener y pisarlo sería cambiarle el registro al
+           usuario por haber abierto la ventana. */
+        function fechaPorOmision() {
+            var caja = document.getElementById("datFechaPop");
+            var valor = enIsoTexto(ajustes ? ajustes.fechaInicioPop : "");
+            var accion = Ventana.valorDe("hdnCodigoAccion");
+
+            if (!caja || valor === "") return;
+            if (accion === "U" || accion === "O") return;
+            if (caja.value !== "") return;
+            caja.value = valor;
         }
 
         function enTexto(iso) {
@@ -740,8 +799,6 @@ var Sistema = (function () {
         function llenarTiempos() {
             var caja = document.getElementById("cboTiempo");
             var paso = ajustes.multiplo;
-            var desde = ajustes.minimo > 0 ? ajustes.minimo : paso;
-            var hasta = ajustes.maximo;
             var minutos;
 
             if (!caja) {
@@ -751,17 +808,16 @@ var Sistema = (function () {
             caja.innerHTML = "";
             caja.appendChild(opcion("", "Seleccione"));
 
-            if (paso < 1 || hasta < desde) {
-                Ventana.registrar("La carga de " + TABLA + " no trajo el múltiplo o los topes " +
-                                  "del tiempo; el desplegable queda vacío.");
+            if (paso < 1) {
+                Ventana.registrar("La carga de " + TABLA + " no trajo 'multiploMinutos'; " +
+                                  "el desplegable del tiempo queda vacío.");
                 return;
             }
-            for (minutos = desde; minutos <= hasta; minutos += paso) {
+            for (minutos = paso; minutos <= TOPE; minutos += paso) {
                 caja.appendChild(opcion(enHoras(minutos), enHoras(minutos)));
             }
             document.getElementById("ayuTiempo").textContent =
-                "De " + enHoras(desde) + " a " + enHoras(hasta) +
-                ", de " + enHoras(paso) + " en " + enHoras(paso) + ".";
+                "De " + enHoras(paso) + " en " + enHoras(paso) + ".";
         }
 
         function opcion(valor, texto) {
@@ -862,7 +918,11 @@ var Sistema = (function () {
             abrirOriginal = Ventana.abrirPopup;
             Ventana.abrirPopup = function (t, titulo) {
                 var salida = abrirOriginal.call(Ventana, t, titulo);
-                if (t === TABLA && ajustes) { recortarFecha(); ponerHorario(); }
+                if (t === TABLA && ajustes) {
+                    recortarFecha();
+                    fechaPorOmision();
+                    ponerHorario();
+                }
                 return salida;
             };
         }
