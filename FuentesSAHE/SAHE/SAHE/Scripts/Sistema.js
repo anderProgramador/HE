@@ -115,6 +115,69 @@ var Sistema = (function () {
         };
     }
 
+    /* Dónde viene el resumen dentro de la respuesta. Lo usan las dos
+       pantallas que tienen tarjeta -T01FUN y T06FUN- y por eso vive aquí y no
+       dentro de una de ellas.
+
+       Llega detrás de las filas en las tres respuestas, pero no en el mismo
+       número de segmento, porque delante de las filas no siempre va lo mismo:
+
+           carga     [0] combos, [1] filas ... y el resumen en el [4]
+           consulta  [0] filas,  [1] resumen
+           gestión   [0] mensaje, [1] filas, [2] resumen
+
+       Una consulta no trae combos ni ayudas ni valores por omisión -eso ya
+       está puesto desde la carga y volver a pisarlo le movería al usuario los
+       filtros que acaba de elegir-, así que contesta pelada. Por eso el aviso
+       dice de dónde viene en vez de que esto lo adivine contando segmentos.
+
+       No se recalcula con las filas de la grilla: la pantalla ve un tramo por
+       vez, y una cuenta armada con lo que está a la vista miente en cuanto
+       algo queda fuera de la vista. */
+    function segmentoResumen(lectura, origen) {
+        var segmentos = (lectura && lectura.segmentos) ? lectura.segmentos : [];
+        var i = (origen === "gestion") ? 2 : (origen === "consulta" ? 1 : 4);
+        return String(segmentos[i] || "");
+    }
+
+    /* El filtro y la tarjeta, uno al lado del otro. El txt las declara como
+       dos secciones y la librería las apila, que es lo correcto para dos
+       bloques de campos; aquí no lo son: a la izquierda se elige y a la
+       derecha se lee la cuenta de lo elegido. Apiladas se llevaban media
+       pantalla entre las dos y la grilla -que es lo que se viene a mirar-
+       empezaba más abajo.
+
+       Se marcan por clase y no por id en la hoja de estilos porque
+       'secbusqueda' lo tiene también T01, que sí quiere su filtro entero: son
+       cuatro campos y no dos. */
+    function emparejarFiltroYResumen(tabla) {
+        marcarSeccion(tabla, "secbusqueda", "seccion--filtro");
+        marcarSeccion(tabla, "secresumen", "seccion--resumen");
+    }
+
+    function marcarSeccion(tabla, id, clase) {
+        var nodo = document.getElementById(id);
+        if (!nodo) {
+            Ventana.registrar("La plantilla de " + tabla + " no declara la sección '" +
+                              id + "'; el filtro y el resumen quedan apilados.");
+            return;
+        }
+        if ((" " + nodo.className + " ").indexOf(" " + clase + " ") === -1) {
+            nodo.className += " " + clase;
+        }
+    }
+
+    /* Escapar lo que se pinta con innerHTML. Lo necesitan las dos tarjetas. */
+    function texto(valor) {
+        return String(valor === null || valor === undefined ? "" : valor)
+               .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function porcentaje(id, valor) {
+        var nodo = document.getElementById(id);
+        if (nodo) nodo.style.width = valor + "%";
+    }
+
     /* La cantidad de meses se ve siempre: esconderla haría que la ventana
        cambiara de alto al elegir 'Sí' y que el usuario no supiera de
        antemano que ese dato existe. Se habilita solo cuando se pide
@@ -325,33 +388,6 @@ var Sistema = (function () {
             }
         }
 
-        /* El resumen llega calculado, en hh:mm:
-
-               <asignada>|<repartida>|<pendiente>
-
-           Detrás de las filas en las tres respuestas, pero no en el mismo
-           número de segmento, porque delante de las filas no siempre va lo
-           mismo:
-
-               carga     [0] combos, [1] filas ... y el resumen en el [4]
-               consulta  [0] filas,  [1] resumen
-               gestión   [0] mensaje, [1] filas, [2] resumen
-
-           Una consulta no trae combos ni ayudas ni valores por omisión -eso
-           ya está puesto desde la carga y volver a pisarlo le movería al
-           usuario los filtros que acaba de elegir-, así que contesta pelada:
-           las filas y detrás el resumen del periodo que se pidió. Por eso el
-           aviso dice de dónde viene en vez de que esto lo adivine contando
-           segmentos.
-
-           No se recalcula con las filas de la grilla: la pantalla ve un
-           periodo por vez, y una cuenta armada con lo que está a la vista
-           miente en cuanto algo queda fuera de la vista. */
-        function segmentoResumen(lectura, origen) {
-            var segmentos = (lectura && lectura.segmentos) ? lectura.segmentos : [];
-            var i = (origen === "gestion") ? 2 : (origen === "consulta" ? 1 : 4);
-            return String(segmentos[i] || "");
-        }
 
         function pintarResumen(lectura, origen) {
             var caja = document.getElementById("secresumen");
@@ -414,16 +450,6 @@ var Sistema = (function () {
                    "</div>";
         }
 
-        function porcentaje(id, valor) {
-            var nodo = document.getElementById(id);
-            if (nodo) nodo.style.width = valor + "%";
-        }
-
-        function texto(valor) {
-            return String(valor === null || valor === undefined ? "" : valor)
-                   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
         /* Aquí iba la regla que encendía una cuota u otra según la oficina
            elegida -global para una dependiente, asignada para la propia-. Por
            ahora las dos se muestran y las dos se pueden escribir: quien decide
@@ -457,37 +483,9 @@ var Sistema = (function () {
             caja.setAttribute("data-default", propia);
         }
 
-        /* El filtro y la tarjeta, uno al lado del otro. El txt las declara
-           como dos secciones y la librería las apila, que es lo correcto para
-           dos bloques de campos; aquí no lo son: a la izquierda se elige el
-           periodo y a la derecha se lee la cuenta de ESE periodo, así que van
-           en la misma fila. Apiladas se llevaban media pantalla entre las dos
-           y la grilla -que es lo que se viene a mirar- empezaba más abajo.
-
-           Se marcan por clase y no por id en la hoja de estilos porque
-           'secbusqueda' lo tiene también T01, que sí quiere su filtro entero:
-           son cuatro campos y no uno. Los anchos están en Sistema.css, junto
-           al resto de la tarjeta. */
-        function emparejarFiltroYResumen() {
-            marcarSeccion("secbusqueda", "seccion--filtro");
-            marcarSeccion("secresumen", "seccion--resumen");
-        }
-
-        function marcarSeccion(id, clase) {
-            var nodo = document.getElementById(id);
-            if (!nodo) {
-                Ventana.registrar("La plantilla de " + TABLA + " no declara la sección '" +
-                                  id + "'; el filtro y el resumen quedan apilados.");
-                return;
-            }
-            if ((" " + nodo.className + " ").indexOf(" " + clase + " ") === -1) {
-                nodo.className += " " + clase;
-            }
-        }
-
         function alConstruir() {
             fijarOficinaPadre();
-            emparejarFiltroYResumen();
+            emparejarFiltroYResumen(TABLA);
             enlazarCampo("cboReplicar", function () { replicaSegunPeriodo(true); });
 
             /* La ventana se abre siempre por el mismo sitio -alta, modificar y
@@ -546,6 +544,252 @@ var Sistema = (function () {
         function alGestionar(lectura) {
             pintarResumen(lectura, "gestion");
             bloquearSiEsPasado();
+        }
+
+        return {
+            alConstruir: alConstruir,
+            alCargar: alCargar,
+            alConsultar: alConsultar,
+            alGestionar: alGestionar
+        };
+    })();
+
+    /* ========================================================================
+       T06FUN - Solicitud de Horas Extras (trabajador)
+
+       Cuatro cosas son propias de esta pantalla:
+
+         1. La carga le manda al paquete con quién y sobre qué ubicación se
+            está entrando. Ese dato no está en la pantalla sino en la sesión,
+            puesto por el escritorio. Igual que en T01FUN.
+         2. La tarjeta de SU SECCIÓN, que no son campos que el usuario llene
+            sino el estado de su cuenta, y que el paquete manda calculada.
+         3. El PLAZO. Llega con la carga y se convierte en el mínimo y el
+            máximo del campo de fecha de la ventana: los días vencidos ni
+            siquiera se pueden elegir.
+         4. El aviso de cuánto le queda de plazo al día elegido.
+
+       El MÚLTIPLO no está aquí y es a propósito: el tiempo es un desplegable
+       cuyas opciones manda el paquete ya en múltiplos, así que una cantidad
+       que no cuadre no se puede ni teclear. Un parámetro que se convierte en
+       la forma del control no necesita código que lo vigile.
+
+       La lupa de oficinas, el desplegable del tiempo, el contador del motivo
+       y los bloqueos del modificar tampoco están: los declara el txt y los
+       resuelve la librería.
+       ===================================================================== */
+    particular.T06FUN = (function () {
+
+        var TABLA = "T06FUN";
+        var abrirOriginal = null;
+        /* El modelo de la pantalla, que llega con 'alConstruir'. Se guarda
+           porque es de donde salen los valores por omisión de la carga, y
+           'Formulario' no se ve desde aquí: vive dentro de Ventana. */
+        var modeloPantalla = null;
+
+        /* 'C|<cTrabajador>|<cUbicacion>'. Se registra en la librería como lo
+           que esta pantalla le agrega a la trama de la carga. */
+        Ventana.datosDeCarga[TABLA] = function () {
+            var quien = ubicacionDeSesion();
+            return "|" + quien.cTrabajador + "|" + quien.cUbicacion;
+        };
+
+        /* Lo que dice el paquete que se puede registrar. Se guarda al cargar
+           porque la ventana lo necesita cada vez que se abre y no tiene
+           sentido volver a pedirlo. Sin dato del paquete no se inventa
+           ninguno: se deja la fecha libre y que decida la base, que es quien
+           manda. */
+        var plazo = 0;
+
+        function leerPlazo() {
+            var modelo = modeloPantalla;
+            var valor = (modelo && modelo.porDefecto) ? modelo.porDefecto.Plazo : "";
+            var n = parseInt(valor, 10);
+            plazo = (isNaN(n) || n < 1) ? 0 : n;
+            if (plazo === 0) {
+                Ventana.registrar("La carga de " + TABLA + " no trajo el parámetro Plazo; " +
+                                  "la fecha queda sin recortar.");
+            }
+        }
+
+        /* La fecha de hoy y la de hace 'plazo' días, en el 'aaaa-mm-dd' que
+           entiende un <input type="date">. Se calcula al ABRIR la ventana y
+           no al cargar la pantalla: si la pestaña quedó abierta de ayer, el
+           plazo de hoy es otro. */
+        function enIso(fecha) {
+            var m = fecha.getMonth() + 1, d = fecha.getDate();
+            return String(fecha.getFullYear()) + "-" +
+                   (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d);
+        }
+
+        function hoy() { return enIso(new Date()); }
+
+        function primerDiaRegistrable() {
+            var f = new Date();
+            f.setDate(f.getDate() - (plazo - 1));
+            return enIso(f);
+        }
+
+        /* El plazo, puesto sobre el control. Es donde evita el error en vez
+           de anunciarlo: el calendario del navegador se abre ya recortado y
+           un día vencido no se puede ni elegir. Hacia adelante tampoco hay
+           nada: una hora extra se pide después de haberla hecho. */
+        function recortarFecha() {
+            var caja = document.getElementById("datFechaPop");
+            if (!caja || plazo === 0) return;
+            caja.min = primerDiaRegistrable();
+            caja.max = hoy();
+        }
+
+        /* Cuántos días le quedan al día elegido antes de salirse del plazo.
+           El rango entero ya está debajo de la tarjeta y es un dato; lo que
+           hace actuar es 'este se le vence mañana'. */
+        function avisarDelDia() {
+            var caja = document.getElementById("ayuFechaPop");
+            var valor = Ventana.valorDe("datFechaPop");
+            var quedan;
+
+            if (!caja) return;
+            if (plazo === 0 || !valor) { caja.textContent = ""; return; }
+
+            quedan = diasEntre(valor, hoy());
+            quedan = plazo - 1 - quedan;
+
+            if (quedan < 0) { caja.textContent = "Ese día ya venció."; return; }
+            if (quedan === 0) { caja.textContent = "Último día para registrarlo."; return; }
+            if (quedan === 1) { caja.textContent = "Vence mañana."; return; }
+            caja.textContent = "Le quedan " + quedan + " días para registrarlo.";
+        }
+
+        /* Días entre dos 'aaaa-mm-dd'. Se parte a mano y no con Date(cadena):
+           el navegador lee '2026-09-01' como UTC y en Lima eso es el 31 de
+           agosto por la noche. Un día que se corre al contarlo es un error
+           que nadie perdona en un plazo. */
+        function diasEntre(desde, hasta) {
+            return Math.round((aFecha(hasta) - aFecha(desde)) / 86400000);
+        }
+
+        function aFecha(iso) {
+            var p = String(iso || "").split("-");
+            return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+        }
+
+        /* La tarjeta. Es la de SU SECCIÓN y solo esa: a las oficinas de la
+           lupa se les pueden cargar horas, pero la cuenta que este trabajador
+           rinde es una. Una ficha por cada oficina llenaría la pantalla de
+           cuentas ajenas.
+
+               <asignado>|<solicitado>|<pendiente>
+
+           Se reaprovechan las clases '.resumen' de T01FUN: es la misma
+           tarjeta -tres cifras y una barra- y darle otra hoja de estilos
+           sería mantener dos veces el mismo dibujo. */
+        function pintarResumen(lectura, origen) {
+            var caja = document.getElementById("secresumen");
+            var cifras = segmentoResumen(lectura, origen).split("|");
+            var quien = ubicacionDeSesion();
+            var asignado = cifras[0] || "";
+            var solicitado = cifras[1] || "";
+            var pendiente = cifras[2] || "";
+            var minutos, usados, pasado;
+
+            if (!caja) return;
+            if (asignado === "") {
+                /* Sin resumen no se dibuja una tarjeta en cero: eso diría que
+                   la cuota es cero, que es muy distinto de no saberla. Se
+                   deja lo que hubiera y queda anotado. */
+                Ventana.registrar("La respuesta de " + TABLA + " no trajo el resumen de la sección.");
+                return;
+            }
+
+            minutos = Grilla.hora.aMinutos(asignado);
+            usados = Grilla.hora.aMinutos(solicitado);
+            pasado = minutos > 0 && usados > minutos;
+
+            caja.innerHTML =
+                '<div class="resumen' + (pasado ? " resumen--excedida" : "") + '">' +
+                    '<div class="resumen__titulo">' + texto(quien.dUbicacion) +
+                        '<span class="resumen__periodo">' + rangoEnTexto() + "</span></div>" +
+                    '<div class="resumen__cifras">' +
+                        dato("Asignado", asignado, "") +
+                        dato("Solicitado", solicitado, "") +
+                        dato(pasado ? "Excedido" : "Pendiente", pendiente,
+                             pasado ? "resumen__valor--rojo" : "resumen__valor--verde") +
+                    "</div>" +
+                    '<div class="resumen__barra"><div class="resumen__lleno' +
+                        (pasado ? " resumen__lleno--excedido" : "") + '" id="resumenLleno"></div></div>' +
+                "</div>";
+
+            /* El ancho es un dato y no una decisión de estilo, así que se
+               pone por código. */
+            porcentaje("resumenLleno", minutos === 0 ? 0 : Math.min(100, Math.round(usados * 100 / minutos)));
+        }
+
+        /* Lo que la tarjeta está contando. Sin esto, las tres cifras no dicen
+           de qué tramo hablan y cambiarían al consultar sin que se entienda
+           por qué. */
+        function rangoEnTexto() {
+            var desde = Ventana.valorDe("datFechaInicio");
+            var hasta = Ventana.valorDe("datFechaFin");
+            if (!desde || !hasta) return "Su sección";
+            return "Del " + enLetra(desde) + " al " + enLetra(hasta);
+        }
+
+        function enLetra(iso) {
+            var p = String(iso || "").split("-");
+            return p[2] + "/" + p[1] + "/" + p[0];
+        }
+
+        function dato(rotulo, valor, clase) {
+            return '<div class="resumen__dato">' +
+                       '<div class="resumen__rotulo">' + texto(rotulo) + "</div>" +
+                       '<div class="resumen__valor ' + clase + '">' + texto(valor) + "</div>" +
+                   "</div>";
+        }
+
+        function alConstruir(modelo) {
+            modeloPantalla = modelo;
+            emparejarFiltroYResumen(TABLA);
+
+            /* La ventana se abre siempre por el mismo sitio -alta, modificar
+               y ver terminan en abrirPopup-, y para entonces los controles ya
+               tienen sus valores y sus bloqueos. Enganchar ahí evita adivinar
+               cuándo llegó la respuesta de Obtener. */
+            abrirOriginal = Ventana.abrirPopup;
+            Ventana.abrirPopup = function (t, titulo) {
+                var salida = abrirOriginal.call(Ventana, t, titulo);
+                if (t === TABLA) { recortarFecha(); avisarDelDia(); }
+                return salida;
+            };
+
+            enlazar("datFechaPop", avisarDelDia);
+        }
+
+        function enlazar(id, fn) {
+            var nodo = document.getElementById(id);
+            if (nodo) nodo.onchange = fn;
+        }
+
+        /* La carga: el resumen viene detrás de los combos, las filas, la
+           ayuda y los valores por omisión. Y con ella llega el plazo. */
+        function alCargar(lectura) {
+            leerPlazo();
+            pintarResumen(lectura, "carga");
+        }
+
+        /* La consulta contesta pelada: las filas en el [0] y el resumen en el
+           [1]. La librería ya repintó la grilla; lo que falta es la tarjeta,
+           que tiene que hablar del rango que se acaba de pedir. */
+        function alConsultar(lectura) {
+            pintarResumen(lectura, "consulta");
+        }
+
+        /* Y al grabar, modificar o eliminar: el mensaje, las filas y el
+           resumen recalculado. Cada solicitud que entra o sale mueve la
+           cuenta, así que la tarjeta y la grilla se rehacen con la misma
+           respuesta y sin pedir nada más. */
+        function alGestionar(lectura) {
+            pintarResumen(lectura, "gestion");
         }
 
         return {
