@@ -1,13 +1,20 @@
 ﻿# ============================================================================
-# T06FUN - Solicitud de Horas Extras (trabajador)
+# T03 - Solicitud de Horas Extras (trabajador)
 #
-# La otra mitad de T06. Allí la jefatura autoriza; aquí el trabajador pide
-# que le reconozcan el tiempo que trabajó fuera de su jornada.
+# Con esta pantalla el trabajador pide que le reconozcan el tiempo que trabajó
+# fuera de su jornada. Autorizar es otra pantalla y otro perfil: aquí solo se
+# pide.
 #
-# Es una pantalla aparte y no un modo de T06 porque no comparten casi nada:
-# otros permisos, otra cuenta que cuadrar y otro paquete -dvpkg_spT06FUN-. El
-# controlador arma el nombre del archivo y el del paquete con el mismo texto,
-# así que basta con que el menú diga 'T06FUN¦...' para que todo apunte aquí.
+# El controlador arma el nombre del archivo y el del paquete con el mismo
+# texto, así que basta con que el menú diga 'T03¦...' para que todo apunte
+# aquí: esta plantilla y dvpkg_spT03.
+#
+# Quién entra y qué puede hacer no se decide aquí. El menú declara la opción
+# -'21NSA100|Solicitar Horas Extras'- y sus acciones, y el perfil del
+# Web.config -'pTrabajador'- dice cuáles de ellas quedan en 'S'. El
+# controlador manda ya filtrado lo que el perfil permite y la librería apaga
+# el resto, así que el txt puede declarar lo que la pantalla ADMITE sin
+# preocuparse de quién lo va a ver.
 #
 # ----------------------------------------------------------------------------
 # LO QUE DEFINE UNA SOLICITUD
@@ -20,7 +27,7 @@
 # El tiempo es una cantidad y no dos horas del reloj. La ubicación NO es la
 # del trabajador: se elige, y por eso cada oficina trae su propio tiempo
 # asignado. El estado no se pregunta: toda solicitud nace 'Solicitado' y la
-# mueve la jefatura desde T06.
+# mueve la jefatura desde la pantalla de autorización.
 #
 # ----------------------------------------------------------------------------
 # LOS DOS PARÁMETROS QUE MANDAN SOBRE ESTA PANTALLA
@@ -42,7 +49,7 @@
 # ----------------------------------------------------------------------------
 # LO QUE SE LE PIDE A CARGAR
 #
-#     T06FUN|C|<cTrabajador>|<cUbicacion>
+#     T03|C|<cTrabajador>|<cUbicacion>
 #
 # El trabajador y su ubicación NO salen de la pantalla: salen de la sesión
 # -Escritorio los deja al ingresar y los cambia el desplegable de la cabecera-.
@@ -50,8 +57,8 @@
 # la palabra final sobre qué puede ver y grabar la tiene la base, no esta
 # trama.
 #
-# Esto es propio de T06FUN y por eso lo registra Sistema.js
-# ('Ventana.datosDeCarga.T06FUN'), no la librería.
+# Esto es propio de T03 y por eso lo registra Sistema.js
+# ('Ventana.datosDeCarga.T03'), no la librería.
 #
 # ----------------------------------------------------------------------------
 # LO QUE DEVUELVE CARGAR, por segmentos separados por ~ :
@@ -112,7 +119,7 @@
 # contando: se le dice de dónde viene la respuesta.
 # ============================================================================
 
-pantalla|tabla=T06FUN|titulo=Solicitud de Horas Extras|subtitulo=Pida que le reconozcan el tiempo que trabajó fuera de su jornada.
+pantalla|tabla=T03|titulo=Solicitud de Horas Extras|subtitulo=Pida que le reconozcan el tiempo que trabajó fuera de su jornada.
 
 # ---------------------------------------------------------------------------
 # Con qué se pide la lista: un rango de fechas, como en la pantalla que ya
@@ -145,8 +152,13 @@ seccion|id=resumen
 #           consulta traería todo el histórico y el resumen de al lado no
 #           tendría de qué hablar.
 #   pk      con qué se pide un registro a Obtener y con qué se da de baja.
+#   acciones sin 'eliminarMultiple' a propósito: el menú no lo concede a esta
+#           opción -declara RE, EX, MO, EL y VE- y declarar aquí una acción
+#           que el perfil nunca va a habilitar es prometer un botón que no
+#           existe. Lo que el perfil permite manda igual, pero el txt no tiene
+#           por qué pedir de más.
 # ---------------------------------------------------------------------------
-grilla|columnas=Id:0:numero,Ubicación:300,Fecha de Solicitud:150,Tiempo Solicitado:150:hora,Tipo de Cobro:150,Modalidad:140,Estado:130|porPagina=10|filtros=si|filtro=!FechaInicio,!FechaFin|pk=Id|uk=FechaPop,OficinaPop|rotulo=NombreOficina|archivo=SolicitudHorasExtras.xlsx|acciones=nuevo,eliminarMultiple,excel,editar,eliminar,ver
+grilla|columnas=Id:0:numero,Ubicación:300,Fecha de Solicitud:150,Tiempo Solicitado:150:hora,Tipo de Cobro:150,Modalidad:140,Estado:130|porPagina=10|filtros=si|filtro=!FechaInicio,!FechaFin|pk=Id|uk=FechaPop,OficinaPop|rotulo=NombreOficina|archivo=SolicitudHorasExtras.xlsx|acciones=nuevo,excel,editar,eliminar,ver
 
 # ---------------------------------------------------------------------------
 # La lupa: las oficinas a las que este trabajador puede cargar horas. Trae dos
