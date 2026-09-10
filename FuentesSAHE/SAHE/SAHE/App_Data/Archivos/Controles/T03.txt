@@ -71,13 +71,13 @@
 #        La lista 2 la manda el paquete pero esta pantalla NO la consume, y
 #        es a propósito: el trabajador no elige el estado -toda solicitud
 #        nace Solicitado y la mueve la jefatura-, así que no hay desplegable
-#        donde ponerla. Su sitio natural sería un filtro de la búsqueda
-#        -'ver solo las rechazadas'-, y para eso haría falta agregar el campo
-#        aquí Y el valor a la trama de consultar, que hoy son dos fechas. Sin
-#        campo que la pida, la librería la ignora sin ruido.
+#        donde ponerla. Su sitio natural sería un filtro de la búsqueda -'ver
+#        solo las rechazadas'-, y para eso haría falta agregar el campo aquí
+#        Y el valor a la trama de consultar, que hoy son dos fechas. Sin campo
+#        que la pida, la librería la ignora sin ruido.
 #
 #        El tercer dato de cada estado -S, A, SA, P, PF- es la letra con que
-#        el paquete lo agrupa; la pantalla solo mostraría el texto.
+#        el paquete lo agrupa; la pantalla solo muestra el texto.
 #
 #   [1]  filas de la grilla, campos por | y en el orden de
 #        'mapeo|origen=cargar':
@@ -87,55 +87,68 @@
 #
 #        El código del trabajador y la secuencia vienen en la fila pero no se
 #        muestran -columna de ancho 0-: el primero es siempre el mismo, el de
-#        quien está mirando, y la segunda es la versión del registro. Están
-#        porque el paquete los manda y porque la baja los puede necesitar.
+#        quien está mirando, y la segunda es la versión del registro.
 #
 #        El cobro, la modalidad y el estado llegan YA EN TEXTO, no en código:
 #        la grilla los pinta tal cual y no tiene que ir a buscarlos a las
 #        listas.
 #
-#   [2]  ayuda de la lupa: las oficinas, en registros separados por ¬ y con
+#   [2]  el RESUMEN, cuatro cantidades en hh:mm:
+#
+#          totalHoras|horasAprobadas|horasSolicitadas|horasPendientes
+#
+#        Es lo que pinta la tarjeta, y es la de SU SECCIÓN y solo esa: las
+#        oficinas de la lupa son varias, pero la cuenta que este trabajador
+#        rinde es una; una ficha por cada oficina llenaría la pantalla de
+#        cuentas ajenas.
+#
+#        Las cuatro se pintan con su rótulo y sin interpretarlas; la barra
+#        mide lo aprobado sobre el total, que es lo único que se puede
+#        afirmar sin saber qué cuenta cada una.
+#
+#        Se manda calculado desde la base y no se recalcula aquí: la pantalla
+#        solo ve las filas del rango consultado, y una cuenta armada con lo
+#        que está a la vista miente en cuanto algo queda fuera de la vista.
+#
+#   [3]  la AYUDA de la lupa: las oficinas, en registros separados por ¬ y con
 #        sus dos campos por | :
 #
 #          0398|AGENCIA 3 MACMYPE JUNIN¬9005|OFICINA ESPECIAL RENIEC - CIENEGUILLA
 #
+#   [4]  los valores POR DEFECTO, y son POSICIONALES -no 'clave=valor'-:
+#
+#          codigoTrabajador|fechaInicio|fechaFin|fechaInicioPop|
+#          cantidadMinimaRegistro|cantidadMaximaRegistro|multiploMinutos|
+#          descripcionHorarioPop
+#
+#        De aquí sale casi todo lo que la pantalla no puede inventarse:
+#
+#          fechaInicio, fechaFin   el rango con que se abre el filtro
+#          fechaInicioPop          desde qué día se puede registrar: es el
+#                                  plazo hecho fecha, y se convierte en el
+#                                  mínimo del calendario de la ventana. El
+#                                  máximo es hoy, porque una hora extra se
+#                                  pide después de haberla hecho.
+#          cantidadMinimaRegistro,
+#          cantidadMaximaRegistro
+#          y multiploMinutos       el desde, el hasta y el paso del
+#                                  desplegable de tiempo. Se aceptan en
+#                                  minutos -'15'- o en hh:mm -'00:15'-.
+#          descripcionHorarioPop   el horario, que se MUESTRA en la ventana y
+#                                  no limita nada
+#
 # ----------------------------------------------------------------------------
-# LO QUE LA CARGA TODAVÍA NO TRAE
+# DOS COSAS QUE LA LIBRERÍA DA POR SUPUESTAS Y AQUÍ NO SE CUMPLEN
 #
-# La respuesta de hoy termina en el [2]. Dos cosas de esta pantalla dependen
-# de segmentos que aún no llegan, y hasta que lleguen se comportan así:
+# La librería busca la ayuda siempre en el [2] y los valores por omisión en el
+# primer segmento que contenga un '='. Este paquete pone el resumen en el [2],
+# la ayuda en el [3] y los por defecto posicionales en el [4], así que
+# Sistema.js los recoloca después de que la librería reparta. Sin eso, la lupa
+# mostraría las cifras del resumen y los por defecto quedarían vacíos.
 #
-#   [3]  valores por omisión, 'clave=valor' separados por ¦ :
-#
-#          FechaInicio=2026-09-01¦FechaFin=2026-09-30¦FechaPop=2026-09-10¦
-#          Multiplo=15¦Plazo=26
-#
-#        'Multiplo' es de cuánto en cuánto sube el tiempo y con él arma
-#        Sistema.js el desplegable. Mientras no venga se cae a 15 minutos y
-#        lo deja anotado en la consola: la pantalla sirve, pero el parámetro
-#        que manda es el del aplicativo y no ese.
-#
-#        'Plazo' recorta la fecha de la ventana. Sin él, el campo se queda
-#        sin mínimo ni máximo y quien decide qué día se acepta es la base.
-#
-#        'FechaInicio' y 'FechaFin' abren la pantalla con un rango puesto.
-#        Sin ellos el filtro nace vacío y hay que elegirlo para consultar.
-#
-#   [4]  el resumen de SU sección en el rango consultado, en hh:mm:
-#          <asignado>|<solicitado>|<pendiente>
-#          por ejemplo   40:00|10:00|30:00
-#
-#        Es lo que pinta la tarjeta. Es la de SU SECCIÓN y solo esa: las
-#        oficinas de la lupa son varias, pero la cuenta que este trabajador
-#        rinde es una; una ficha por cada oficina llenaría la pantalla de
-#        cuentas ajenas. Debe venir calculado desde la base y no se recalcula
-#        aquí: la pantalla solo ve las filas del rango consultado, y una
-#        cuenta armada con lo que está a la vista miente en cuanto algo queda
-#        fuera de la vista.
-#
-#        Mientras no venga, la sección del resumen no se dibuja -no queda un
-#        recuadro vacío- y queda anotado en la consola. Una tarjeta en cero
-#        diría que su cuota es cero, que es muy distinto de no saberla.
+# Se arregla en la pantalla y no en la librería porque no es un error de la
+# librería: es que este paquete ordena sus segmentos a su manera, y las otras
+# pantallas siguen con la suya.
 #
 # ----------------------------------------------------------------------------
 # LO QUE DEVUELVE CONSULTAR:
@@ -232,8 +245,8 @@ ayuda|titulo=Búsqueda de oficinas|ancho=640|porPagina=10|columnas=Código:120,O
 # La ventana de mantenimiento.
 #
 # 'deshabilitar' admite grupos separados por ; : el primero, sin prefijo, vale
-# para todas las acciones. El nombre de la oficina nunca se escribe -lo trae
-# la lupa-; y al MODIFICAR se apagan además la fecha y el código de oficina,
+# para todas las acciones. Ni el horario ni el nombre de la oficina se
+# escriben nunca -el primero lo pone la carga y el segundo lo trae la lupa-; y al MODIFICAR se apagan además la fecha y el código de oficina,
 # porque cambiarlos sería otra solicitud y no una corrección de esta. Se
 # apagan y no se esconden: siguen haciendo falta para saber de qué registro se
 # está hablando. La librería esconde la lupa junto con su campo, así que al
@@ -242,7 +255,7 @@ ayuda|titulo=Búsqueda de oficinas|ancho=640|porPagina=10|columnas=Código:120,O
 # Modificar deja abiertos exactamente cuatro: tiempo, tipo de cobro, modalidad
 # y motivo.
 # ---------------------------------------------------------------------------
-popup|titulo=Solicitud de horas extras|ancho=760|deshabilitar=NombreOficina;editar:FechaPop,OficinaPop
+popup|titulo=Solicitud de horas extras|ancho=760|deshabilitar=HorarioPop,NombreOficina;editar:FechaPop,OficinaPop
 
 seccion|id=datos
 campo|tipo=oculto|id=CodigoAccion
@@ -270,6 +283,12 @@ campo|tipo=fecha|id=FechaPop|etiqueta=Fecha a solicitar|ancho=corto|requerido=si
 # hh:mm con que el paquete escribe el tiempo en la grilla, para que la ida y
 # la vuelta hablen igual.
 campo|tipo=select|id=Tiempo|etiqueta=Tiempo solicitado|opciones=-:Elija el tiempo|ancho=corto|requerido=si|ayuda=Sube de múltiplo en múltiplo.
+
+# El horario, que llega en el último dato del [4]. Es de REFERENCIA: se
+# muestra para que la persona se ubique y no limita lo que puede pedir. Va
+# aquí porque el paquete se toma el trabajo de mandarlo, y un dato que se
+# manda y no se enseña es un viaje perdido.
+campo|tipo=text|id=HorarioPop|etiqueta=Su horario|largo=100|ancho=medio|soloLectura=si
 
 # Segunda fila: la oficina. El código con lupa y el nombre al lado, de solo
 # lectura: un código de cuatro cifras no le dice nada a nadie.

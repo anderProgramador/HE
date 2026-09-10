@@ -122,21 +122,26 @@ var Sistema = (function () {
        Llega detrás de las filas en las tres respuestas, pero no en el mismo
        número de segmento, porque delante de las filas no siempre va lo mismo:
 
-           carga     [0] combos, [1] filas ... y el resumen en el [4]
            consulta  [0] filas,  [1] resumen
            gestión   [0] mensaje, [1] filas, [2] resumen
 
+       En la CARGA no hay un sitio común: cada paquete ordena sus segmentos
+       como quiere -T01FUN manda el resumen al final, en el [4]; T03 lo pone
+       en el [2], antes de la ayuda-, así que ese índice lo dice la pantalla
+       y no se adivina aquí. Los otros dos sí son iguales porque la forma de
+       una consulta y la de un grabado las fija la librería.
+
        Una consulta no trae combos ni ayudas ni valores por omisión -eso ya
        está puesto desde la carga y volver a pisarlo le movería al usuario los
-       filtros que acaba de elegir-, así que contesta pelada. Por eso el aviso
-       dice de dónde viene en vez de que esto lo adivine contando segmentos.
+       filtros que acaba de elegir-, así que contesta pelada.
 
        No se recalcula con las filas de la grilla: la pantalla ve un tramo por
        vez, y una cuenta armada con lo que está a la vista miente en cuanto
        algo queda fuera de la vista. */
-    function segmentoResumen(lectura, origen) {
+    function segmentoResumen(lectura, origen, enCarga) {
         var segmentos = (lectura && lectura.segmentos) ? lectura.segmentos : [];
-        var i = (origen === "gestion") ? 2 : (origen === "consulta" ? 1 : 4);
+        var i = (origen === "gestion") ? 2
+              : (origen === "consulta" ? 1 : (enCarga === undefined ? 4 : enCarga));
         return String(segmentos[i] || "");
     }
 
@@ -557,48 +562,45 @@ var Sistema = (function () {
     /* ========================================================================
        T03 - Solicitud de Horas Extras (trabajador)
 
-       Cuatro cosas son propias de esta pantalla:
+       Lo propio de esta pantalla es leer una carga que NO tiene la forma que
+       la librería da por supuesta. El paquete manda cinco segmentos en este
+       orden:
 
-         1. La carga le manda al paquete con quién y sobre qué ubicación se
-            está entrando. Ese dato no está en la pantalla sino en la sesión,
-            puesto por el escritorio. Igual que en T01FUN.
-         2. La tarjeta de SU SECCIÓN, que no son campos que el usuario llene
-            sino el estado de su cuenta, y que el paquete manda calculada.
-         3. El PLAZO. Llega con la carga y se convierte en el mínimo y el
-            máximo del campo de fecha de la ventana: los días vencidos ni
-            siquiera se pueden elegir.
-         4. El aviso de cuánto le queda de plazo al día elegido.
+           [0] combos    cobro ¦ modalidad ¦ estados
+           [1] grilla
+           [2] RESUMEN   totalHoras|horasAprobadas|horasSolicitadas|horasPendientes
+           [3] AYUDA     las oficinas de la lupa
+           [4] POR DEFECTO, y posicionales:
+               codigoTrabajador|fechaInicio|fechaFin|fechaInicioPop|
+               cantidadMinimaRegistro|cantidadMaximaRegistro|multiploMinutos|
+               descripcionHorarioPop
 
-       El MÚLTIPLO no está aquí y es a propósito: el tiempo es un desplegable
-       cuyas opciones manda el paquete ya en múltiplos, así que una cantidad
-       que no cuadre no se puede ni teclear. Un parámetro que se convierte en
-       la forma del control no necesita código que lo vigile.
+       La librería busca la ayuda siempre en el [2] y los valores por omisión
+       como 'clave=valor'. Ninguna de las dos cosas se cumple aquí, así que
+       esta pantalla los recoloca DESPUÉS de que la librería reparta: sin eso
+       la lupa mostraría las cifras del resumen y los por-omisión quedarían
+       vacíos. Se arregla aquí y no en la librería porque no es un error de la
+       librería: es que este paquete ordena sus segmentos a su manera, y las
+       otras pantallas siguen con la suya.
 
-       El PERFIL tampoco: quién entra lo dice el menú y qué puede hacer lo
-       dice 'pTrabajador' en el Web.config. El controlador manda en 'hdfTabla'
-       solo los códigos que el perfil tiene en 'S' y la librería apaga el
-       resto, así que aquí no hay nada que consultar ni que esconder.
-
-       La lupa de oficinas, el desplegable del tiempo, el contador del motivo
-       y los bloqueos del modificar tampoco están: los declara el txt y los
-       resuelve la librería.
+       Del [4] sale casi todo lo que la pantalla no puede inventar: el rango
+       con que se abre el filtro, desde qué día se puede registrar, y el
+       mínimo, el máximo y el paso del desplegable de tiempo. El horario es
+       informativo: se muestra en la ventana y no limita nada.
        ===================================================================== */
     particular.T03 = (function () {
 
         var TABLA = "T03";
-        var abrirOriginal = null;
+        /* En la carga, el resumen viene antes que la ayuda. */
+        var RESUMEN_EN_CARGA = 2;
+        var AYUDA_EN_CARGA = 3;
+        var POR_DEFECTO_EN_CARGA = 4;
 
-        /* El múltiplo mientras el paquete no lo mande. NO es la
-           configuración: es lo que permite que la pantalla sirva hoy, y se
-           anuncia en la consola cada vez que se usa para que no pase por
-           configuración. En cuanto la carga traiga 'Multiplo=' en sus valores
-           por omisión, manda ese y esto no vuelve a leerse. */
-        var MULTIPLO_MIENTRAS_TANTO = 15;
-        var TOPE_TIEMPO = 8 * 60;
-        /* El modelo de la pantalla, que llega con 'alConstruir'. Se guarda
-           porque es de donde salen los valores por omisión de la carga, y
-           'Formulario' no se ve desde aquí: vive dentro de Ventana. */
+        var abrirOriginal = null;
         var modeloPantalla = null;
+        /* Lo que trajo el [4], ya partido. Se guarda porque la ventana lo
+           necesita cada vez que se abre y no tiene sentido volver a pedirlo. */
+        var ajustes = null;
 
         /* 'C|<cTrabajador>|<cUbicacion>'. Se registra en la librería como lo
            que esta pantalla le agrega a la trama de la carga. */
@@ -607,212 +609,239 @@ var Sistema = (function () {
             return "|" + quien.cTrabajador + "|" + quien.cUbicacion;
         };
 
-        /* Lo que dice el paquete que se puede registrar. Se guarda al cargar
-           porque la ventana lo necesita cada vez que se abre y no tiene
-           sentido volver a pedirlo. Sin dato del paquete no se inventa
-           ninguno: se deja la fecha libre y que decida la base, que es quien
-           manda. */
-        var plazo = 0;
+        /* ------------------------------------------------ el cuarto segmento
+           Posicional, no 'clave=valor', así que se lee por orden. Un campo que
+           no venga queda en blanco y quien dependa de él se comporta como si
+           no existiera, en vez de inventarse un valor. */
+        function leerAjustes(lectura) {
+            var crudo = String((lectura.segmentos || [])[POR_DEFECTO_EN_CARGA] || "");
+            var c = crudo.split("|");
 
-        /* El desplegable del tiempo, armado con el múltiplo. Las opciones son
-           las únicas cantidades que se pueden pedir, así que una que no
-           cuadre con el parámetro no se puede ni teclear: el reparo que la
-           rechazaría no llega a existir.
+            ajustes = {
+                trabajador: c[0] || "",
+                fechaInicio: c[1] || "",
+                fechaFin: c[2] || "",
+                fechaInicioPop: c[3] || "",
+                minimo: enMinutos(c[4]),
+                maximo: enMinutos(c[5]),
+                multiplo: enMinutos(c[6]),
+                horario: c[7] || ""
+            };
+            if (crudo === "") {
+                Ventana.registrar("La carga de " + TABLA + " no trajo el segmento de valores " +
+                                  "por defecto; el filtro nace vacío y el tiempo sin límites.");
+            }
+        }
 
-           El valor de cada opción es el mismo hh:mm con que el paquete
-           escribe el tiempo en la grilla -'04:00'- para que lo que se manda y
-           lo que vuelve hablen igual. */
+        /* Una cantidad puede venir en minutos -'15'- o en hh:mm -'00:15'-.
+           Se aceptan las dos: adivinar mal el formato de un tope convierte un
+           desplegable de ocho horas en uno de ocho minutos. */
+        function enMinutos(valor) {
+            var texto = String(valor === undefined || valor === null ? "" : valor);
+            var partes, h, m, n;
+
+            if (texto === "") return 0;
+            if (texto.indexOf(":") >= 0) {
+                partes = texto.split(":");
+                h = parseInt(partes[0], 10);
+                m = parseInt(partes[1], 10);
+                return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+            }
+            n = parseInt(texto, 10);
+            return isNaN(n) ? 0 : n;
+        }
+
+        /* La ayuda, en su sitio. La librería la dejó apuntando al [2] -que
+           aquí es el resumen-, así que se corrige antes de que alguien abra
+           la lupa. */
+        function corregirAyuda(lectura) {
+            var segmentos = lectura.segmentos || [];
+            if (!modeloPantalla) return;
+            modeloPantalla.datosAyuda = [String(segmentos[AYUDA_EN_CARGA] || "")];
+        }
+
+        /* ------------------------------------------------------- las fechas
+           El filtro y la ventana usan <input type="date">, que solo entiende
+           'aaaa-mm-dd'. El paquete escribe las fechas como '02/09/2026' en la
+           grilla, así que se admiten las dos formas y se normaliza. */
+        function enIsoTexto(valor) {
+            var texto = String(valor || "").replace(/^\s+|\s+$/g, "");
+            var p;
+
+            if (texto === "") return "";
+            if (texto.indexOf("/") >= 0) {
+                p = texto.split("/");
+                if (p.length !== 3) return "";
+                return p[2] + "-" + dos(p[1]) + "-" + dos(p[0]);
+            }
+            return texto;
+        }
+
+        function dos(n) {
+            var t = String(n);
+            return t.length < 2 ? "0" + t : t;
+        }
+
+        function enIso(fecha) {
+            return String(fecha.getFullYear()) + "-" +
+                   dos(fecha.getMonth() + 1) + "-" + dos(fecha.getDate());
+        }
+
+        function hoy() { return enIso(new Date()); }
+
+        /* El rango con que se abre el filtro. Solo se pone lo que venga: si
+           el paquete no manda fechas, el usuario las elige. */
+        function aplicarFiltro() {
+            ponerFecha("datFechaInicio", enIsoTexto(ajustes.fechaInicio));
+            ponerFecha("datFechaFin", enIsoTexto(ajustes.fechaFin));
+        }
+
+        function ponerFecha(id, valor) {
+            var caja = document.getElementById(id);
+            if (caja && valor !== "") caja.value = valor;
+        }
+
+        /* Desde qué día se puede registrar. Es el plazo hecho fecha: lo
+           calcula el paquete y aquí solo se pone como mínimo del calendario,
+           que así se abre ya recortado y un día vencido no se puede ni
+           elegir. El máximo es hoy: una hora extra se pide después de
+           haberla hecho. */
+        function recortarFecha() {
+            var caja = document.getElementById("datFechaPop");
+            var desde = enIsoTexto(ajustes ? ajustes.fechaInicioPop : "");
+
+            if (!caja) return;
+            caja.max = hoy();
+            if (desde === "") {
+                Ventana.registrar("La carga de " + TABLA + " no trajo 'fechaInicioPop'; " +
+                                  "la fecha queda sin mínimo y quien decide qué día se " +
+                                  "acepta es la base.");
+                return;
+            }
+            caja.min = desde;
+            document.getElementById("ayuFechaPop").textContent =
+                "Se puede registrar desde el " + enTexto(desde) + ".";
+        }
+
+        function enTexto(iso) {
+            var p = String(iso || "").split("-");
+            return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso;
+        }
+
+        /* ------------------------------------------------------- el tiempo
+           El desplegable va del mínimo al máximo, de múltiplo en múltiplo.
+           Las tres cifras son del aplicativo y llegan en el [4]: aquí no hay
+           ningún número escrito.
+
+           Con eso, una cantidad que no cuadre no se puede ni teclear, y el
+           reparo que la rechazaría no llega a existir. El valor de cada
+           opción es el mismo hh:mm con que el paquete escribe el tiempo en la
+           grilla -'04:00'- para que la ida y la vuelta hablen igual. */
         function llenarTiempos() {
             var caja = document.getElementById("cboTiempo");
-            var paso = leerMultiplo();
-            var opcion, minutos;
+            var paso = ajustes.multiplo;
+            var desde = ajustes.minimo > 0 ? ajustes.minimo : paso;
+            var hasta = ajustes.maximo;
+            var minutos;
 
             if (!caja) {
                 Ventana.registrar("La plantilla de " + TABLA + " no declara el campo Tiempo.");
                 return;
             }
-
             caja.innerHTML = "";
-            opcion = document.createElement("option");
-            opcion.value = "";
-            opcion.textContent = "Seleccione";
-            caja.appendChild(opcion);
+            caja.appendChild(opcion("", "Seleccione"));
 
-            for (minutos = paso; minutos <= TOPE_TIEMPO; minutos += paso) {
-                opcion = document.createElement("option");
-                opcion.value = enHoras(minutos);
-                opcion.textContent = enHoras(minutos);
-                caja.appendChild(opcion);
+            if (paso < 1 || hasta < desde) {
+                Ventana.registrar("La carga de " + TABLA + " no trajo el múltiplo o los topes " +
+                                  "del tiempo; el desplegable queda vacío.");
+                return;
+            }
+            for (minutos = desde; minutos <= hasta; minutos += paso) {
+                caja.appendChild(opcion(enHoras(minutos), enHoras(minutos)));
             }
             document.getElementById("ayuTiempo").textContent =
-                "De " + enHoras(paso) + " en " + enHoras(paso) + ".";
+                "De " + enHoras(desde) + " a " + enHoras(hasta) +
+                ", de " + enHoras(paso) + " en " + enHoras(paso) + ".";
         }
 
-        /* Minutos a 'hh:mm' con las dos cifras de la hora, que es como los
-           escribe el paquete: '04:00' y no '4:00'. */
+        function opcion(valor, texto) {
+            var o = document.createElement("option");
+            o.value = valor;
+            o.textContent = texto;
+            return o;
+        }
+
+        /* Minutos a 'hh:mm' con las dos cifras de la hora, como los escribe el
+           paquete: '04:00' y no '4:00'. */
         function enHoras(minutos) {
-            var h = Math.floor(minutos / 60), m = minutos % 60;
-            return (h < 10 ? "0" + h : String(h)) + ":" + (m < 10 ? "0" + m : String(m));
+            return dos(Math.floor(minutos / 60)) + ":" + dos(minutos % 60);
         }
 
-        function leerMultiplo() {
-            var valor = (modeloPantalla && modeloPantalla.porDefecto)
-                        ? modeloPantalla.porDefecto.Multiplo : "";
-            var n = parseInt(valor, 10);
-
-            if (isNaN(n) || n < 1) {
-                Ventana.registrar("La carga de " + TABLA + " no trajo el parámetro Multiplo; " +
-                                  "el tiempo sube de " + MULTIPLO_MIENTRAS_TANTO +
-                                  " en " + MULTIPLO_MIENTRAS_TANTO + " minutos hasta que llegue.");
-                return MULTIPLO_MIENTRAS_TANTO;
-            }
-            return n;
+        /* El horario, que es de referencia: se muestra para que la persona se
+           ubique y no limita lo que puede pedir. */
+        function ponerHorario() {
+            var caja = document.getElementById("txtHorarioPop");
+            if (caja) caja.value = ajustes ? ajustes.horario : "";
         }
 
-        function leerPlazo() {
-            var modelo = modeloPantalla;
-            var valor = (modelo && modelo.porDefecto) ? modelo.porDefecto.Plazo : "";
-            var n = parseInt(valor, 10);
-            plazo = (isNaN(n) || n < 1) ? 0 : n;
-            if (plazo === 0) {
-                Ventana.registrar("La carga de " + TABLA + " no trajo el parámetro Plazo; " +
-                                  "la fecha queda sin recortar y quien decide qué día se " +
-                                  "acepta es la base.");
-            }
-        }
+        /* --------------------------------------------------------- la tarjeta
+           Cuatro cifras, que son las cuatro que manda el paquete:
 
-        /* La fecha de hoy y la de hace 'plazo' días, en el 'aaaa-mm-dd' que
-           entiende un <input type="date">. Se calcula al ABRIR la ventana y
-           no al cargar la pantalla: si la pestaña quedó abierta de ayer, el
-           plazo de hoy es otro. */
-        function enIso(fecha) {
-            var m = fecha.getMonth() + 1, d = fecha.getDate();
-            return String(fecha.getFullYear()) + "-" +
-                   (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d);
-        }
+               totalHoras | horasAprobadas | horasSolicitadas | horasPendientes
 
-        function hoy() { return enIso(new Date()); }
-
-        function primerDiaRegistrable() {
-            var f = new Date();
-            f.setDate(f.getDate() - (plazo - 1));
-            return enIso(f);
-        }
-
-        /* El plazo, puesto sobre el control. Es donde evita el error en vez
-           de anunciarlo: el calendario del navegador se abre ya recortado y
-           un día vencido no se puede ni elegir. Hacia adelante tampoco hay
-           nada: una hora extra se pide después de haberla hecho. */
-        function recortarFecha() {
-            var caja = document.getElementById("datFechaPop");
-            if (!caja || plazo === 0) return;
-            caja.min = primerDiaRegistrable();
-            caja.max = hoy();
-        }
-
-        /* Cuántos días le quedan al día elegido antes de salirse del plazo.
-           El rango entero ya está debajo de la tarjeta y es un dato; lo que
-           hace actuar es 'este se le vence mañana'. */
-        function avisarDelDia() {
-            var caja = document.getElementById("ayuFechaPop");
-            var valor = Ventana.valorDe("datFechaPop");
-            var quedan;
-
-            if (!caja) return;
-            if (plazo === 0 || !valor) { caja.textContent = ""; return; }
-
-            quedan = diasEntre(valor, hoy());
-            quedan = plazo - 1 - quedan;
-
-            if (quedan < 0) { caja.textContent = "Ese día ya venció."; return; }
-            if (quedan === 0) { caja.textContent = "Último día para registrarlo."; return; }
-            if (quedan === 1) { caja.textContent = "Vence mañana."; return; }
-            caja.textContent = "Le quedan " + quedan + " días para registrarlo.";
-        }
-
-        /* Días entre dos 'aaaa-mm-dd'. Se parte a mano y no con Date(cadena):
-           el navegador lee '2026-09-01' como UTC y en Lima eso es el 31 de
-           agosto por la noche. Un día que se corre al contarlo es un error
-           que nadie perdona en un plazo. */
-        function diasEntre(desde, hasta) {
-            return Math.round((aFecha(hasta) - aFecha(desde)) / 86400000);
-        }
-
-        function aFecha(iso) {
-            var p = String(iso || "").split("-");
-            return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-        }
-
-        /* La tarjeta. Es la de SU SECCIÓN y solo esa: a las oficinas de la
-           lupa se les pueden cargar horas, pero la cuenta que este trabajador
-           rinde es una. Una ficha por cada oficina llenaría la pantalla de
-           cuentas ajenas.
-
-               <asignado>|<solicitado>|<pendiente>
-
-           Se reaprovechan las clases '.resumen' de T01FUN: es la misma
-           tarjeta -tres cifras y una barra- y darle otra hoja de estilos
-           sería mantener dos veces el mismo dibujo. */
+           Se pintan con el rótulo que les da el paquete y sin interpretarlas:
+           la barra mide lo aprobado sobre el total, que es lo único que se
+           puede afirmar sin saber qué cuenta cada una. */
         function pintarResumen(lectura, origen) {
             var caja = document.getElementById("secresumen");
-            var cifras = segmentoResumen(lectura, origen).split("|");
+            var cifras = segmentoResumen(lectura, origen, RESUMEN_EN_CARGA).split("|");
             var quien = ubicacionDeSesion();
-            var asignado = cifras[0] || "";
-            var solicitado = cifras[1] || "";
-            var pendiente = cifras[2] || "";
-            var minutos, usados, pasado;
+            var total = cifras[0] || "";
+            var aprobadas = cifras[1] || "";
+            var solicitadas = cifras[2] || "";
+            var pendientes = cifras[3] || "";
+            var minutos, hechas;
 
             if (!caja) return;
-            if (asignado === "") {
+            if (total === "") {
                 /* Sin resumen no se dibuja una tarjeta en cero: eso diría que
-                   su cuota es cero, que es muy distinto de no saberla.
-
-                   Y si NUNCA hubo tarjeta -el paquete todavía no manda ese
-                   segmento- la sección se esconde: un recuadro vacío al lado
-                   del filtro se lee como que algo falló al cargar. En cuanto
-                   llegue una cifra vuelve sola. */
+                   su cuenta es cero, que es muy distinto de no saberla. Y si
+                   nunca hubo tarjeta, la sección se esconde: un recuadro
+                   vacío al lado del filtro se lee como que algo falló al
+                   cargar. */
                 if (caja.innerHTML === "") caja.hidden = true;
-                Ventana.registrar("La respuesta de " + TABLA + " no trajo el resumen de la sección.");
+                Ventana.registrar("La respuesta de " + TABLA + " no trajo el resumen.");
                 return;
             }
             caja.hidden = false;
 
-            minutos = Grilla.hora.aMinutos(asignado);
-            usados = Grilla.hora.aMinutos(solicitado);
-            pasado = minutos > 0 && usados > minutos;
+            minutos = Grilla.hora.aMinutos(total);
+            hechas = Grilla.hora.aMinutos(aprobadas);
 
             caja.innerHTML =
-                '<div class="resumen' + (pasado ? " resumen--excedida" : "") + '">' +
+                '<div class="resumen resumen--cuatro">' +
                     '<div class="resumen__titulo">' + texto(quien.dUbicacion) +
                         '<span class="resumen__periodo">' + rangoEnTexto() + "</span></div>" +
                     '<div class="resumen__cifras">' +
-                        dato("Asignado", asignado, "") +
-                        dato("Solicitado", solicitado, "") +
-                        dato(pasado ? "Excedido" : "Pendiente", pendiente,
-                             pasado ? "resumen__valor--rojo" : "resumen__valor--verde") +
+                        dato("Total", total, "") +
+                        dato("Aprobadas", aprobadas, "resumen__valor--verde") +
+                        dato("Solicitadas", solicitadas, "") +
+                        dato("Pendientes", pendientes, "") +
                     "</div>" +
-                    '<div class="resumen__barra"><div class="resumen__lleno' +
-                        (pasado ? " resumen__lleno--excedido" : "") + '" id="resumenLleno"></div></div>' +
+                    '<div class="resumen__barra"><div class="resumen__lleno" id="resumenLleno"></div></div>' +
                 "</div>";
 
-            /* El ancho es un dato y no una decisión de estilo, así que se
-               pone por código. */
-            porcentaje("resumenLleno", minutos === 0 ? 0 : Math.min(100, Math.round(usados * 100 / minutos)));
+            porcentaje("resumenLleno", minutos === 0 ? 0 : Math.min(100, Math.round(hechas * 100 / minutos)));
         }
 
-        /* Lo que la tarjeta está contando. Sin esto, las tres cifras no dicen
-           de qué tramo hablan y cambiarían al consultar sin que se entienda
-           por qué. */
+        /* Lo que la tarjeta está contando. Sin esto, las cifras no dicen de
+           qué tramo hablan y cambiarían al consultar sin que se entienda por
+           qué. */
         function rangoEnTexto() {
             var desde = Ventana.valorDe("datFechaInicio");
             var hasta = Ventana.valorDe("datFechaFin");
             if (!desde || !hasta) return "Su sección";
-            return "Del " + enLetra(desde) + " al " + enLetra(hasta);
-        }
-
-        function enLetra(iso) {
-            var p = String(iso || "").split("-");
-            return p[2] + "/" + p[1] + "/" + p[0];
+            return "Del " + enTexto(desde) + " al " + enTexto(hasta);
         }
 
         function dato(rotulo, valor, clase) {
@@ -833,25 +862,18 @@ var Sistema = (function () {
             abrirOriginal = Ventana.abrirPopup;
             Ventana.abrirPopup = function (t, titulo) {
                 var salida = abrirOriginal.call(Ventana, t, titulo);
-                if (t === TABLA) { recortarFecha(); avisarDelDia(); }
+                if (t === TABLA && ajustes) { recortarFecha(); ponerHorario(); }
                 return salida;
             };
-
-            enlazar("datFechaPop", avisarDelDia);
         }
 
-        function enlazar(id, fn) {
-            var nodo = document.getElementById(id);
-            if (nodo) nodo.onchange = fn;
-        }
-
-        /* La carga: el resumen viene detrás de los combos, las filas, la
-           ayuda y los valores por omisión. Y con ella llega el plazo. */
+        /* La carga. El orden importa: primero se lee el [4], porque de ahí
+           sale todo lo que se aplica después. */
         function alCargar(lectura) {
-            leerPlazo();
-            /* Después de leer los valores por omisión, no antes: es de ahí de
-               donde sale el múltiplo con que se arma la lista. */
+            leerAjustes(lectura);
+            corregirAyuda(lectura);
             llenarTiempos();
+            aplicarFiltro();
             pintarResumen(lectura, "carga");
         }
 
