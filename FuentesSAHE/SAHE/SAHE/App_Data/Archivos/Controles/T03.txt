@@ -64,17 +64,32 @@
 # LO QUE DEVUELVE CARGAR, por segmentos separados por ~ :
 #
 #   [0]  listas de los combos, separadas por ¦ y con sus registros por ¬
+#
 #          0  tipo de cobro     00001|Pago¬00002|Compensación
 #          1  modalidad         00001|Presencial¬00002|Teletrabajo
-#          2  estados           00001|Solicitado|S¬00002|Aprobado|A¬...
+#          2  estados           00001|Solicitado|S¬00002|Aprobado|A
 #
-#        La lista 2 la manda el paquete pero esta pantalla NO la consume, y
-#        es a propósito: el trabajador no elige el estado -toda solicitud
-#        nace Solicitado y la mueve la jefatura-, así que no hay desplegable
-#        donde ponerla. Su sitio natural sería un filtro de la búsqueda -'ver
-#        solo las rechazadas'-, y para eso haría falta agregar el campo aquí
-#        Y el valor a la trama de consultar, que hoy son dos fechas. Sin campo
-#        que la pida, la librería la ignora sin ruido.
+#        EL ORDEN ES UN CONTRATO, y por eso importa más que el contenido: el
+#        txt no pide una lista por su nombre sino por su NÚMERO -'lista=1' es
+#        la modalidad-, así que el que ocupa cada puesto no puede moverse.
+#
+#        Una pantalla que no necesite una de estas listas la recibe IGUAL,
+#        vacía, para no correr de sitio a las que van detrás. Un hueco entre
+#        dos ¦ no molesta -la librería no toca un desplegable al que no le
+#        llegan datos- y en cambio quitarlo le cambiaría la lista a todos los
+#        que vinieran después. Es más barato mandar un vacío que acordarse de
+#        renumerar cada txt.
+#
+#        Aquí se usan la 0 y la 1. La 2 llega y NO se consume, y es a
+#        propósito: el trabajador no elige el estado -toda solicitud nace
+#        Solicitado y la mueve la jefatura-, así que no hay desplegable donde
+#        ponerla; viene porque el paquete sirve también a la pantalla que
+#        autoriza, donde sí es un filtro. Sin campo que la pida, la librería
+#        la ignora sin ruido.
+#
+#        Si algún día se quisiera aquí -un filtro 'ver solo las rechazadas'-
+#        haría falta agregar el campo Y su valor a la trama de consultar, que
+#        hoy son dos fechas.
 #
 #        El tercer dato de cada estado -S, A, SA, P, PF- es la letra con que
 #        el paquete lo agrupa; la pantalla solo muestra el texto.
@@ -121,19 +136,36 @@
 #          cantidadMinimaRegistro|cantidadMaximaRegistro|multiploMinutos|
 #          descripcionHorarioPop
 #
-#        De aquí sale casi todo lo que la pantalla no puede inventarse:
+#        Vienen los de las DOS pantallas en la misma trama, y se distinguen
+#        por el sufijo: lo que lleva 'Pop' es de la ventana y el resto de la
+#        pantalla principal. De la principal son solo dos:
 #
 #          fechaInicio, fechaFin   el rango con que se abre el filtro
-#          fechaInicioPop          desde qué día se puede registrar: es el
-#                                  plazo hecho fecha, y se convierte en el
-#                                  mínimo del calendario de la ventana. El
-#                                  máximo es hoy, porque una hora extra se
-#                                  pide después de haberla hecho.
-#          cantidadMinimaRegistro,
-#          cantidadMaximaRegistro
-#          y multiploMinutos       el desde, el hasta y el paso del
-#                                  desplegable de tiempo. Se aceptan en
-#                                  minutos -'15'- o en hh:mm -'00:15'-.
+#
+#        Y de la ventana:
+#
+#          fechaInicioPop          la fecha con que se abre un ALTA. Al
+#                                  modificar no se toca: ahí el valor lo trajo
+#                                  Obtener, y pisarlo sería cambiarle el
+#                                  registro al usuario por haber abierto la
+#                                  ventana.
+#          cantidadMinimaRegistro  DÍAS, no cantidades de tiempo. Son los dos
+#          cantidadMaximaRegistro  extremos del plazo contados hacia atrás
+#                                  desde hoy: la mínima es el día más antiguo
+#                                  que se puede registrar -el plazo de
+#                                  siempre, 26 días- y la máxima el más
+#                                  reciente, que en 0 es hoy. Se convierten en
+#                                  el min y el max del calendario, así que un
+#                                  día vencido no se puede ni elegir.
+#
+#                                  Se cuentan al ABRIR la ventana y no al
+#                                  cargar: un plazo contado al cargar deja de
+#                                  ser el plazo al día siguiente, y esta
+#                                  pantalla se queda abierta.
+#          multiploMinutos         el paso del desplegable de tiempo. Se
+#                                  acepta en minutos -'15'- o en hh:mm
+#                                  -'00:15'-. No viene un tope por solicitud,
+#                                  así que el desplegable llega hasta el día.
 #          descripcionHorarioPop   el horario, que se MUESTRA en la ventana y
 #                                  no limita nada
 #
