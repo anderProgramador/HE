@@ -587,6 +587,14 @@ var Sistema = (function () {
 
         var TABLA = "T03";
         var abrirOriginal = null;
+
+        /* El múltiplo mientras el paquete no lo mande. NO es la
+           configuración: es lo que permite que la pantalla sirva hoy, y se
+           anuncia en la consola cada vez que se usa para que no pase por
+           configuración. En cuanto la carga traiga 'Multiplo=' en sus valores
+           por omisión, manda ese y esto no vuelve a leerse. */
+        var MULTIPLO_MIENTRAS_TANTO = 15;
+        var TOPE_TIEMPO = 8 * 60;
         /* El modelo de la pantalla, que llega con 'alConstruir'. Se guarda
            porque es de donde salen los valores por omisión de la carga, y
            'Formulario' no se ve desde aquí: vive dentro de Ventana. */
@@ -606,6 +614,61 @@ var Sistema = (function () {
            manda. */
         var plazo = 0;
 
+        /* El desplegable del tiempo, armado con el múltiplo. Las opciones son
+           las únicas cantidades que se pueden pedir, así que una que no
+           cuadre con el parámetro no se puede ni teclear: el reparo que la
+           rechazaría no llega a existir.
+
+           El valor de cada opción es el mismo hh:mm con que el paquete
+           escribe el tiempo en la grilla -'04:00'- para que lo que se manda y
+           lo que vuelve hablen igual. */
+        function llenarTiempos() {
+            var caja = document.getElementById("cboTiempo");
+            var paso = leerMultiplo();
+            var opcion, minutos;
+
+            if (!caja) {
+                Ventana.registrar("La plantilla de " + TABLA + " no declara el campo Tiempo.");
+                return;
+            }
+
+            caja.innerHTML = "";
+            opcion = document.createElement("option");
+            opcion.value = "";
+            opcion.textContent = "Seleccione";
+            caja.appendChild(opcion);
+
+            for (minutos = paso; minutos <= TOPE_TIEMPO; minutos += paso) {
+                opcion = document.createElement("option");
+                opcion.value = enHoras(minutos);
+                opcion.textContent = enHoras(minutos);
+                caja.appendChild(opcion);
+            }
+            document.getElementById("ayuTiempo").textContent =
+                "De " + enHoras(paso) + " en " + enHoras(paso) + ".";
+        }
+
+        /* Minutos a 'hh:mm' con las dos cifras de la hora, que es como los
+           escribe el paquete: '04:00' y no '4:00'. */
+        function enHoras(minutos) {
+            var h = Math.floor(minutos / 60), m = minutos % 60;
+            return (h < 10 ? "0" + h : String(h)) + ":" + (m < 10 ? "0" + m : String(m));
+        }
+
+        function leerMultiplo() {
+            var valor = (modeloPantalla && modeloPantalla.porDefecto)
+                        ? modeloPantalla.porDefecto.Multiplo : "";
+            var n = parseInt(valor, 10);
+
+            if (isNaN(n) || n < 1) {
+                Ventana.registrar("La carga de " + TABLA + " no trajo el parámetro Multiplo; " +
+                                  "el tiempo sube de " + MULTIPLO_MIENTRAS_TANTO +
+                                  " en " + MULTIPLO_MIENTRAS_TANTO + " minutos hasta que llegue.");
+                return MULTIPLO_MIENTRAS_TANTO;
+            }
+            return n;
+        }
+
         function leerPlazo() {
             var modelo = modeloPantalla;
             var valor = (modelo && modelo.porDefecto) ? modelo.porDefecto.Plazo : "";
@@ -613,7 +676,8 @@ var Sistema = (function () {
             plazo = (isNaN(n) || n < 1) ? 0 : n;
             if (plazo === 0) {
                 Ventana.registrar("La carga de " + TABLA + " no trajo el parámetro Plazo; " +
-                                  "la fecha queda sin recortar.");
+                                  "la fecha queda sin recortar y quien decide qué día se " +
+                                  "acepta es la base.");
             }
         }
 
@@ -701,11 +765,17 @@ var Sistema = (function () {
             if (!caja) return;
             if (asignado === "") {
                 /* Sin resumen no se dibuja una tarjeta en cero: eso diría que
-                   la cuota es cero, que es muy distinto de no saberla. Se
-                   deja lo que hubiera y queda anotado. */
+                   su cuota es cero, que es muy distinto de no saberla.
+
+                   Y si NUNCA hubo tarjeta -el paquete todavía no manda ese
+                   segmento- la sección se esconde: un recuadro vacío al lado
+                   del filtro se lee como que algo falló al cargar. En cuanto
+                   llegue una cifra vuelve sola. */
+                if (caja.innerHTML === "") caja.hidden = true;
                 Ventana.registrar("La respuesta de " + TABLA + " no trajo el resumen de la sección.");
                 return;
             }
+            caja.hidden = false;
 
             minutos = Grilla.hora.aMinutos(asignado);
             usados = Grilla.hora.aMinutos(solicitado);
@@ -779,6 +849,9 @@ var Sistema = (function () {
            ayuda y los valores por omisión. Y con ella llega el plazo. */
         function alCargar(lectura) {
             leerPlazo();
+            /* Después de leer los valores por omisión, no antes: es de ahí de
+               donde sale el múltiplo con que se arma la lista. */
+            llenarTiempos();
             pintarResumen(lectura, "carga");
         }
 
