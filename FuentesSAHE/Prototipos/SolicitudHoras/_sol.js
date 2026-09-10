@@ -364,6 +364,74 @@ var Sol = (function () {
         input.max = Sol.hoy();
     };
 
+    /* ------------------------------------------------- la duración en pasos --
+       EL CAMBIO DE FONDO. Antes se pedían dos horas del reloj y después se
+       revisaba si la resta cuadraba con el múltiplo; ahora se pide UNA hora
+       -a la que empezó, que es la que la persona recuerda- y una DURACIÓN
+       elegida de una lista de múltiplos. El 'hasta' se calcula.
+
+       Con eso, un tiempo que no cuadre con el parámetro deja de poder
+       escribirse: no hay nada que rechazar porque no hay forma de teclearlo.
+       Es la diferencia entre una pantalla que avisa del error y una en la
+       que el error no cabe.
+
+       El reparo del múltiplo sigue en 'revisar' y no sobra: es la última
+       línea, para el día en que alguien mande la trama desde fuera de esta
+       pantalla. Lo que ya no hace es aparecerle a nadie. */
+    Sol.duraciones = function () {
+        var m = Sol.parametros.multiplo;
+        var tope = 8 * 60, salida = [], v;
+        for (v = m; v <= tope; v += m) salida.push(v);
+        return salida;
+    };
+
+    Sol.llenarDuracion = function (sel, elegida) {
+        var lista = Sol.duraciones(), i;
+        if (!sel) return;
+        sel.innerHTML = "";
+        for (i = 0; i < lista.length; i++) {
+            sel.appendChild(new Option(Sol.formatear(lista[i]), String(lista[i])));
+        }
+        sel.value = String(elegida || Sol.duracionPorOmision());
+    };
+
+    /* Dos horas: es lo que más se pide y lo que menos sorprende. Si el
+       múltiplo no divide a 120 -uno de 45, por ejemplo- se cae al primero
+       que llegue o lo pase. */
+    Sol.duracionPorOmision = function () {
+        var m = Sol.parametros.multiplo;
+        return Math.max(m, Math.round(120 / m) * m);
+    };
+
+    Sol.hastaDe = function (desde, minutos) {
+        return Sol.reloj(Sol.aMinutos(desde) + Number(minutos || 0));
+    };
+
+    /* ---------------------------------------------------- lo que va a vencer --
+       Cuántos días le quedan a una fecha antes de salirse del plazo. Es la
+       cara útil del parámetro: 'del 15/08 al 09/09' dice el rango, pero lo
+       que hace actuar es 'este día se le vence mañana'.
+
+       Devuelve 0 el último día en que todavía se puede registrar, y un
+       número negativo cuando ya venció. */
+    Sol.diasDePlazo = function (iso) {
+        var limite = Sol.aFecha(iso);
+        var hoy = Sol.aFecha(Sol.hoy());
+        limite.setDate(limite.getDate() + Sol.parametros.plazo - 1);
+        return Math.round((limite - hoy) / 86400000);
+    };
+
+    /* En palabras, y solo cuando aprieta: un día con quince de margen no
+       necesita que se lo recuerden. */
+    Sol.urgenciaDe = function (iso) {
+        var quedan = Sol.diasDePlazo(iso);
+        if (quedan < 0) return { texto: "vencido", clase: "urge--fuera", aprieta: false };
+        if (quedan === 0) return { texto: "vence hoy", clase: "urge--hoy", aprieta: true };
+        if (quedan === 1) return { texto: "vence mañana", clase: "urge--hoy", aprieta: true };
+        if (quedan <= 3) return { texto: "quedan " + quedan + " días", clase: "urge--pronto", aprieta: true };
+        return { texto: "quedan " + quedan + " días", clase: "", aprieta: false };
+    };
+
     /* Los atajos que se ofrecen, en minutos. Se parte de una, dos, tres y
        cuatro horas -que es lo que pide la gente- y cada una se lleva al
        múltiplo más cercano: con 15 o con 10 quedan iguales; con uno de 45,

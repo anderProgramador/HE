@@ -52,8 +52,9 @@
             <thead>
                 <tr>
                     <th class="col-fecha">Fecha</th>
-                    <th class="col-tramo">Se quedó de</th>
-                    <th class="der col-tiempo">Tiempo</th>
+                    <th class="col-hora">Desde</th>
+                    <th class="col-tiempo">Cuánto</th>
+                    <th class="col-hora">Se fue</th>
                     <th class="col-cobro">Modo de Cobro</th>
                     <th class="col-motivo">Motivo</th>
                     <th class="col-estado">Estado</th>
@@ -64,11 +65,10 @@
                 <!-- LA FILA DE ALTA. No es un registro: es el formulario, y por
                      eso se pinta distinta y vive arriba de todo. -->
                 <tr class="alta">
-                    <td><input type="date" class="control" id="nFecha"></td>
-                    <td class="alta__par">
-                        <input type="time" class="control" id="nDesde"><span>a</span><input type="time" class="control" id="nHasta">
-                    </td>
-                    <td class="der" id="nTiempo">&mdash;</td>
+                    <td><input type="date" class="control" id="nFecha"><div id="nUrge"></div></td>
+                    <td><input type="time" class="control" id="nDesde"></td>
+                    <td><select class="control" id="nDuracion"></select></td>
+                    <td class="der tenue" id="nHasta">&mdash;</td>
                     <td><select class="control" id="nCobro"></select></td>
                     <td><input type="text" class="control" id="nMotivo" maxlength="250" placeholder="Motivo"></td>
                     <td><span class="pastilla pastilla--espera">Solicitado</span></td>
@@ -82,8 +82,8 @@
             <tfoot>
                 <tr>
                     <td colspan="2">Total del periodo</td>
-                    <td class="der" id="total">0:00</td>
-                    <td colspan="4"></td>
+                    <td id="total">0:00</td>
+                    <td colspan="5"></td>
                 </tr>
             </tfoot>
         </table>
@@ -109,11 +109,11 @@
             <li>El reparo aparece <b>sobre la grilla</b> y el campo culpable se marca en rojo, sin sacar al
                 usuario de donde estaba escribiendo.</li>
         </ul>
-        <div class="nota__cambia"><b>Los parámetros, en una fila estrecha.</b> El plazo recorta el
-            calendario de la celda de fecha y el múltiplo es el paso de las dos cajas de hora. Donde no cabe
-            un texto de ayuda, el aviso lo da el propio dato: el tiempo sale en rojo con un asterisco cuando
-            no cuadra con el múltiplo. La fila que se abre para modificar lleva los mismos topes: corregir no
-            es una puerta trasera para saltárselos.</div>
+        <div class="nota__cambia"><b>Los parámetros, en una fila estrecha.</b> La duración es un
+            desplegable de múltiplos, así que la celda del tiempo dejó de ser un aviso -antes salía en rojo
+            con un asterisco- y volvió a ser un dato: la hora a la que se fue, calculada. Debajo de la fecha
+            va lo único que sí urge, los días que le quedan a ESE día de plazo. La fila que se abre para
+            modificar lleva los mismos controles: corregir no es una puerta trasera para saltárselos.</div>
         <div class="nota__cambia"><b>El precio:</b> caben menos campos que en una ventana. Modalidad y
             adjunto no entran en la fila y se resuelven al modificar. Si mañana la solicitud pide tres datos
             más, esta alternativa es la primera que se rompe.</div>
@@ -138,7 +138,7 @@
             filas += (lista[i].id === editando) ? filaEditable(lista[i]) : filaNormal(lista[i]);
         }
         if (filas === "") {
-            filas = '<tr class="sin-datos"><td colspan="7">Todavía no hay solicitudes en el rango.</td></tr>';
+            filas = '<tr class="sin-datos"><td colspan="8">Todavía no hay solicitudes en el rango.</td></tr>';
         }
         cuerpo.innerHTML = filas;
         Sol.porId("cuenta").textContent = String(lista.length);
@@ -152,8 +152,9 @@
         return "<tr>" +
                 "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
                     '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
-                "<td>" + Sol.texto(s.desde) + " a " + Sol.texto(s.hasta) + "</td>" +
-                '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                "<td>" + Sol.texto(s.desde) + "</td>" +
+                "<td>" + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                '<td class="der tenue">' + Sol.texto(s.hasta) + "</td>" +
                 "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
                 '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
                 "<td>" + Sol.pastilla(s.estado) + "</td>" +
@@ -171,11 +172,9 @@
     function filaEditable(s) {
         return '<tr class="alta">' +
                 '<td><input type="date" class="control" id="eFecha" value="' + Sol.texto(s.fecha) + '"></td>' +
-                '<td class="alta__par">' +
-                    '<input type="time" class="control" id="eDesde" value="' + Sol.texto(s.desde) + '">' +
-                    "<span>a</span>" +
-                    '<input type="time" class="control" id="eHasta" value="' + Sol.texto(s.hasta) + '"></td>' +
-                '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                '<td><input type="time" class="control" id="eDesde" value="' + Sol.texto(s.desde) + '"></td>' +
+                '<td><select class="control" id="eDuracion"></select></td>' +
+                '<td class="der tenue" id="eHasta">' + Sol.texto(s.hasta) + "</td>" +
                 '<td><select class="control" id="eCobro"></select></td>' +
                 '<td><input type="text" class="control" id="eMotivo" maxlength="250" value="' +
                     Sol.texto(s.motivo) + '"></td>' +
@@ -213,7 +212,9 @@
                puerta trasera para saltarse los parámetros. */
             Sol.prepararFecha(Sol.porId("eFecha"));
             Sol.prepararHora(Sol.porId("eDesde"));
-            Sol.prepararHora(Sol.porId("eHasta"));
+            Sol.llenarDuracion(Sol.porId("eDuracion"), Sol.minutosDe(porId(editando)));
+            Sol.porId("eDesde").onchange = refrescarEditada;
+            Sol.porId("eDuracion").onchange = refrescarEditada;
         }
     }
 
@@ -221,6 +222,12 @@
         var i;
         for (i = 0; i < Sol.solicitudes.length; i++) if (Sol.solicitudes[i].id === id) return Sol.solicitudes[i];
         return null;
+    }
+
+    /* La hora de salida de la fila abierta, que también se calcula. */
+    function refrescarEditada() {
+        Sol.porId("eHasta").textContent =
+            Sol.hastaDe(Sol.porId("eDesde").value, Sol.porId("eDuracion").value);
     }
 
     function abrirFila(id) { return function () { editando = id; avisar(""); pintar(); }; }
@@ -243,7 +250,7 @@
                 id: id,
                 fecha: Sol.porId("eFecha").value,
                 desde: Sol.porId("eDesde").value,
-                hasta: Sol.porId("eHasta").value,
+                hasta: Sol.hastaDe(Sol.porId("eDesde").value, Sol.porId("eDuracion").value),
                 cobro: Sol.porId("eCobro").value,
                 modalidad: s.modalidad,
                 estado: s.estado,
@@ -262,20 +269,25 @@
     }
 
     /* --------------------------------------------------------- la fila de alta */
-    /* En la fila no cabe un texto de ayuda, así que el propio tiempo dice
-       si cuadra con el múltiplo: en rojo y con un asterisco cuando no. Es
-       lo único que se puede decir en una celda de esa anchura. */
-    function tiempoDelAlta() {
-        var d = Sol.porId("nDesde").value, h = Sol.porId("nHasta").value;
-        var caja = Sol.porId("nTiempo"), minutos;
+    function hastaDelAlta() {
+        var d = Sol.porId("nDesde").value;
+        return d ? Sol.hastaDe(d, Sol.porId("nDuracion").value) : "";
+    }
 
-        if (!d || !h) { caja.innerHTML = "&mdash;"; caja.className = "der"; return; }
-        minutos = Sol.duracion(d, h);
-        caja.className = Sol.esMultiplo(minutos) ? "der" : "der tiempo--fuera";
-        caja.innerHTML = Sol.formatear(minutos) + (Sol.esMultiplo(minutos) ? "" : " *");
-        caja.title = Sol.esMultiplo(minutos) ? "" :
-            "El tiempo sube de " + Sol.formatear(Sol.parametros.multiplo) + " en " +
-            Sol.formatear(Sol.parametros.multiplo) + ".";
+    /* La fila ya no puede llevar un tiempo fuera de múltiplo -la duración
+       sale de una lista-, así que la celda dejó de ser un aviso y volvió a
+       ser lo que debía: la hora a la que se fue, calculada.
+
+       Debajo de la fecha va lo único que sí urge: cuántos días le quedan a
+       ESE día antes de salirse del plazo. */
+    function tiempoDelAlta() {
+        var fecha = Sol.porId("nFecha").value;
+        var hasta = hastaDelAlta(), u;
+
+        Sol.porId("nHasta").innerHTML = hasta ? Sol.texto(hasta) : "&mdash;";
+        u = (fecha && Sol.enPlazo(fecha)) ? Sol.urgenciaDe(fecha) : null;
+        Sol.porId("nUrge").innerHTML = (u && u.aprieta)
+            ? '<span class="urge ' + u.clase + '">' + u.texto + "</span>" : "";
     }
 
     function agregar() {
@@ -283,7 +295,7 @@
             id: new Date().getTime(),
             fecha: Sol.porId("nFecha").value,
             desde: Sol.porId("nDesde").value,
-            hasta: Sol.porId("nHasta").value,
+            hasta: hastaDelAlta(),
             cobro: Sol.porId("nCobro").value,
             modalidad: "P",
             estado: "S",
@@ -321,13 +333,13 @@
             reparo.indexOf("venció") >= 0 || reparo.indexOf("ocurrió") >= 0) marcar("nFecha");
         else if (reparo.indexOf("motivo") >= 0 || reparo.indexOf("Explique") >= 0) marcar("nMotivo");
         else if (reparo.indexOf("cobrar") >= 0) marcar("nCobro");
-        else { marcar("nDesde"); marcar("nHasta"); }
+        else { marcar("nDesde"); marcar("nDuracion"); }
     }
 
     function marcar(id) { Sol.porId(id).className = "control control--error"; }
 
     function limpiarMarcas() {
-        var ids = ["nFecha", "nDesde", "nHasta", "nCobro", "nMotivo"], i;
+        var ids = ["nFecha", "nDesde", "nDuracion", "nCobro", "nMotivo"], i;
         for (i = 0; i < ids.length; i++) Sol.porId(ids[i]).className = "control";
     }
 
@@ -344,17 +356,17 @@
        múltiplo en múltiplo. */
     Sol.prepararFecha(Sol.porId("nFecha"));
     Sol.prepararHora(Sol.porId("nDesde"));
-    Sol.prepararHora(Sol.porId("nHasta"));
+    Sol.llenarDuracion(Sol.porId("nDuracion"), 0);
     Sol.porId("nFecha").value = Sol.hoy();
     Sol.porId("nDesde").value = Sol.trabajador.salida;
-    Sol.porId("nHasta").value = Sol.reloj(Sol.aMinutos(Sol.trabajador.salida) + 120);
     Sol.porId("pieModalidad").textContent = Sol.modalidades[0].nombre;
     Sol.porId("pieReglas").innerHTML = Sol.reglasEnTexto();
 
     Sol.porId("btnAgregar").onclick = agregar;
     Sol.porId("btnBuscar").onclick = pintar;
     Sol.porId("nDesde").onchange = tiempoDelAlta;
-    Sol.porId("nHasta").onchange = tiempoDelAlta;
+    Sol.porId("nDuracion").onchange = tiempoDelAlta;
+    Sol.porId("nFecha").onchange = tiempoDelAlta;
     Sol.porId("nFecha").onkeypress = alTeclear;
     Sol.porId("nMotivo").onkeypress = alTeclear;
 

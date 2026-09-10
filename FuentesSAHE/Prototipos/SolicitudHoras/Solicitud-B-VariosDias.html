@@ -29,7 +29,7 @@
         <div class="par__izq">
             <div class="barra">
                 <div class="barra__titulo" id="tituloMes"></div>
-                <button type="button" class="boton boton--secundario" id="btnLaborables">Marcar los sábados</button>
+                <button type="button" class="boton boton--secundario" id="btnLaborables">Marcar lo que vence</button>
             </div>
 
             <div class="calendario__cabecera">
@@ -56,16 +56,24 @@
             <!-- Un solo juego de datos para todos los días marcados. Es la
                  apuesta de esta alternativa: quien se queda tres días de un
                  cierre se queda por lo mismo y a la misma hora. -->
+            <!-- Una hora y una duración, no dos horas: la duración sale de una
+                 lista de múltiplos, así que ninguno de los días del lote puede
+                 llevar un tiempo que después se rechace. -->
             <div class="fila">
                 <div class="campo campo--medio">
                     <label class="campo__etiqueta" for="mDesde">Desde<span class="campo__obligatorio">*</span></label>
                     <input type="time" class="control" id="mDesde" value="17:30">
                 </div>
                 <div class="campo campo--medio">
-                    <label class="campo__etiqueta" for="mHasta">Hasta<span class="campo__obligatorio">*</span></label>
-                    <input type="time" class="control" id="mHasta" value="19:30">
+                    <label class="campo__etiqueta" for="mDuracion">Cuánto<span class="campo__obligatorio">*</span></label>
+                    <div class="duracion">
+                        <button type="button" class="duracion__paso" id="btnMenos" title="Menos">&minus;</button>
+                        <select class="control" id="mDuracion"></select>
+                        <button type="button" class="duracion__paso" id="btnMas" title="Más">+</button>
+                    </div>
                 </div>
             </div>
+            <p class="campo__ayuda" id="ayudaHasta"></p>
 
             <div class="atajos" id="atajos"></div>
 
@@ -141,6 +149,10 @@
                 deja de ser «el mes» y pasa a ser «lo que todavía puede registrar», que con 26 días cruza dos
                 meses. Los días vencidos se ven apagados en vez de desaparecer, porque una casilla ausente no
                 explica por qué no se puede pedir.</li>
+            <li>Los días <b>avisan de su propio vencimiento</b>. Con 26 días de plazo, los del principio de la
+                ventana se caen esta semana, y eso no se ve en un rango escrito arriba. «Marcar lo que vence»
+                los selecciona todos de un toque: antes ese botón marcaba los sábados, que era una corazonada
+                sobre cuándo se hacen horas extra; esto no adivina nada.</li>
             <li>El total del lote <b>se cuenta antes de mandarlo</b>, contra la cuota del mes. Pasarse deja de
                 ser una sorpresa del final.</li>
             <li>Cada día creado sigue siendo <b>una solicitud independiente</b>: la jefatura puede aprobar dos
@@ -193,7 +205,7 @@
         var caja = Sol.porId("calendario");
         var minimo = Sol.primerDiaRegistrable(), hoy = Sol.hoy();
         var inicio = Sol.aFecha(minimo), fin = Sol.aFecha(hoy);
-        var html = "", f, iso, previas, clases, fuera, ocupado;
+        var html = "", f, iso, previas, clases, fuera, ocupado, urge;
 
         /* Se retrocede al domingo de esa semana y se avanza hasta el sábado
            de la última: así las columnas cuadran con la cabecera. */
@@ -206,10 +218,13 @@
             fuera = !Sol.enPlazo(iso);
             ocupado = previas.length > 0;
 
+            urge = (!fuera && !ocupado) ? Sol.urgenciaDe(iso) : null;
+
             clases = "calendario__celda";
             if (Sol.esFinDeSemana(iso)) clases += " calendario__celda--finde";
             if (fuera) clases += " calendario__celda--vencido";
             if (ocupado) clases += " calendario__celda--conSolicitud";
+            if (urge && urge.aprieta) clases += " calendario__celda--urge";
             if (iso === hoy) clases += " calendario__celda--hoy";
             if (estaMarcado(iso)) clases += " calendario__celda--marcado";
 
@@ -220,6 +235,11 @@
                         '<span class="calendario__numero">' + f.getDate() + "</span>" +
                         (iso === hoy ? '<span class="calendario__hoy">hoy</span>' : "") +
                         '<div class="calendario__nota">' + notaDelDia(iso, previas, fuera) + "</div>" +
+                        /* El plazo, en el día que le toca. Es lo que
+                           convierte el calendario en algo que se mira todos
+                           los días: 'a estos se les acaba el tiempo'. */
+                        (urge && urge.aprieta && !estaMarcado(iso)
+                            ? '<div class="calendario__urge">' + urge.texto + "</div>" : "") +
                     "</button></div>";
         }
         caja.innerHTML = html;
@@ -270,21 +290,38 @@
     }
 
     function aplicarAtajo() {
-        var minutos = Number(this.getAttribute("data-min"));
         Sol.porId("mDesde").value = Sol.trabajador.salida;
-        Sol.porId("mHasta").value = Sol.reloj(Sol.aMinutos(Sol.trabajador.salida) + minutos);
+        Sol.porId("mDuracion").value = String(this.getAttribute("data-min"));
         alCambiarHora();
     }
 
-    function duracionElegida() {
-        var d = Sol.porId("mDesde").value, h = Sol.porId("mHasta").value;
-        return (d && h) ? Sol.duracion(d, h) : 0;
+    function duracionElegida() { return Number(Sol.porId("mDuracion").value || 0); }
+
+    function hastaActual() {
+        var d = Sol.porId("mDesde").value;
+        return d ? Sol.hastaDe(d, duracionElegida()) : "";
     }
 
     function alCambiarHora() {
+        var d = Sol.porId("mDesde").value, sel = Sol.porId("mDuracion");
+
+        Sol.porId("ayudaHasta").textContent = d
+            ? "Cada día marcado: de " + d + " a " + hastaActual() + "."
+            : "Indique desde qué hora.";
+        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
+        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
+
         pintarAtajos();
         pintarCalendario();
         pintarLote();
+    }
+
+    function mover(cuanto) {
+        var sel = Sol.porId("mDuracion");
+        var i = sel.selectedIndex + cuanto;
+        if (i < 0 || i >= sel.options.length) return;
+        sel.selectedIndex = i;
+        alCambiarHora();
     }
 
     /* ------------------------------------------------------------- el lote -- */
@@ -306,22 +343,14 @@
         html = '<div class="lote__titulo">' + marcados.length +
                (marcados.length === 1 ? " día · " : " días · ") + "<b>" + Sol.formatear(total) + "</b></div>";
 
-        /* El múltiplo se revisa sobre la duración de UN día y no sobre el
-           total: el total siempre cuadra si cada día cuadra, y decirlo del
-           total escondería cuál es la cifra que hay que corregir. */
-        if (!Sol.esMultiplo(unidad)) {
-            html += '<div class="lote__linea" style="color:#8E1F19">Cada día son ' +
-                    Sol.formatear(unidad) + " y el tiempo sube de " +
-                    Sol.formatear(Sol.parametros.multiplo) + " en " +
-                    Sol.formatear(Sol.parametros.multiplo) + ".</div>";
-        }
 
         for (i = 0; i < marcados.length; i++) {
             html += '<div class="lote__linea">' +
                         '<button type="button" class="lote__quitar" data-quitar="' + marcados[i] +
                             '" title="Quitar">&times;</button>' +
                         "<b>" + Sol.texto(Sol.enLetra(marcados[i])) + "</b> · " +
-                        Sol.texto(Sol.porId("mDesde").value) + " a " + Sol.texto(Sol.porId("mHasta").value) +
+                        Sol.texto(Sol.porId("mDesde").value) + " a " + Sol.texto(hastaActual()) +
+                        avisoUrgencia(marcados[i]) +
                     "</div>";
         }
 
@@ -335,6 +364,13 @@
         enlazarQuitar();
     }
 
+    /* Un día del lote que además está por vencer se marca: si el lote se
+       queda a medias, ese es el que no puede esperar a mañana. */
+    function avisoUrgencia(iso) {
+        var u = Sol.urgenciaDe(iso);
+        return u.aprieta ? ' <span class="urge ' + u.clase + '">' + u.texto + "</span>" : "";
+    }
+
     function enlazarQuitar() {
         var botones = Sol.porId("lote").getElementsByTagName("button"), i;
         for (i = 0; i < botones.length; i++) botones[i].onclick = alQuitar;
@@ -344,7 +380,7 @@
 
     /* ------------------------------------------------------------- solicitar */
     function solicitar() {
-        var desde = Sol.porId("mDesde").value, hasta = Sol.porId("mHasta").value;
+        var desde = Sol.porId("mDesde").value, hasta = hastaActual();
         var cobro = Sol.porId("mCobro").value;
         var modalidad = Sol.porId("mModalidad").value;
         var motivo = Sol.porId("mMotivo").value.replace(/^\s+|\s+$/g, "");
@@ -423,7 +459,11 @@
 
     /* Los sábados del mes que todavía no tienen solicitud: el caso de un
        cierre suele ser justo ese. */
-    function marcarSabados() {
+    /* Los días libres a los que se les acaba el plazo. Antes este botón
+       marcaba los sábados, que era una corazonada sobre cuándo se hacen
+       horas extra; esto no adivina nada: marca lo que se va a perder si no
+       se registra ya. */
+    function marcarPorVencer() {
         var f = Sol.aFecha(Sol.primerDiaRegistrable());
         var fin = Sol.aFecha(Sol.hoy());
         var iso;
@@ -431,7 +471,8 @@
         marcados = [];
         for (; f <= fin; f.setDate(f.getDate() + 1)) {
             iso = Sol.aIso(f);
-            if (f.getDay() === 6 && Sol.delDia(Sol.solicitudes, iso, 0).length === 0) marcados.push(iso);
+            if (Sol.delDia(Sol.solicitudes, iso, 0).length > 0) continue;
+            if (Sol.urgenciaDe(iso).aprieta) marcados.push(iso);
         }
         pintarCalendario();
         pintarLote();
@@ -439,18 +480,20 @@
 
     /* ------------------------------------------------------------- arranque */
     Sol.prepararHora(Sol.porId("mDesde"));
-    Sol.prepararHora(Sol.porId("mHasta"));
+    Sol.llenarDuracion(Sol.porId("mDuracion"), 0);
     Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
     Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
 
     Sol.porId("mDesde").onchange = alCambiarHora;
-    Sol.porId("mHasta").onchange = alCambiarHora;
+    Sol.porId("mDuracion").onchange = alCambiarHora;
+    Sol.porId("btnMenos").onclick = function () { mover(-1); };
+    Sol.porId("btnMas").onclick = function () { mover(1); };
     Sol.porId("btnSolicitar").onclick = solicitar;
-    Sol.porId("btnLaborables").onclick = marcarSabados;
+    Sol.porId("btnLaborables").onclick = marcarPorVencer;
     Sol.porId("btnLimpiar").onclick = function () { marcados = []; pintarCalendario(); pintarLote(); };
 
-    pintarAtajos();
     pintar();
+    alCambiarHora();
 })();
 </script>
 </body>
