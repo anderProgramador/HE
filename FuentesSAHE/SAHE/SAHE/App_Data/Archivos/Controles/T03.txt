@@ -149,23 +149,37 @@
 #                                  Obtener, y pisarlo sería cambiarle el
 #                                  registro al usuario por haber abierto la
 #                                  ventana.
-#          cantidadMinimaRegistro  DÍAS, no cantidades de tiempo. Son los dos
-#          cantidadMaximaRegistro  extremos del plazo contados hacia atrás
-#                                  desde hoy: la mínima es el día más antiguo
-#                                  que se puede registrar -el plazo de
-#                                  siempre, 26 días- y la máxima el más
-#                                  reciente, que en 0 es hoy. Se convierten en
-#                                  el min y el max del calendario, así que un
-#                                  día vencido no se puede ni elegir.
+#          cantidadMinimaRegistro  los dos extremos del plazo: el día más
+#          cantidadMaximaRegistro  antiguo que se puede registrar y el más
+#                                  reciente. NO son cantidades de tiempo.
 #
-#                                  Se cuentan al ABRIR la ventana y no al
+#                                  Se aceptan de las dos maneras en que pueden
+#                                  venir: ya como FECHA -'15/08/2026' o
+#                                  '2026-08-15'-, que es lo preferible porque
+#                                  la cuenta la hace el paquete una sola vez,
+#                                  o como una CANTIDAD DE DÍAS hacia atrás
+#                                  desde hoy -'26'-, que es como venían antes.
+#                                  Aceptar las dos no es indecisión: el
+#                                  paquete y la pantalla se despliegan por
+#                                  separado, y así el día que la trama cambie
+#                                  no hace falta que las dos salgan a la vez.
+#
+#                                  Se convierten en el min y el max del
+#                                  calendario, así que un día fuera de plazo
+#                                  no se puede ni elegir. El que falte se
+#                                  queda en hoy, que es el límite que no
+#                                  depende de ninguna configuración.
+#
+#                                  Se resuelven al ABRIR la ventana y no al
 #                                  cargar: un plazo contado al cargar deja de
 #                                  ser el plazo al día siguiente, y esta
 #                                  pantalla se queda abierta.
 #          multiploMinutos         el paso del desplegable de tiempo. Se
 #                                  acepta en minutos -'15'- o en hh:mm
-#                                  -'00:15'-. No viene un tope por solicitud,
-#                                  así que el desplegable llega hasta el día.
+#                                  -'00:15'-. El techo son 17 horas por
+#                                  solicitud, que es regla del negocio y está
+#                                  escrita en Sistema.js; si algún día se
+#                                  configura, llegará por aquí.
 #          descripcionHorarioPop   el horario, que se MUESTRA en la ventana y
 #                                  no limita nada
 #
