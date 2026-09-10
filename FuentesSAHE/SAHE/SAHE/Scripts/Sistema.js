@@ -596,13 +596,12 @@ var Sistema = (function () {
         var AYUDA_EN_CARGA = 3;
         var POR_DEFECTO_EN_CARGA = 4;
 
-        /* El tope del desplegable de tiempo. No es una regla del negocio: es
-           el día, que es lo único que se puede afirmar sin un parámetro. La
-           carga no manda un máximo por solicitud -las dos 'cantidades' que
-           trae son días de plazo, no horas-, así que se lista todo múltiplo
-           que cabe en un día. Si algún día se configura un tope por
-           solicitud, es cambiar esta línea por el dato que llegue. */
-        var TOPE = 24 * 60;
+        /* El tope del desplegable: 17 horas por solicitud. Es una regla del
+           negocio y por eso está escrita, no calculada. La carga no la manda
+           -sus dos 'cantidades' son el plazo, no horas-, así que si algún día
+           pasa a configurarse llegará en la trama y esta línea se cambia por
+           el dato que venga. */
+        var TOPE = 17 * 60;
 
         var abrirOriginal = null;
         var modeloPantalla = null;
@@ -630,13 +629,18 @@ var Sistema = (function () {
                 fechaInicio: c[1] || "",
                 fechaFin: c[2] || "",
                 fechaInicioPop: c[3] || "",
-                /* DÍAS, no cantidades de tiempo: son los dos extremos del
-                   plazo, contados hacia atrás desde hoy. La 'mínima' es la
-                   fecha más antigua que se puede registrar -el plazo de
-                   siempre, 26 días- y la 'máxima' la más reciente, que en 0
-                   es hoy. */
-                diasAtras: entero(c[4]),
-                diasAdelante: entero(c[5]),
+                /* Los dos extremos del plazo: el día más antiguo que se
+                   puede registrar y el más reciente. Se aceptan de las DOS
+                   maneras en que pueden venir -ya como fecha, o como una
+                   cantidad de días hacia atrás desde hoy- y por eso se
+                   guardan crudos: quien los usa decide.
+
+                   Aceptar las dos no es indecisión: es que el paquete y la
+                   pantalla se despliegan por separado, y así el día que la
+                   trama pase de mandar '26' a mandar '15/08/2026' no hace
+                   falta que las dos cosas salgan a la vez. */
+                desdePop: c[4] || "",
+                hastaPop: c[5] || "",
                 multiplo: enMinutos(c[6]),
                 horario: c[7] || ""
             };
@@ -644,11 +648,6 @@ var Sistema = (function () {
                 Ventana.registrar("La carga de " + TABLA + " no trajo el segmento de valores " +
                                   "por defecto; el filtro nace vacío y el tiempo sin límites.");
             }
-        }
-
-        function entero(valor) {
-            var n = parseInt(String(valor === undefined ? "" : valor), 10);
-            return isNaN(n) ? -1 : n;
         }
 
         /* Una cantidad puede venir en minutos -'15'- o en hh:mm -'00:15'-.
@@ -740,16 +739,26 @@ var Sistema = (function () {
             var uno, otro, desde, hasta;
 
             if (!caja || !ajustes) return;
-            if (ajustes.diasAtras < 0) {
+            uno = comoFecha(ajustes.desdePop);
+            otro = comoFecha(ajustes.hastaPop);
+
+            if (uno === "" && otro === "") {
                 if (ayuda) ayuda.textContent = "";
-                Ventana.registrar("La carga de " + TABLA + " no trajo los días de plazo; " +
+                Ventana.registrar("La carga de " + TABLA + " no trajo los extremos del plazo; " +
                                   "la fecha queda sin recortar y quien decide qué día se " +
                                   "acepta es la base.");
                 return;
             }
+            /* Uno solo también sirve: el que falte se queda en hoy, que es el
+               límite que no depende de ninguna configuración -una hora extra
+               se pide después de haberla hecho-. */
+            if (uno === "") uno = hoy();
+            if (otro === "") otro = hoy();
 
-            uno = haceDias(ajustes.diasAtras);
-            otro = haceDias(ajustes.diasAdelante < 0 ? 0 : ajustes.diasAdelante);
+            /* Se ordenan antes de usarlos: cuál de los dos es el mayor lo
+               decide la configuración, y si algún día vinieran al revés el
+               campo seguiría teniendo un rango con sentido en vez de uno
+               imposible. */
             desde = uno < otro ? uno : otro;
             hasta = uno < otro ? otro : uno;
 
@@ -761,10 +770,25 @@ var Sistema = (function () {
             }
         }
 
-        /* La fecha de hace n días, en 'aaaa-mm-dd'. */
-        function haceDias(n) {
-            var f = new Date();
-            f.setDate(f.getDate() - n);
+        /* Un extremo del plazo, venga como venga.
+
+           Si trae separadores es una FECHA y se usa tal cual -'15/08/2026' o
+           '2026-08-15'-: es lo que manda el paquete cuando ya hizo él la
+           cuenta, y hacerla dos veces solo sirve para que un día no
+           coincidan.
+
+           Si es un número pelado es una CANTIDAD DE DÍAS hacia atrás desde
+           hoy, y se convierte aquí. */
+        function comoFecha(valor) {
+            var texto = String(valor || "").replace(/^\s+|\s+$/g, "");
+            var f;
+
+            if (texto === "") return "";
+            if (texto.indexOf("/") >= 0 || texto.indexOf("-") >= 0) return enIsoTexto(texto);
+            if (!/^\d+$/.test(texto)) return "";
+
+            f = new Date();
+            f.setDate(f.getDate() - Number(texto));
             return enIso(f);
         }
 
@@ -817,7 +841,8 @@ var Sistema = (function () {
                 caja.appendChild(opcion(enHoras(minutos), enHoras(minutos)));
             }
             document.getElementById("ayuTiempo").textContent =
-                "De " + enHoras(paso) + " en " + enHoras(paso) + ".";
+                "De " + enHoras(paso) + " en " + enHoras(paso) +
+                ", hasta " + enHoras(TOPE) + ".";
         }
 
         function opcion(valor, texto) {
