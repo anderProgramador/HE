@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>SAHE - Solicitud de Horas Extra - A - Desde el horario</title>
+<title>SAHE - Solicitud de Horas Extra - A - Ventana con lupa</title>
 <link rel="stylesheet" href="../Cuotas/_comun.css">
 <link rel="stylesheet" href="_sol.css">
 </head>
@@ -11,27 +11,31 @@
 
     <div class="cabecera">
         <h1>Solicitudes de Horas Extras</h1>
-        <p>Pida que le reconozcan el tiempo que se quedó fuera de su jornada. Su horario, su oficina
-           y el estado en que nace la solicitud no se preguntan: ya los sabe el sistema.</p>
+        <p>Pida que le reconozcan el tiempo trabajado fuera de su jornada. Cada oficina tiene su propio
+           tiempo asignado y se rinde por separado.</p>
     </div>
 
     <div class="saltos">
-        <a href="Solicitud-A-DesdeElHorario.html" class="saltos--aqui">A · Desde el horario</a>
+        <a href="Solicitud-A-DesdeElHorario.html" class="saltos--aqui">A · Ventana con lupa</a>
         <a href="Solicitud-B-VariosDias.html">B · Varios días de una vez</a>
         <a href="Solicitud-C-EnLinea.html">C · En línea, sin ventana</a>
     </div>
 
     <div id="contexto"></div>
 
-    <!-- El filtro, igual que hoy: un rango de fechas y Buscar. -->
+    <!-- El presupuesto de la pantalla: una ficha por oficina. Va arriba y
+         siempre, porque un número que solo aparece cuando ya te pasaste no
+         sirve de nada. -->
+    <div class="cuotas" id="cuotas"></div>
+
     <div class="fila">
         <div class="campo campo--corto">
             <label class="campo__etiqueta" for="fDesde">Fecha Inicio</label>
-            <input type="date" class="control" id="fDesde" value="2026-09-01">
+            <input type="date" class="control" id="fDesde">
         </div>
         <div class="campo campo--corto">
             <label class="campo__etiqueta" for="fHasta">Fecha Fin</label>
-            <input type="date" class="control" id="fHasta" value="2026-09-30">
+            <input type="date" class="control" id="fHasta">
         </div>
         <div class="campo campo--corto">
             <label class="campo__etiqueta">&nbsp;</label>
@@ -49,19 +53,19 @@
         <table class="tabla">
             <thead>
                 <tr>
-                    <th class="col-fecha">Fecha</th>
-                    <th class="col-tramo">Se quedó de</th>
-                    <th class="der col-tiempo">Tiempo</th>
-                    <th class="col-cobro">Modo de Cobro</th>
+                    <th class="col-ubicacion">Ubicación</th>
+                    <th class="col-fecha">Fecha de Solicitud</th>
+                    <th class="der col-tiempo">Tiempo Solicitado</th>
+                    <th class="col-cobro">Tipo de Cobro</th>
+                    <th class="col-modalidad">Modalidad</th>
                     <th class="col-estado">Estado</th>
-                    <th class="col-motivo">Motivo</th>
                     <th class="cen col-accion">Acciones</th>
                 </tr>
             </thead>
             <tbody id="cuerpo"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2">Total del periodo</td>
+                    <td colspan="2">Total solicitado</td>
                     <td class="der" id="total">0:00</td>
                     <td colspan="4"></td>
                 </tr>
@@ -70,39 +74,31 @@
     </div>
 
     <div class="nota">
-        <b>Alternativa A — una hora y una duración; el resto se calcula.</b>
+        <b>Alternativa A — la ventana de siempre, con la oficina por lupa.</b>
         <ul>
-            <li>La ventana de hoy pide <i>Tiempo de Hora(s)</i> y <i>Tiempo de Minuto(s)</i> en dos cajas y
-                después revisa si la suma cuadra con el múltiplo. Aquí se pide <b>a qué hora empezó</b>
-                -que nace en su hora de salida y es lo que la persona recuerda- y <b>cuánto se quedó</b>,
-                elegido de una lista de múltiplos. La hora de salida se calcula y se muestra.</li>
-            <li>Con eso, <b>un tiempo que no cuadre con el parámetro no se puede ni teclear</b>. El reparo
-                del múltiplo sigue existiendo por debajo, para el día en que alguien mande la trama desde
-                fuera, pero ya no le aparece a nadie. Es la diferencia entre una pantalla que avisa del
-                error y una en la que el error no cabe.</li>
-            <li>Con las dos horas del reloj se puede <b>avisar de un cruce</b> con otra solicitud del mismo
-                día. Con una cantidad suelta eso no se puede revisar, porque nunca se supo a qué parte del
-                día correspondía.</li>
-            <li>La <b>línea del día</b> pone el horario y lo pedido a escala. Un error de turno -pedir de
-                09:00 a 11:00 un martes- se ve antes de leerlo.</li>
-            <li>Los <b>atajos</b> resuelven el caso normal de un toque: casi toda solicitud es «me quedé una,
-                dos o tres horas después de mi salida».</li>
-            <li>Debajo de la fecha, <b>lo que le queda de plazo a ESE día</b>. El rango entero está arriba
-                y es un dato; «vence mañana» es lo que hace actuar.</li>
+            <li>Es la más fiel a lo que ya existe: se pulsa <i>Nuevo</i>, se llena una ventana y se graba.
+                Lo que cambia es <b>qué se pregunta y cómo</b>.</li>
+            <li>El <b>tiempo es una cantidad</b>, no dos cajas de horas y minutos, y se elige de una lista de
+                múltiplos con dos botones para moverse de uno en uno. Una cantidad que no cuadre con el
+                parámetro <b>no se puede ni teclear</b>: el reparo sigue existiendo por debajo, para el día
+                en que alguien mande la trama desde fuera, pero ya no le aparece a nadie.</li>
+            <li>La <b>oficina se elige con la lupa</b>, y la lupa muestra lo asignado y lo que queda de cada
+                una. Se elige sabiendo contra qué presupuesto se carga, en vez de enterarse después.</li>
+            <li>Al <b>modificar</b>, la fecha y la oficina quedan bloqueadas: cambiarlas sería otra
+                solicitud, no una corrección de esta. Solo se tocan tiempo, cobro, modalidad y motivo.</li>
+            <li>Debajo de la fecha, <b>lo que le queda de plazo a ESE día</b>. El rango entero está arriba y
+                es un dato; «vence mañana» es lo que hace actuar.</li>
         </ul>
-        <div class="nota__cambia"><b>Los dos parámetros no se revisan: se dibujan.</b> El <i>múltiplo</i>
-            es la lista de duraciones y el salto de los botones &minus;/+; el <i>plazo</i> es el mínimo y el
-            máximo del calendario -que se abre ya recortado- y la cuenta de días que aparece debajo. Cambiar
-            15 por 10, o 26 por 1, mueve las dos cosas sin tocar la pantalla: no hay ningún 15 ni ningún 26
-            escrito aquí.</div>
-        <div class="nota__cambia"><b>El horario es de referencia.</b> Se muestra y se dibuja para que la
-            persona se ubique, y si el tramo se cruza con él sale una advertencia ámbar -suele ser un
-            dedazo-, pero <b>no impide pedir</b>. Lo único que rechaza por cruce es haber pedido ya esas
-            mismas horas, que es una regla de la lista y no del horario.</div>
+        <div class="nota__cambia"><b>El tiempo asignado de la oficina, en tres sitios y ninguno de ellos la
+            grilla:</b> las fichas de arriba, la lupa al elegir y el aviso al grabar. En una columna de la
+            lista repetiría la misma cifra en todas las filas de la misma oficina, que es ruido; en las
+            fichas se lee una vez y sirve para las tres cosas.</div>
+        <div class="nota__cambia"><b>Pasarse de lo asignado avisa, no impide.</b> Quien decide si esas horas
+            se pagan es la jefatura, y una solicitud que la pantalla rechaza nunca llega a que nadie la mire.
+            Lo mismo con el horario, que solo se muestra.</div>
         <div class="nota__cambia"><b>Lo que desaparece de la ventana:</b> <i>Estado de la Solicitud</i>
-            -nace Solicitado y lo mueve la jefatura, no quien pide-, <i>Código Oficina</i> y <i>Oficina</i>
-            -son los de la persona; por eso las tres filas de la lista dicen siempre lo mismo- y la caja de
-            minutos, que se volvió parte del reloj.</div>
+            -nace Solicitado y lo mueve la jefatura, no quien pide- y la caja de minutos, que se volvió parte
+            del tiempo.</div>
     </div>
 
 </div>
@@ -124,69 +120,52 @@
                     <input type="date" class="control" id="mFecha">
                     <p class="campo__ayuda" id="ayudaFecha"></p>
                 </div>
-                <div class="campo campo--medio">
-                    <label class="campo__etiqueta">Su horario ese día
-                        <span class="contexto__marca">referencia</span></label>
-                    <input type="text" class="control" id="mHorario" readonly>
-                    <p class="campo__ayuda">Se muestra para ubicarse; no limita lo que puede pedir.</p>
-                </div>
-            </div>
-
-            <!-- La línea del día: la jornada en gris, lo ya pedido en plomo y
-                 lo que se está pidiendo en rojo. -->
-            <label class="campo__etiqueta">El día, de 0:00 a 24:00</label>
-            <div class="dia" id="dia"></div>
-            <div class="dia__horas">
-                <span>0</span><span>3</span><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span>
-            </div>
-            <div class="dia__leyenda">
-                <i class="i-jornada"></i>Su jornada
-                <i class="i-pedido"></i>Lo que está pidiendo
-                <i class="i-previa"></i>Ya pedido ese día
-            </div>
-
-            <div class="atajos" id="atajos"></div>
-
-            <!-- Se pregunta UNA hora y una duración, no dos horas. La hora es
-                 la que la persona recuerda -'me quedé desde que salí'- y la
-                 duración se elige de una lista de múltiplos, así que un
-                 tiempo que no cuadre con el parámetro no se puede ni
-                 teclear. El 'hasta' se calcula y se muestra. -->
-            <div class="fila" style="margin-top:12px">
                 <div class="campo campo--corto">
-                    <label class="campo__etiqueta" for="mDesde">Se quedó desde<span class="campo__obligatorio">*</span></label>
-                    <input type="time" class="control" id="mDesde">
-                </div>
-                <div class="campo campo--corto">
-                    <label class="campo__etiqueta" for="mDuracion">Cuánto tiempo<span class="campo__obligatorio">*</span></label>
-                    <div class="duracion">
-                        <button type="button" class="duracion__paso" id="btnMenos" title="Menos">&minus;</button>
-                        <select class="control" id="mDuracion"></select>
-                        <button type="button" class="duracion__paso" id="btnMas" title="Más">+</button>
+                    <label class="campo__etiqueta" for="mTiempo">Tiempo solicitado<span class="campo__obligatorio">*</span></label>
+                    <div class="tiempo">
+                        <button type="button" class="tiempo__paso" id="btnMenos" title="Menos">&minus;</button>
+                        <select class="control" id="mTiempo"></select>
+                        <button type="button" class="tiempo__paso" id="btnMas" title="Más">+</button>
                     </div>
                     <p class="campo__ayuda" id="ayudaTiempo"></p>
                 </div>
-                <div class="campo campo--corto">
-                    <label class="campo__etiqueta">Se fue a las</label>
-                    <div class="calculado" id="mHasta">&mdash;</div>
-                    <p class="campo__ayuda">Sale de las dos cajas de al lado.</p>
+            </div>
+
+            <!-- La oficina no se teclea: la trae la lupa. El código va en una
+                 caja chica y el nombre al lado, de solo lectura, porque un
+                 código de cuatro cifras no le dice nada a nadie. -->
+            <div class="fila">
+                <div class="campo campo--largo">
+                    <label class="campo__etiqueta" for="mCodigo">Ubicación<span class="campo__obligatorio">*</span></label>
+                    <div class="oficina">
+                        <div class="oficina__codigo">
+                            <div class="campo__control">
+                                <input type="text" class="control control--conLupa" id="mCodigo" readonly placeholder="0000">
+                                <button type="button" class="lupa" id="btnLupa" title="Buscar oficina">&#128269;</button>
+                            </div>
+                        </div>
+                        <div class="oficina__nombre">
+                            <input type="text" class="control" id="mNombre" readonly placeholder="Se completa al elegir con la lupa">
+                        </div>
+                    </div>
+                    <div class="oficina__saldo" id="saldoOficina"></div>
                 </div>
             </div>
 
             <div class="fila">
                 <div class="campo campo--corto">
-                    <label class="campo__etiqueta" for="mCobro">Modo de cobro<span class="campo__obligatorio">*</span></label>
+                    <label class="campo__etiqueta" for="mCobro">Tipo de cobro<span class="campo__obligatorio">*</span></label>
                     <select class="control" id="mCobro"></select>
                 </div>
                 <div class="campo campo--corto">
-                    <label class="campo__etiqueta" for="mModalidad">Modalidad de trabajo</label>
+                    <label class="campo__etiqueta" for="mModalidad">Modalidad de trabajo<span class="campo__obligatorio">*</span></label>
                     <select class="control" id="mModalidad"></select>
                 </div>
             </div>
 
             <div class="fila">
                 <div class="campo campo--largo">
-                    <label class="campo__etiqueta" for="mMotivo">Motivo
+                    <label class="campo__etiqueta" for="mMotivo">Motivo de la solicitud
                         <span class="campo__obligatorio">*</span>
                         <span class="campo__cuenta" id="cuentaMotivo">0/250</span></label>
                     <textarea class="control" id="mMotivo" maxlength="250"
@@ -194,8 +173,8 @@
                 </div>
             </div>
 
-            <!-- Dos cosas distintas y por eso dos sitios: la advertencia del
-                 horario informa y deja pasar; el reparo rechaza. -->
+            <!-- Dos cosas distintas y por eso dos sitios: la advertencia
+                 informa y deja pasar; el reparo rechaza. -->
             <div class="advertencia" id="aviso" style="display:none"></div>
             <p class="campo__error" id="error"></p>
         </div>
@@ -224,13 +203,14 @@
             editable = Sol.editable(s);
             filas +=
                 "<tr>" +
+                    "<td>" + Sol.texto(Sol.nombreUbicacion(s.ubicacion)) +
+                        '<div class="tenue">' + Sol.texto(s.ubicacion) + "</div></td>" +
                     "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
                         '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
-                    "<td>" + Sol.texto(s.desde) + " a " + Sol.texto(s.hasta) + "</td>" +
-                    '<td class="der">' + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
+                    '<td class="der">' + Sol.formatear(s.minutos) + "</td>" +
                     "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
+                    "<td>" + Sol.texto(Sol.nombreDe(Sol.modalidades, s.modalidad)) + "</td>" +
                     "<td>" + Sol.pastilla(s.estado) + "</td>" +
-                    '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
                     '<td class="cen">' +
                         '<button type="button" class="boton-fila" data-editar="' + s.id + '"' +
                             (editable ? "" : " disabled") + ' title="Modificar">&#9998;</button>' +
@@ -244,8 +224,9 @@
         }
         cuerpo.innerHTML = filas;
         Sol.porId("cuenta").textContent = String(lista.length);
-        Sol.porId("total").textContent = Sol.formatear(Sol.acumulado(lista));
-        Sol.pintarContexto("contexto", lista);
+        Sol.porId("total").textContent = Sol.formatear(Sol.totalDe(lista));
+        Sol.pintarContexto("contexto");
+        Sol.pintarCuotas("cuotas", lista, "");
         enlazarFilas();
     }
 
@@ -260,6 +241,7 @@
     }
 
     function abrirPara(id) { return function () { abrir(porId(id)); }; }
+
     function borrarPara(id) {
         return function () {
             var i;
@@ -276,61 +258,91 @@
         return null;
     }
 
-    /* --------------------------------------------------------- la línea del día
-       Todo en porcentaje sobre las 24 horas. Un tramo que cruza la
-       medianoche se corta a las 24:00 para dibujarlo: la parte del día
-       siguiente no cabe en la línea de este día, y estirarla mentiría. */
-    function tramo(clase, desde, hasta) {
-        var a = Sol.aMinutos(desde), b = Sol.aMinutos(hasta);
-        if (b <= a) b = 24 * 60;
-        return '<div class="' + clase + '" style="left:' + (a / 14.4) + "%;width:" + ((b - a) / 14.4) + '%"></div>';
+    /* --------------------------------------------------------- la ventana */
+
+    /* Lo que se puede tocar según se esté dando de alta o modificando. Al
+       modificar, la fecha y la oficina quedan fijas: cambiarlas sería otra
+       solicitud, no una corrección de esta. Se apagan en vez de esconderse
+       porque siguen haciendo falta para saber de qué registro se habla. */
+    function bloquear(modificando) {
+        Sol.porId("mFecha").disabled = modificando;
+        Sol.porId("btnLupa").disabled = modificando;
+        Sol.porId("btnLupa").className = modificando ? "lupa lupa--apagada" : "lupa";
     }
 
-    /* La hora de salida, que ya no se teclea. Una sola fuente para toda la
-       pantalla: la calculan el dibujo, el aviso y el grabado. */
-    function hastaActual() {
-        var desde = Sol.porId("mDesde").value;
-        return desde ? Sol.hastaDe(desde, Sol.porId("mDuracion").value) : "";
+    function abrir(s) {
+        var modificando = !!s;
+        enEdicion = s || null;
+
+        Sol.porId("tituloVentana").textContent = modificando ? "Modificar solicitud" : "Nueva solicitud";
+        Sol.porId("cintillo").innerHTML =
+            "Se registra a nombre de <b>" + Sol.texto(Sol.trabajador.nombre) + "</b>." +
+            '<div class="campo__ayuda">Nace como <b>Solicitado</b>. El estado lo mueve su jefatura.</div>' +
+            '<div class="campo__ayuda">' + Sol.reglasEnTexto() + ".</div>" +
+            (modificando
+                ? '<div class="campo__ayuda">Al modificar solo cambian el tiempo, el cobro, la modalidad y el motivo.</div>'
+                : "");
+
+        /* Los topes del calendario se ponen al abrir y no al cargar la
+           página: si la pestaña quedó abierta de ayer, el plazo de hoy es
+           otro. */
+        Sol.prepararFecha(Sol.porId("mFecha"));
+        Sol.porId("mFecha").value = modificando ? s.fecha : Sol.hoy();
+        ponerOficina(modificando ? Sol.ubicacionDe(s.ubicacion) : null);
+        Sol.llenarTiempo(Sol.porId("mTiempo"), modificando ? s.minutos : 0);
+        Sol.porId("mCobro").value = modificando ? s.cobro : "";
+        Sol.porId("mModalidad").value = modificando ? s.modalidad : "";
+        Sol.porId("mMotivo").value = modificando ? s.motivo : "";
+        Sol.porId("error").textContent = "";
+
+        bloquear(modificando);
+        refrescar();
+        Sol.porId("velo").className = "velo abierto";
     }
 
-    function pintarDia() {
-        var t = Sol.trabajador;
-        var fecha = Sol.porId("mFecha").value;
-        var desde = Sol.porId("mDesde").value, hasta = hastaActual();
-        var vecinas = fecha ? Sol.delDia(Sol.solicitudes, fecha, enEdicion ? enEdicion.id : 0) : [];
-        var html = "", i, cruza;
+    function cerrar() { Sol.porId("velo").className = "velo"; }
 
-        /* La jornada solo existe de lunes a viernes: un sábado, la línea no
-           tiene bloque gris y toda la hora es extra. */
-        if (fecha && !Sol.esFinDeSemana(fecha)) html += tramo("dia__jornada", t.entrada, t.salida);
-        for (i = 0; i < vecinas.length; i++) html += tramo("dia__previa", vecinas[i].desde, vecinas[i].hasta);
-
-        if (desde && hasta) {
-            /* Ámbar y no rojo: el cruce con el horario se señala porque
-               suele ser un dedazo, pero no impide nada. */
-            cruza = fecha && !Sol.esFinDeSemana(fecha) && Sol.seCruzan(desde, hasta, t.entrada, t.salida);
-            html += tramo("dia__pedido" + (cruza ? " dia__pedido--cruce" : ""), desde, hasta);
-        }
-        Sol.porId("dia").innerHTML = html;
-        Sol.porId("mHasta").innerHTML = hasta ? Sol.texto(hasta) : "&mdash;";
-        pintarAyudaTiempo();
-        pintarAyudaFecha();
-        pintarAviso();
-        marcarAtajo(desde, hasta);
-        marcarPasos();
+    /* La oficina que trajo la lupa. El código y el nombre viajan juntos
+       siempre: nunca hay uno sin el otro. */
+    function ponerOficina(u) {
+        Sol.porId("mCodigo").value = u ? u.codigo : "";
+        Sol.porId("mNombre").value = u ? u.nombre : "";
     }
 
-    /* Ya no hay nada que corregir: la duración sale de una lista de
-       múltiplos. La ayuda solo cuenta de cuánto es el paso, que es el dato
-       que explica por qué la lista salta así. */
-    function pintarAyudaTiempo() {
+    /* Todo lo que se recalcula al cambiar cualquier cosa: el saldo de la
+       oficina, la urgencia del día, el contador del motivo, los topes de los
+       botones y las advertencias. Una sola función para no tener que
+       acordarse de llamar a cinco. */
+    function refrescar() {
+        var sel = Sol.porId("mTiempo");
         var paso = Sol.formatear(Sol.parametros.multiplo);
+
+        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
+        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
         Sol.porId("ayudaTiempo").textContent = "De " + paso + " en " + paso + ".";
+        Sol.porId("cuentaMotivo").textContent = Sol.porId("mMotivo").value.length + "/250";
+
+        pintarSaldoOficina();
+        pintarAyudaFecha();
+        pintarAvisos();
+        Sol.pintarCuotas("cuotas", Sol.solicitudes, Sol.porId("mCodigo").value);
     }
 
-    /* El plazo, aplicado al día elegido. El rango entero ya está en la
-       cinta de arriba; aquí interesa lo otro: cuánto le queda a ESTE día.
-       Solo se dice cuando aprieta. */
+    /* Lo que le queda a la oficina elegida, al lado del campo. La cifra ya
+       está en su ficha de arriba, pero arriba queda tapada por el velo de la
+       ventana: repetirla aquí es lo que evita tener que cerrar para mirar. */
+    function pintarSaldoOficina() {
+        var caja = Sol.porId("saldoOficina");
+        var codigo = Sol.porId("mCodigo").value, saldo;
+
+        if (!codigo) { caja.innerHTML = "Elija la oficina a cuya cuota se carga este tiempo."; return; }
+        saldo = Sol.saldoDe(Sol.solicitudes, codigo);
+        if (enEdicion) saldo.queda += enEdicion.minutos;
+        caja.innerHTML = "Asignado <b>" + Sol.formatear(saldo.tope) + "</b> · solicitado <b>" +
+                         Sol.formatear(saldo.tope - saldo.queda) + "</b> · queda <b>" +
+                         Sol.formatear(Math.max(0, saldo.queda)) + "</b>";
+    }
+
     function pintarAyudaFecha() {
         var caja = Sol.porId("ayudaFecha");
         var fecha = Sol.porId("mFecha").value, u;
@@ -342,162 +354,78 @@
             : "Le " + u.texto + " para registrarlo.";
     }
 
-    /* Los dos botones se apagan en los extremos de la lista en vez de no
-       hacer nada al pulsarlos. */
-    function marcarPasos() {
-        var sel = Sol.porId("mDuracion");
-        Sol.porId("btnMenos").disabled = sel.selectedIndex <= 0;
-        Sol.porId("btnMas").disabled = sel.selectedIndex >= sel.options.length - 1;
-    }
-
-    function mover(cuanto) {
-        var sel = Sol.porId("mDuracion");
-        var i = sel.selectedIndex + cuanto;
-        if (i < 0 || i >= sel.options.length) return;
-        sel.selectedIndex = i;
-        pintarDia();
-    }
-
-    /* La advertencia del horario. Aparece y desaparece con lo escrito, y
-       nunca impide grabar: el horario es un dato de referencia. */
-    function pintarAviso() {
+    function pintarAvisos() {
         var caja = Sol.porId("aviso");
-        var texto = Sol.avisoHorario({
+        var avisos = Sol.avisos(Sol.solicitudes, leerVentana());
+        caja.innerHTML = avisos.join("<br>");
+        caja.style.display = avisos.length === 0 ? "none" : "block";
+    }
+
+    function leerVentana() {
+        return {
+            id: enEdicion ? enEdicion.id : 0,
             fecha: Sol.porId("mFecha").value,
-            desde: Sol.porId("mDesde").value,
-            hasta: hastaActual()
-        });
-        caja.textContent = texto;
-        caja.style.display = texto === "" ? "none" : "block";
-    }
-
-    /* ------------------------------------------------------------- los atajos
-       Se cuentan desde el fin de la jornada, que es donde empieza la hora
-       extra de un día normal. En sábado se cuentan desde la hora de
-       entrada: no hay jornada de la cual salir. */
-    function inicioNatural() {
-        var fecha = Sol.porId("mFecha").value;
-        var t = Sol.trabajador;
-        return (fecha && Sol.esFinDeSemana(fecha)) ? t.entrada : t.salida;
-    }
-
-    function pintarAtajos() {
-        var caja = Sol.porId("atajos"), atajos = Sol.atajos(), html = "", i;
-        /* Los atajos los da la librería: son múltiplos del parámetro, así
-           que ninguno ofrece un tiempo que después se vaya a rechazar. */
-        for (i = 0; i < atajos.length; i++) {
-            html += '<button type="button" class="atajo" data-min="' + atajos[i] + '">' +
-                    Sol.formatear(atajos[i]) + " desde las " + inicioNatural() + "</button>";
-        }
-        caja.innerHTML = html;
-        enlazarAtajos();
-    }
-
-    function enlazarAtajos() {
-        var botones = Sol.porId("atajos").getElementsByTagName("button"), i;
-        for (i = 0; i < botones.length; i++) botones[i].onclick = aplicarAtajo;
-    }
-
-    /* Un atajo ya no escribe dos horas: pone la de inicio y elige la
-       duración en la lista. Es el mismo gesto que haría la persona. */
-    function aplicarAtajo() {
-        var minutos = String(this.getAttribute("data-min"));
-        Sol.porId("mDesde").value = inicioNatural();
-        Sol.porId("mDuracion").value = minutos;
-        pintarDia();
-    }
-
-    function marcarAtajo(desde) {
-        var botones = Sol.porId("atajos").getElementsByTagName("button");
-        var elegida = Number(Sol.porId("mDuracion").value), i, activo;
-        for (i = 0; i < botones.length; i++) {
-            activo = desde === inicioNatural() && elegida === Number(botones[i].getAttribute("data-min"));
-            botones[i].className = activo ? "atajo atajo--activo" : "atajo";
-        }
-    }
-
-    /* --------------------------------------------------------------- ventana */
-    function abrir(s) {
-        var t = Sol.trabajador;
-        enEdicion = s || null;
-
-        Sol.porId("tituloVentana").textContent = s ? "Modificar solicitud" : "Nueva solicitud";
-        Sol.porId("cintillo").innerHTML =
-            "Se registra a nombre de <b>" + Sol.texto(t.nombre) + "</b>, en <b>" +
-            Sol.texto(t.oficina) + " - " + Sol.texto(t.dOficina) + "</b>." +
-            '<div class="campo__ayuda">Nace como <b>Solicitado</b>. El estado lo mueve su jefatura.</div>' +
-            '<div class="campo__ayuda">' + Sol.reglasEnTexto() + ".</div>";
-
-        /* Hoy, no el fin del periodo: hacia adelante no hay nada que pedir. */
-        Sol.porId("mFecha").value = s ? s.fecha : Sol.hoy();
-        Sol.porId("mHorario").value = t.horario;
-        /* Al dar de alta, la hora de inicio nace en la salida del horario:
-           es de donde arranca la hora extra de un día normal y es lo que la
-           persona iba a escribir. Sigue siendo editable -el horario es una
-           referencia, no un tope-. */
-        Sol.porId("mDesde").value = s ? s.desde : Sol.trabajador.salida;
-        Sol.llenarDuracion(Sol.porId("mDuracion"), s ? Sol.minutosDe(s) : 0);
-        Sol.porId("mCobro").value = s ? s.cobro : "";
-        Sol.porId("mModalidad").value = s ? s.modalidad : "P";
-        Sol.porId("mMotivo").value = s ? s.motivo : "";
-        Sol.porId("error").textContent = "";
-        /* Los topes del calendario se ponen al abrir y no al cargar la
-           página: si la pestaña quedó abierta de ayer, el plazo de hoy es
-           otro. */
-        Sol.prepararFecha(Sol.porId("mFecha"));
-        contarMotivo();
-        pintarAtajos();
-        pintarDia();
-        Sol.porId("velo").className = "velo abierto";
-    }
-
-    function cerrar() { Sol.porId("velo").className = "velo"; }
-
-    function contarMotivo() {
-        Sol.porId("cuentaMotivo").textContent = Sol.porId("mMotivo").value.length + "/250";
-    }
-
-    function grabar() {
-        var s = {
-            id: enEdicion ? enEdicion.id : new Date().getTime(),
-            fecha: Sol.porId("mFecha").value,
-            desde: Sol.porId("mDesde").value,
-            hasta: hastaActual(),
+            ubicacion: Sol.porId("mCodigo").value,
+            minutos: Number(Sol.porId("mTiempo").value || 0),
             cobro: Sol.porId("mCobro").value,
             modalidad: Sol.porId("mModalidad").value,
             estado: "S",
             motivo: Sol.porId("mMotivo").value.replace(/^\s+|\s+$/g, "")
         };
+    }
+
+    function mover(cuanto) {
+        var sel = Sol.porId("mTiempo");
+        var i = sel.selectedIndex + cuanto;
+        if (i < 0 || i >= sel.options.length) return;
+        sel.selectedIndex = i;
+        refrescar();
+    }
+
+    function grabar() {
+        var s = leerVentana();
         var reparo = Sol.revisar(Sol.solicitudes, s);
 
         if (reparo !== "") { Sol.porId("error").textContent = reparo; return; }
 
         if (enEdicion) {
-            enEdicion.fecha = s.fecha; enEdicion.desde = s.desde; enEdicion.hasta = s.hasta;
-            enEdicion.cobro = s.cobro; enEdicion.modalidad = s.modalidad; enEdicion.motivo = s.motivo;
+            /* Solo lo que el alta dejó abierto: la fecha y la oficina no se
+               copian porque no se pudieron cambiar. */
+            enEdicion.minutos = s.minutos;
+            enEdicion.cobro = s.cobro;
+            enEdicion.modalidad = s.modalidad;
+            enEdicion.motivo = s.motivo;
         } else {
+            s.id = new Date().getTime();
             Sol.solicitudes.push(s);
+            Sol.solicitudes.sort(porFecha);
         }
         cerrar();
         pintar();
     }
 
+    function porFecha(a, b) { return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0); }
+
     /* ------------------------------------------------------------- arranque */
-    Sol.prepararHora(Sol.porId("mDesde"));
+    Sol.Lupa.montar();
     Sol.llenarSelect(Sol.porId("mCobro"), Sol.cobros, "Seleccione");
-    Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "");
+    Sol.llenarSelect(Sol.porId("mModalidad"), Sol.modalidades, "Seleccione");
+    Sol.porId("fDesde").value = Sol.primerDiaRegistrable();
+    Sol.porId("fHasta").value = Sol.hoy();
 
     Sol.porId("btnNuevo").onclick = function () { abrir(null); };
     Sol.porId("btnCerrar").onclick = cerrar;
     Sol.porId("btnCancelar").onclick = cerrar;
     Sol.porId("btnGrabar").onclick = grabar;
     Sol.porId("btnBuscar").onclick = pintar;
-    Sol.porId("mFecha").onchange = function () { pintarAtajos(); pintarDia(); };
-    Sol.porId("mDesde").onchange = pintarDia;
-    Sol.porId("mDuracion").onchange = pintarDia;
+    Sol.porId("btnLupa").onclick = function () {
+        Sol.Lupa.abrir(function (u) { ponerOficina(u); refrescar(); });
+    };
     Sol.porId("btnMenos").onclick = function () { mover(-1); };
     Sol.porId("btnMas").onclick = function () { mover(1); };
-    Sol.porId("mMotivo").oninput = contarMotivo;
+    Sol.porId("mTiempo").onchange = refrescar;
+    Sol.porId("mFecha").onchange = refrescar;
+    Sol.porId("mMotivo").oninput = refrescar;
 
     pintar();
 })();

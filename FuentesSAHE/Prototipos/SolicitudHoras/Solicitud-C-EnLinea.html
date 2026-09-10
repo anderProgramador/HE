@@ -16,21 +16,22 @@
     </div>
 
     <div class="saltos">
-        <a href="Solicitud-A-DesdeElHorario.html">A · Desde el horario</a>
+        <a href="Solicitud-A-DesdeElHorario.html">A · Ventana con lupa</a>
         <a href="Solicitud-B-VariosDias.html">B · Varios días de una vez</a>
         <a href="Solicitud-C-EnLinea.html" class="saltos--aqui">C · En línea, sin ventana</a>
     </div>
 
     <div id="contexto"></div>
+    <div class="cuotas" id="cuotas"></div>
 
     <div class="fila">
         <div class="campo campo--corto">
             <label class="campo__etiqueta" for="fDesde">Fecha Inicio</label>
-            <input type="date" class="control" id="fDesde" value="2026-09-01">
+            <input type="date" class="control" id="fDesde">
         </div>
         <div class="campo campo--corto">
             <label class="campo__etiqueta" for="fHasta">Fecha Fin</label>
-            <input type="date" class="control" id="fHasta" value="2026-09-30">
+            <input type="date" class="control" id="fHasta">
         </div>
         <div class="campo campo--corto">
             <label class="campo__etiqueta">&nbsp;</label>
@@ -46,16 +47,17 @@
     <!-- El reparo va pegado encima de la grilla, no en un diálogo: el campo
          que hay que corregir queda a la vista mientras se lee. -->
     <div class="alta__reparo" id="reparo" style="display:none"></div>
+    <div class="advertencia" id="aviso" style="display:none"></div>
 
     <div class="rejilla">
         <table class="tabla">
             <thead>
                 <tr>
-                    <th class="col-fecha">Fecha</th>
-                    <th class="col-hora">Desde</th>
-                    <th class="col-tiempo">Cuánto</th>
-                    <th class="col-hora">Se fue</th>
-                    <th class="col-cobro">Modo de Cobro</th>
+                    <th class="col-ubicacion">Ubicación</th>
+                    <th class="col-fecha">Fecha de Solicitud</th>
+                    <th class="col-tiempo">Tiempo Solicitado</th>
+                    <th class="col-cobro">Tipo de Cobro</th>
+                    <th class="col-modalidad">Modalidad</th>
                     <th class="col-motivo">Motivo</th>
                     <th class="col-estado">Estado</th>
                     <th class="cen col-accion">Acciones</th>
@@ -65,11 +67,17 @@
                 <!-- LA FILA DE ALTA. No es un registro: es el formulario, y por
                      eso se pinta distinta y vive arriba de todo. -->
                 <tr class="alta">
+                    <td>
+                        <div class="campo__control">
+                            <input type="text" class="control control--conLupa" id="nCodigo" readonly placeholder="Oficina">
+                            <button type="button" class="lupa" id="btnLupa" title="Buscar oficina">&#128269;</button>
+                        </div>
+                        <div class="tenue" id="nNombre"></div>
+                    </td>
                     <td><input type="date" class="control" id="nFecha"><div id="nUrge"></div></td>
-                    <td><input type="time" class="control" id="nDesde"></td>
-                    <td><select class="control" id="nDuracion"></select></td>
-                    <td class="der tenue" id="nHasta">&mdash;</td>
+                    <td><select class="control" id="nTiempo"></select></td>
                     <td><select class="control" id="nCobro"></select></td>
+                    <td><select class="control" id="nModalidad"></select></td>
                     <td><input type="text" class="control" id="nMotivo" maxlength="250" placeholder="Motivo"></td>
                     <td><span class="pastilla pastilla--espera">Solicitado</span></td>
                     <td class="cen">
@@ -81,7 +89,7 @@
             <tbody id="cuerpo"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2">Total del periodo</td>
+                    <td colspan="2">Total solicitado</td>
                     <td id="total">0:00</td>
                     <td colspan="5"></td>
                 </tr>
@@ -89,11 +97,7 @@
         </table>
     </div>
 
-    <p class="campo__ayuda" style="margin-top:8px">
-        La modalidad de trabajo se toma de su horario (<b id="pieModalidad"></b>) y solo se cambia
-        al modificar una solicitud. Es lo mismo en el 95% de los casos y no merece una columna.
-        <br><span id="pieReglas"></span>.
-    </p>
+    <p class="campo__ayuda" style="margin-top:8px"><span id="pieReglas"></span>.</p>
 
     <div class="nota">
         <b>Alternativa C — la lista es el formulario.</b>
@@ -101,22 +105,23 @@
             <li>No hay ventana. La primera fila de la grilla <b>es</b> el alta: se escribe de izquierda a
                 derecha y con <b>Enter</b> se agrega, quedando lista para la siguiente. Quien pide horas todas
                 las semanas deja de abrir y cerrar un diálogo cada vez.</li>
+            <li>La <b>oficina y la fecha no se limpian</b> al agregar: quien registra dos días de la misma
+                oficina vuelve a escribir casi lo mismo. Se limpia el motivo, que es lo único que cambia de
+                verdad, y ahí queda el foco.</li>
             <li>Lo que ya se pidió <b>no se tapa</b>. En la pantalla de hoy, el velo esconde justo la lista que
                 haría falta consultar para no repetir un día.</li>
-            <li>Las solicitudes en <i>Solicitado</i> se corrigen <b>en su propia fila</b>: es el mismo gesto
-                que crearlas. Las que la jefatura ya decidió quedan de solo lectura, con su estado a la
-                vista.</li>
+            <li>Las solicitudes en <i>Solicitado</i> se corrigen <b>en su propia fila</b>, y ahí se ve mejor
+                que en ningún sitio qué deja tocar una modificación: la ubicación y la fecha se quedan como
+                texto y solo se abren el tiempo, el cobro, la modalidad y el motivo.</li>
             <li>El reparo aparece <b>sobre la grilla</b> y el campo culpable se marca en rojo, sin sacar al
                 usuario de donde estaba escribiendo.</li>
         </ul>
-        <div class="nota__cambia"><b>Los parámetros, en una fila estrecha.</b> La duración es un
-            desplegable de múltiplos, así que la celda del tiempo dejó de ser un aviso -antes salía en rojo
-            con un asterisco- y volvió a ser un dato: la hora a la que se fue, calculada. Debajo de la fecha
-            va lo único que sí urge, los días que le quedan a ESE día de plazo. La fila que se abre para
-            modificar lleva los mismos controles: corregir no es una puerta trasera para saltárselos.</div>
-        <div class="nota__cambia"><b>El precio:</b> caben menos campos que en una ventana. Modalidad y
-            adjunto no entran en la fila y se resuelven al modificar. Si mañana la solicitud pide tres datos
-            más, esta alternativa es la primera que se rompe.</div>
+        <div class="nota__cambia"><b>Los parámetros, en una fila estrecha.</b> El tiempo es un desplegable de
+            múltiplos -no cabe otra cosa, y tampoco hace falta- y el plazo recorta el calendario de la celda
+            de fecha. Debajo de esa celda va lo único que urge: los días que le quedan a ESE día.</div>
+        <div class="nota__cambia"><b>El precio:</b> son ocho columnas y la fila va justa. Si mañana la
+            solicitud pide un adjunto o dos datos más, esta alternativa es la primera que se rompe: la A
+            aguanta lo que le echen.</div>
     </div>
 
 </div>
@@ -142,20 +147,22 @@
         }
         cuerpo.innerHTML = filas;
         Sol.porId("cuenta").textContent = String(lista.length);
-        Sol.porId("total").textContent = Sol.formatear(Sol.acumulado(lista));
-        Sol.pintarContexto("contexto", lista);
+        Sol.porId("total").textContent = Sol.formatear(Sol.totalDe(lista));
+        Sol.pintarContexto("contexto");
+        Sol.pintarCuotas("cuotas", lista, Sol.porId("nCodigo").value);
         enlazarFilas();
     }
 
     function filaNormal(s) {
         var editable = Sol.editable(s);
         return "<tr>" +
+                "<td>" + Sol.texto(Sol.nombreUbicacion(s.ubicacion)) +
+                    '<div class="tenue">' + Sol.texto(s.ubicacion) + "</div></td>" +
                 "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
                     '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
-                "<td>" + Sol.texto(s.desde) + "</td>" +
-                "<td>" + Sol.formatear(Sol.minutosDe(s)) + "</td>" +
-                '<td class="der tenue">' + Sol.texto(s.hasta) + "</td>" +
+                "<td>" + Sol.formatear(s.minutos) + "</td>" +
                 "<td>" + Sol.texto(Sol.nombreDe(Sol.cobros, s.cobro)) + "</td>" +
+                "<td>" + Sol.texto(Sol.nombreDe(Sol.modalidades, s.modalidad)) + "</td>" +
                 '<td class="tenue">' + Sol.texto(s.motivo) + "</td>" +
                 "<td>" + Sol.pastilla(s.estado) + "</td>" +
                 '<td class="cen">' +
@@ -167,18 +174,23 @@
             "</tr>";
     }
 
-    /* La misma fila, con sus datos abiertos. No se abre otra cosa en otro
-       sitio: se edita donde se estaba mirando. */
+    /* La misma fila con sus datos abiertos, y solo los que una modificación
+       deja tocar. La ubicación y la fecha se quedan como texto: cambiarlas
+       sería otra solicitud, no una corrección de esta, y en una fila eso se
+       entiende sin explicarlo -las dos primeras celdas no cambian de
+       aspecto-. */
     function filaEditable(s) {
         return '<tr class="alta">' +
-                '<td><input type="date" class="control" id="eFecha" value="' + Sol.texto(s.fecha) + '"></td>' +
-                '<td><input type="time" class="control" id="eDesde" value="' + Sol.texto(s.desde) + '"></td>' +
-                '<td><select class="control" id="eDuracion"></select></td>' +
-                '<td class="der tenue" id="eHasta">' + Sol.texto(s.hasta) + "</td>" +
+                "<td>" + Sol.texto(Sol.nombreUbicacion(s.ubicacion)) +
+                    '<div class="tenue">' + Sol.texto(s.ubicacion) + "</div></td>" +
+                "<td>" + Sol.texto(Sol.enTexto(s.fecha)) +
+                    '<div class="tenue">' + Sol.texto(Sol.enLetra(s.fecha)) + "</div></td>" +
+                '<td><select class="control" id="eTiempo"></select></td>' +
                 '<td><select class="control" id="eCobro"></select></td>' +
+                '<td><select class="control" id="eModalidad"></select></td>' +
                 '<td><input type="text" class="control" id="eMotivo" maxlength="250" value="' +
                     Sol.texto(s.motivo) + '"></td>' +
-                '<td>' + Sol.pastilla(s.estado) + "</td>" +
+                "<td>" + Sol.pastilla(s.estado) + "</td>" +
                 '<td class="cen">' +
                     '<button type="button" class="boton-fila" data-guardar="' + s.id + '" title="Guardar">&#10003;</button>' +
                     '<button type="button" class="boton-fila" data-cancelar="1" title="Cancelar">&times;</button>' +
@@ -187,7 +199,7 @@
     }
 
     function enlazarFilas() {
-        var botones = Sol.porId("cuerpo").getElementsByTagName("button"), i, id, sel;
+        var botones = Sol.porId("cuerpo").getElementsByTagName("button"), i, id, s;
 
         for (i = 0; i < botones.length; i++) {
             id = botones[i].getAttribute("data-editar");
@@ -201,33 +213,22 @@
             }
         }
 
-        /* El desplegable de la fila abierta se llena después de pintarla:
-           su valor no cabe en el HTML de arriba sin repetir las opciones. */
-        sel = Sol.porId("eCobro");
-        if (sel) {
-            Sol.llenarSelect(sel, Sol.cobros, "");
-            sel.value = porId(editando).cobro;
-            /* La fila abierta se acaba de pintar, así que sus controles
-               también necesitan el plazo y el múltiplo: modificar no es una
-               puerta trasera para saltarse los parámetros. */
-            Sol.prepararFecha(Sol.porId("eFecha"));
-            Sol.prepararHora(Sol.porId("eDesde"));
-            Sol.llenarDuracion(Sol.porId("eDuracion"), Sol.minutosDe(porId(editando)));
-            Sol.porId("eDesde").onchange = refrescarEditada;
-            Sol.porId("eDuracion").onchange = refrescarEditada;
-        }
+        /* Los desplegables de la fila abierta se llenan después de pintarla:
+           sus valores no caben en el HTML de arriba sin repetir las
+           opciones tres veces. */
+        if (!editando) return;
+        s = porId(editando);
+        Sol.llenarTiempo(Sol.porId("eTiempo"), s.minutos);
+        Sol.llenarSelect(Sol.porId("eCobro"), Sol.cobros, "");
+        Sol.porId("eCobro").value = s.cobro;
+        Sol.llenarSelect(Sol.porId("eModalidad"), Sol.modalidades, "");
+        Sol.porId("eModalidad").value = s.modalidad;
     }
 
     function porId(id) {
         var i;
         for (i = 0; i < Sol.solicitudes.length; i++) if (Sol.solicitudes[i].id === id) return Sol.solicitudes[i];
         return null;
-    }
-
-    /* La hora de salida de la fila abierta, que también se calcula. */
-    function refrescarEditada() {
-        Sol.porId("eHasta").textContent =
-            Sol.hastaDe(Sol.porId("eDesde").value, Sol.porId("eDuracion").value);
     }
 
     function abrirFila(id) { return function () { editando = id; avisar(""); pintar(); }; }
@@ -247,12 +248,10 @@
         return function () {
             var s = porId(id);
             var cambiada = {
-                id: id,
-                fecha: Sol.porId("eFecha").value,
-                desde: Sol.porId("eDesde").value,
-                hasta: Sol.hastaDe(Sol.porId("eDesde").value, Sol.porId("eDuracion").value),
+                id: id, fecha: s.fecha, ubicacion: s.ubicacion,
+                minutos: Number(Sol.porId("eTiempo").value || 0),
                 cobro: Sol.porId("eCobro").value,
-                modalidad: s.modalidad,
+                modalidad: Sol.porId("eModalidad").value,
                 estado: s.estado,
                 motivo: Sol.porId("eMotivo").value.replace(/^\s+|\s+$/g, "")
             };
@@ -260,61 +259,65 @@
 
             if (reparo !== "") { avisar(reparo); return; }
 
-            s.fecha = cambiada.fecha; s.desde = cambiada.desde; s.hasta = cambiada.hasta;
-            s.cobro = cambiada.cobro; s.motivo = cambiada.motivo;
+            /* Solo lo que la modificación deja abierto. La fecha y la
+               ubicación ni se leen de la fila: no había dónde cambiarlas. */
+            s.minutos = cambiada.minutos;
+            s.cobro = cambiada.cobro;
+            s.modalidad = cambiada.modalidad;
+            s.motivo = cambiada.motivo;
             editando = 0;
             avisar("");
             pintar();
+            advertir(Sol.avisos(Sol.solicitudes, s));
         };
     }
 
     /* --------------------------------------------------------- la fila de alta */
-    function hastaDelAlta() {
-        var d = Sol.porId("nDesde").value;
-        return d ? Sol.hastaDe(d, Sol.porId("nDuracion").value) : "";
-    }
-
-    /* La fila ya no puede llevar un tiempo fuera de múltiplo -la duración
-       sale de una lista-, así que la celda dejó de ser un aviso y volvió a
-       ser lo que debía: la hora a la que se fue, calculada.
-
-       Debajo de la fecha va lo único que sí urge: cuántos días le quedan a
-       ESE día antes de salirse del plazo. */
-    function tiempoDelAlta() {
-        var fecha = Sol.porId("nFecha").value;
-        var hasta = hastaDelAlta(), u;
-
-        Sol.porId("nHasta").innerHTML = hasta ? Sol.texto(hasta) : "&mdash;";
-        u = (fecha && Sol.enPlazo(fecha)) ? Sol.urgenciaDe(fecha) : null;
-        Sol.porId("nUrge").innerHTML = (u && u.aprieta)
-            ? '<span class="urge ' + u.clase + '">' + u.texto + "</span>" : "";
-    }
-
-    function agregar() {
-        var s = {
-            id: new Date().getTime(),
+    function leerAlta() {
+        return {
+            id: 0,
             fecha: Sol.porId("nFecha").value,
-            desde: Sol.porId("nDesde").value,
-            hasta: hastaDelAlta(),
+            ubicacion: Sol.porId("nCodigo").value,
+            minutos: Number(Sol.porId("nTiempo").value || 0),
             cobro: Sol.porId("nCobro").value,
-            modalidad: "P",
+            modalidad: Sol.porId("nModalidad").value,
             estado: "S",
             motivo: Sol.porId("nMotivo").value.replace(/^\s+|\s+$/g, "")
         };
+    }
+
+    /* Lo único que urge en una celda de este ancho: los días que le quedan a
+       ESE día de plazo. Lo demás -el saldo de la oficina- ya está en las
+       fichas de arriba, que aquí no las tapa ningún velo. */
+    function refrescarAlta() {
+        var fecha = Sol.porId("nFecha").value, u;
+
+        u = (fecha && Sol.enPlazo(fecha)) ? Sol.urgenciaDe(fecha) : null;
+        Sol.porId("nUrge").innerHTML = (u && u.aprieta)
+            ? '<span class="urge ' + u.clase + '">' + u.texto + "</span>" : "";
+        Sol.pintarCuotas("cuotas", Sol.solicitudes, Sol.porId("nCodigo").value);
+        advertir(Sol.avisos(Sol.solicitudes, leerAlta()));
+    }
+
+    function agregar() {
+        var s = leerAlta();
         var reparo = Sol.revisar(Sol.solicitudes, s);
 
         limpiarMarcas();
         if (reparo !== "") { avisar(reparo); marcarCulpable(reparo); return; }
 
+        s.id = new Date().getTime();
         Sol.solicitudes.push(s);
         Sol.solicitudes.sort(function (a, b) { return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0); });
 
-        /* La fecha y el horario NO se limpian: quien pide dos días seguidos
-           vuelve a escribir casi lo mismo. Se limpia el motivo, que es lo
-           único que cambia de verdad, y ahí queda el foco. */
+        /* La oficina, la fecha y el tiempo NO se limpian: quien registra dos
+           días seguidos vuelve a escribir casi lo mismo. Se limpia el
+           motivo, que es lo único que cambia de verdad, y ahí queda el
+           foco. */
         Sol.porId("nMotivo").value = "";
         avisar("");
         pintar();
+        refrescarAlta();
         Sol.porId("nMotivo").focus();
     }
 
@@ -324,23 +327,37 @@
         caja.style.display = texto === "" ? "none" : "block";
     }
 
+    /* Advertencias: informan y dejan pasar. Van en otra caja y en otro color
+       que el reparo, que sí rechaza. */
+    function advertir(lista) {
+        var caja = Sol.porId("aviso");
+        caja.innerHTML = lista.join("<br>");
+        caja.style.display = lista.length === 0 ? "none" : "block";
+    }
+
     /* Marcar el campo del que habla el reparo. Se mira el texto y no un
        código porque el reparo lo arma 'Sol.revisar', que es de los tres
        prototipos: darle un código solo para esta pantalla sería pedirle que
        sepa de una fila que no conoce. */
     function marcarCulpable(reparo) {
-        if (reparo.indexOf("fecha") >= 0 || reparo.indexOf("día") >= 0 ||
-            reparo.indexOf("venció") >= 0 || reparo.indexOf("ocurrió") >= 0) marcar("nFecha");
+        if (reparo.indexOf("oficina") >= 0) marcar("nCodigo");
         else if (reparo.indexOf("motivo") >= 0 || reparo.indexOf("Explique") >= 0) marcar("nMotivo");
-        else if (reparo.indexOf("cobrar") >= 0) marcar("nCobro");
-        else { marcar("nDesde"); marcar("nDuracion"); }
+        else if (reparo.indexOf("cobro") >= 0) marcar("nCobro");
+        else if (reparo.indexOf("modalidad") >= 0) marcar("nModalidad");
+        else if (reparo.indexOf("tiempo") >= 0 || reparo.indexOf("sube de") >= 0) marcar("nTiempo");
+        else marcar("nFecha");
     }
 
-    function marcar(id) { Sol.porId(id).className = "control control--error"; }
+    function marcar(id) {
+        var nodo = Sol.porId(id);
+        nodo.className = nodo.className.indexOf("conLupa") >= 0
+            ? "control control--conLupa control--error" : "control control--error";
+    }
 
     function limpiarMarcas() {
-        var ids = ["nFecha", "nDesde", "nDuracion", "nCobro", "nMotivo"], i;
+        var ids = ["nFecha", "nTiempo", "nCobro", "nModalidad", "nMotivo"], i;
         for (i = 0; i < ids.length; i++) Sol.porId(ids[i]).className = "control";
+        Sol.porId("nCodigo").className = "control control--conLupa";
     }
 
     /* Enter agrega desde cualquier caja de la fila: es el gesto que hace que
@@ -350,28 +367,32 @@
     }
 
     /* ------------------------------------------------------------- arranque */
+    Sol.Lupa.montar();
+    Sol.llenarTiempo(Sol.porId("nTiempo"), 0);
     Sol.llenarSelect(Sol.porId("nCobro"), Sol.cobros, "Cobro");
-    /* Los dos parámetros, puestos sobre los controles de la fila: el
-       calendario se abre recortado al plazo y las cajas de hora suben de
-       múltiplo en múltiplo. */
+    Sol.llenarSelect(Sol.porId("nModalidad"), Sol.modalidades, "Modalidad");
     Sol.prepararFecha(Sol.porId("nFecha"));
-    Sol.prepararHora(Sol.porId("nDesde"));
-    Sol.llenarDuracion(Sol.porId("nDuracion"), 0);
     Sol.porId("nFecha").value = Sol.hoy();
-    Sol.porId("nDesde").value = Sol.trabajador.salida;
-    Sol.porId("pieModalidad").textContent = Sol.modalidades[0].nombre;
+    Sol.porId("fDesde").value = Sol.primerDiaRegistrable();
+    Sol.porId("fHasta").value = Sol.hoy();
     Sol.porId("pieReglas").innerHTML = Sol.reglasEnTexto();
 
+    Sol.porId("btnLupa").onclick = function () {
+        Sol.Lupa.abrir(function (u) {
+            Sol.porId("nCodigo").value = u.codigo;
+            Sol.porId("nNombre").textContent = u.nombre;
+            refrescarAlta();
+        });
+    };
     Sol.porId("btnAgregar").onclick = agregar;
     Sol.porId("btnBuscar").onclick = pintar;
-    Sol.porId("nDesde").onchange = tiempoDelAlta;
-    Sol.porId("nDuracion").onchange = tiempoDelAlta;
-    Sol.porId("nFecha").onchange = tiempoDelAlta;
+    Sol.porId("nFecha").onchange = refrescarAlta;
+    Sol.porId("nTiempo").onchange = refrescarAlta;
     Sol.porId("nFecha").onkeypress = alTeclear;
     Sol.porId("nMotivo").onkeypress = alTeclear;
 
-    tiempoDelAlta();
     pintar();
+    refrescarAlta();
 })();
 </script>
 </body>
