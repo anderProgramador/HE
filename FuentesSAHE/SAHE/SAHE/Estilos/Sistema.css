@@ -596,6 +596,11 @@ input.control.Derecha { text-align: right; }
 
 .resumen__cifras { margin-top: 8px; }
 .resumen__dato { display: inline-block; width: 32%; vertical-align: top; }
+/* La tarjeta de T03 lleva cuatro cifras y no tres -total, aprobadas,
+   solicitadas y pendientes-, así que sus datos reparten el ancho entre
+   cuatro. Es un modificador y no un cambio del ancho de siempre: T01FUN
+   sigue con sus tres. */
+.resumen--cuatro .resumen__dato { width: 24%; }
 .resumen__rotulo {
     font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #8A8781;
 }
