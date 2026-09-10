@@ -116,7 +116,7 @@ var Sistema = (function () {
     }
 
     /* Dónde viene el resumen dentro de la respuesta. Lo usan las dos
-       pantallas que tienen tarjeta -T01FUN y T06FUN- y por eso vive aquí y no
+       pantallas que tienen tarjeta -T01FUN y T03- y por eso vive aquí y no
        dentro de una de ellas.
 
        Llega detrás de las filas en las tres respuestas, pero no en el mismo
@@ -555,7 +555,7 @@ var Sistema = (function () {
     })();
 
     /* ========================================================================
-       T06FUN - Solicitud de Horas Extras (trabajador)
+       T03 - Solicitud de Horas Extras (trabajador)
 
        Cuatro cosas son propias de esta pantalla:
 
@@ -574,13 +574,18 @@ var Sistema = (function () {
        que no cuadre no se puede ni teclear. Un parámetro que se convierte en
        la forma del control no necesita código que lo vigile.
 
+       El PERFIL tampoco: quién entra lo dice el menú y qué puede hacer lo
+       dice 'pTrabajador' en el Web.config. El controlador manda en 'hdfTabla'
+       solo los códigos que el perfil tiene en 'S' y la librería apaga el
+       resto, así que aquí no hay nada que consultar ni que esconder.
+
        La lupa de oficinas, el desplegable del tiempo, el contador del motivo
        y los bloqueos del modificar tampoco están: los declara el txt y los
        resuelve la librería.
        ===================================================================== */
-    particular.T06FUN = (function () {
+    particular.T03 = (function () {
 
-        var TABLA = "T06FUN";
+        var TABLA = "T03";
         var abrirOriginal = null;
         /* El modelo de la pantalla, que llega con 'alConstruir'. Se guarda
            porque es de donde salen los valores por omisión de la carga, y
