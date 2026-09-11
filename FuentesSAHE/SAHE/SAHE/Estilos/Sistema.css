@@ -646,8 +646,12 @@ input.control.Derecha { text-align: right; }
 .seccion--resumen .resumen { width: 100%; margin-bottom: 0; }
 /* La tarjeta se estira, las cifras no: repartidas por todo el ancho quedaban
    a un palmo unas de otras y dejaban de leerse como una sola cuenta. Se
-   agrupan a la izquierda y la barra sí ocupa lo que hay. */
+   agrupan a la izquierda y la barra sí ocupa lo que hay.
+
+   Con cuatro cifras hace falta más sitio: en 460px les tocaban 115 a cada
+   una y la cuarta se caía a una segunda línea. */
 .seccion--resumen .resumen__cifras { max-width: 460px; }
+.seccion--resumen .resumen--cuatro .resumen__cifras { max-width: 580px; }
 
 /* Emparejadas solo cuando hay ancho para las dos; por debajo vuelven a
    apilarse, que es como se leen en una pantalla angosta. */
@@ -657,4 +661,13 @@ input.control.Derecha { text-align: right; }
     /* El desplegable del periodo no baja de aquí: en una columna estrecha el
        25% de 'ancho=corto' dejaba 'aaaamm' sin sitio. */
     .seccion--filtro .campo--corto, .seccion--filtro .campo--medio { min-width: 150px; }
+
+    /* Un filtro de DOS campos no cabe en el 36%: con dos cajas de 150 y el
+       botón detrás se pasa del ancho y el botón se cae a la línea de abajo,
+       separado de lo que consulta. La clase la pone Sistema.js contando los
+       campos, porque el ancho que hace falta lo decide el txt de cada
+       pantalla y no la hoja de estilos: T01FUN filtra por un periodo y T03
+       por un rango de fechas. */
+    .seccion--filtro--dos { width: 47%; }
+    .seccion--filtro--dos + .seccion--resumen { width: 50%; }
 }

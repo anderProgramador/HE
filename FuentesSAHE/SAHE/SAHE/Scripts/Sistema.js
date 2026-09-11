@@ -158,6 +158,30 @@ var Sistema = (function () {
     function emparejarFiltroYResumen(tabla) {
         marcarSeccion(tabla, "secbusqueda", "seccion--filtro");
         marcarSeccion(tabla, "secresumen", "seccion--resumen");
+        anchoDelFiltro();
+    }
+
+    /* El filtro ocupa lo que piden sus campos. Con uno solo -T01FUN, que
+       filtra por periodo- la columna estrecha sobra; con dos -T03, que filtra
+       por un rango de fechas- el botón no cabe al lado y se cae a la línea de
+       abajo, separado de lo que consulta.
+
+       Se cuenta aquí y no se escribe en la hoja de estilos porque el número
+       de campos lo decide el txt de cada pantalla, y el CSS no sabe contar.
+       El botón no cuenta: es lo que tiene que caber DESPUÉS. */
+    function anchoDelFiltro() {
+        var caja = document.getElementById("secbusqueda");
+        var campos;
+
+        if (!caja) return;
+        campos = caja.querySelectorAll(".campo:not(.campo--boton)");
+        if (campos.length > 1) agregarClase(caja, "seccion--filtro--dos");
+    }
+
+    function agregarClase(nodo, clase) {
+        if ((" " + nodo.className + " ").indexOf(" " + clase + " ") === -1) {
+            nodo.className += " " + clase;
+        }
     }
 
     function marcarSeccion(tabla, id, clase) {
@@ -167,9 +191,7 @@ var Sistema = (function () {
                               id + "'; el filtro y el resumen quedan apilados.");
             return;
         }
-        if ((" " + nodo.className + " ").indexOf(" " + clase + " ") === -1) {
-            nodo.className += " " + clase;
-        }
+        agregarClase(nodo, clase);
     }
 
     /* Escapar lo que se pinta con innerHTML. Lo necesitan las dos tarjetas. */
