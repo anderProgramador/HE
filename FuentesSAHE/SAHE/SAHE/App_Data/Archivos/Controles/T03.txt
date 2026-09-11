@@ -184,17 +184,38 @@
 #                                  no limita nada
 #
 # ----------------------------------------------------------------------------
-# DOS COSAS QUE LA LIBRERÍA DA POR SUPUESTAS Y AQUÍ NO SE CUMPLEN
+# EL ORDEN DEL [2] EN ADELANTE NO IMPORTA
 #
-# La librería busca la ayuda siempre en el [2] y los valores por omisión en el
-# primer segmento que contenga un '='. Este paquete pone el resumen en el [2],
-# la ayuda en el [3] y los por defecto posicionales en el [4], así que
-# Sistema.js los recoloca después de que la librería reparta. Sin eso, la lupa
-# mostraría las cifras del resumen y los por defecto quedarían vacíos.
+# Los tres últimos -resumen, ayuda y valores por defecto- se reconocen por su
+# FORMA y no por el puesto que ocupan, así que pueden venir en cualquier
+# orden, y pueden no venir.
 #
-# Se arregla en la pantalla y no en la librería porque no es un error de la
-# librería: es que este paquete ordena sus segmentos a su manera, y las otras
-# pantallas siguen con la suya.
+# No es un lujo: la trama ha ido cambiando mientras se armaba la pantalla -ha
+# llegado con la ayuda sola en el [2], y también con resumen, ayuda y
+# defectos- y cada vez que se fijó un número de segmento la pantalla acabó
+# pintando una cosa en el sitio de otra: la tarjeta llegó a mostrar nombres de
+# oficinas donde van las horas. Contar segmentos obliga a que el paquete y la
+# pantalla cambien a la vez; reconocerlos, no.
+#
+# Las tres son inconfundibles:
+#
+#   resumen   un solo registro y TODOS sus campos son horas
+#             10:00|06:00|04:00|30:00
+#   defectos  un solo registro con seis campos o más, y alguno es una fecha
+#             0347159|01/09/2026|...|15|OFAD - OFIC.ADMINISTRATIVAS...
+#   ayuda     lo demás: varios registros separados por ¬, o uno de dos campos
+#             0398|AGENCIA 3 MACMYPE JUNIN¬9005|OFICINA ESPECIAL...
+#
+# El que no venga no se reconoce, y quien dependa de él se comporta como si no
+# existiera -la tarjeta se esconde, el filtro nace vacío, la lupa sale sin
+# filas- en vez de quedarse con la basura del vecino. Los tres casos quedan
+# anotados en la consola.
+#
+# Esto es del [2] en adelante. El [0] y el [1] sí son fijos: las listas y la
+# grilla las coloca la librería, no esta pantalla.
+#
+# Es la misma idea que la librería ya usa para los valores por omisión, que
+# busca 'el primer segmento que contenga un =' en vez de un número.
 #
 # ----------------------------------------------------------------------------
 # LO QUE DEVUELVE CONSULTAR:
