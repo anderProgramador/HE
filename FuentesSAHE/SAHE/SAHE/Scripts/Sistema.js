@@ -591,10 +591,6 @@ var Sistema = (function () {
     particular.T03 = (function () {
 
         var TABLA = "T03";
-        /* En la carga, el resumen viene antes que la ayuda. */
-        var RESUMEN_EN_CARGA = 2;
-        var AYUDA_EN_CARGA = 3;
-        var POR_DEFECTO_EN_CARGA = 4;
 
         /* El tope del desplegable: 17 horas por solicitud. Es una regla del
            negocio y por eso está escrita, no calculada. La carga no la manda
@@ -605,8 +601,12 @@ var Sistema = (function () {
 
         var abrirOriginal = null;
         var modeloPantalla = null;
-        /* Lo que trajo el [4], ya partido. Se guarda porque la ventana lo
-           necesita cada vez que se abre y no tiene sentido volver a pedirlo. */
+        /* Los tres segmentos de la carga, ya reconocidos, y los ajustes ya
+           partidos. Se guardan porque la ventana los necesita cada vez que se
+           abre y no tiene sentido volver a pedirlos. */
+        var resumenCrudo = "";
+        var ayudaCruda = "";
+        var ajustesCrudos = "";
         var ajustes = null;
 
         /* 'C|<cTrabajador>|<cUbicacion>'. Se registra en la librería como lo
@@ -616,12 +616,88 @@ var Sistema = (function () {
             return "|" + quien.cTrabajador + "|" + quien.cUbicacion;
         };
 
-        /* ------------------------------------------------ el cuarto segmento
-           Posicional, no 'clave=valor', así que se lee por orden. Un campo que
-           no venga queda en blanco y quien dependa de él se comporta como si
-           no existiera, en vez de inventarse un valor. */
-        function leerAjustes(lectura) {
-            var crudo = String((lectura.segmentos || [])[POR_DEFECTO_EN_CARGA] || "");
+        /* ================================================================
+           DE QUÉ SEGMENTO SALE CADA COSA
+
+           Del [2] en adelante vienen el resumen, la ayuda de la lupa y los
+           valores por defecto, y NO siempre en el mismo orden ni siempre los
+           tres: el paquete ha mandado ya 'ayuda' sola, y también 'resumen,
+           ayuda, defectos'. Fijar el número de segmento obliga a que las dos
+           partes cambien a la vez, y mientras tanto la pantalla pinta una
+           cosa en el sitio de otra -la tarjeta llegó a mostrar nombres de
+           oficinas donde van las horas-.
+
+           Así que no se cuentan: se reconocen por su FORMA, que es lo que la
+           propia librería hace con los valores por omisión. Las tres son
+           inconfundibles:
+
+             resumen   un solo registro y TODOS sus campos son horas
+                       '10:00|10:00|00:00|30:00'
+             defectos  un solo registro con seis campos o más, y alguno es
+                       una fecha
+                       '0347159|01/09/2026|...|15|OFAD - ...'
+             ayuda     lo demás: varios registros separados por ¬, o uno de
+                       dos campos
+                       '0398|AGENCIA 3 MACMYPE JUNIN¬9005|...'
+
+           El que no venga simplemente no se reconoce, y quien dependa de él
+           se comporta como si no existiera en vez de quedarse con la basura
+           del vecino. */
+        function repartirSegmentos(lectura) {
+            var segmentos = lectura.segmentos || [];
+            var i, crudo;
+
+            resumenCrudo = "";
+            ayudaCruda = "";
+            ajustesCrudos = "";
+
+            for (i = 2; i < segmentos.length; i++) {
+                crudo = String(segmentos[i] || "");
+                if (crudo === "") continue;
+                if (resumenCrudo === "" && esResumen(crudo)) { resumenCrudo = crudo; continue; }
+                if (ajustesCrudos === "" && esAjustes(crudo)) { ajustesCrudos = crudo; continue; }
+                if (ayudaCruda === "") ayudaCruda = crudo;
+            }
+        }
+
+        /* Un solo registro y todos sus campos horas. Con tres o más, para no
+           confundirlo con una fila suelta de dos columnas. */
+        function esResumen(crudo) {
+            var c;
+            if (crudo.indexOf("¬") >= 0) return false;
+            c = crudo.split("|");
+            if (c.length < 3) return false;
+            return todasHoras(c);
+        }
+
+        function todasHoras(c) {
+            var i;
+            for (i = 0; i < c.length; i++) {
+                if (!/^\d{1,4}:[0-5]\d$/.test(c[i])) return false;
+            }
+            return true;
+        }
+
+        /* Un solo registro, seis campos o más, y alguno con pinta de fecha.
+           Las dos condiciones juntas: seis campos los tiene también una fila
+           de la grilla, y una fecha suelta la tiene cualquiera. */
+        function esAjustes(crudo) {
+            var c, i;
+            if (crudo.indexOf("¬") >= 0) return false;
+            c = crudo.split("|");
+            if (c.length < 6) return false;
+            for (i = 0; i < c.length; i++) {
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(c[i]) || /^\d{4}-\d{2}-\d{2}$/.test(c[i])) return true;
+            }
+            return false;
+        }
+
+        /* --------------------------------------------- los valores por defecto
+           Posicionales, no 'clave=valor', así que se leen por orden. Un campo
+           que no venga queda en blanco y quien dependa de él se comporta como
+           si no existiera, en vez de inventarse un valor. */
+        function leerAjustes() {
+            var crudo = ajustesCrudos;
             var c = crudo.split("|");
 
             ajustes = {
@@ -645,8 +721,9 @@ var Sistema = (function () {
                 horario: c[7] || ""
             };
             if (crudo === "") {
-                Ventana.registrar("La carga de " + TABLA + " no trajo el segmento de valores " +
-                                  "por defecto; el filtro nace vacío y el tiempo sin límites.");
+                Ventana.registrar("La carga de " + TABLA + " no trajo los valores por defecto; " +
+                                  "el filtro nace vacío, la fecha sin recortar y el tiempo " +
+                                  "sin paso.");
             }
         }
 
@@ -668,13 +745,16 @@ var Sistema = (function () {
             return isNaN(n) ? 0 : n;
         }
 
-        /* La ayuda, en su sitio. La librería la dejó apuntando al [2] -que
-           aquí es el resumen-, así que se corrige antes de que alguien abra
-           la lupa. */
-        function corregirAyuda(lectura) {
-            var segmentos = lectura.segmentos || [];
+        /* La ayuda, en su sitio. La librería la toma siempre del [2]; aquí se
+           le pone la que se reconoció, que puede estar en otro puesto. Se
+           hace antes de que nadie abra la lupa. */
+        function corregirAyuda() {
             if (!modeloPantalla) return;
-            modeloPantalla.datosAyuda = [String(segmentos[AYUDA_EN_CARGA] || "")];
+            modeloPantalla.datosAyuda = [ayudaCruda];
+            if (ayudaCruda === "") {
+                Ventana.registrar("La carga de " + TABLA + " no trajo la ayuda de la lupa; " +
+                                  "la búsqueda de oficinas queda vacía.");
+            }
         }
 
         /* ------------------------------------------------------- las fechas
@@ -875,7 +955,11 @@ var Sistema = (function () {
            puede afirmar sin saber qué cuenta cada una. */
         function pintarResumen(lectura, origen) {
             var caja = document.getElementById("secresumen");
-            var cifras = segmentoResumen(lectura, origen, RESUMEN_EN_CARGA).split("|");
+            /* En la carga el resumen ya está reconocido por su forma; en una
+               consulta y en un grabado la forma la impone la librería y sí se
+               sabe el sitio. */
+            var crudo = (origen === "carga") ? resumenCrudo : segmentoResumen(lectura, origen);
+            var cifras = crudo.split("|");
             var quien = ubicacionDeSesion();
             var total = cifras[0] || "";
             var aprobadas = cifras[1] || "";
@@ -955,8 +1039,11 @@ var Sistema = (function () {
         /* La carga. El orden importa: primero se lee el [4], porque de ahí
            sale todo lo que se aplica después. */
         function alCargar(lectura) {
-            leerAjustes(lectura);
-            corregirAyuda(lectura);
+            /* Primero se reconoce qué trajo cada segmento; todo lo demás
+               depende de eso. */
+            repartirSegmentos(lectura);
+            leerAjustes();
+            corregirAyuda();
             llenarTiempos();
             aplicarFiltro();
             pintarResumen(lectura, "carga");
