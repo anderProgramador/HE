@@ -751,21 +751,30 @@ var Sistema = (function () {
             };
         }
 
-        /* 'clave=valor', que es como llega ahora.
+        /* 'clave=valor', separados por ¦, que es el separador de listas de
+           toda la librería y el que ya usan las otras pantallas.
 
-           El separador se acepta en las dos formas: el ¦ que usa la librería
-           para sus listas y el | con que lo manda hoy el paquete. Ninguno de
-           los dos puede aparecer dentro de una clave ni de estos valores
-           -fechas, números y un horario-, así que partir por los dos es
-           seguro y evita que un despliegue tenga que esperar al otro.
+           Se parte SOLO por ¦ y no también por |, aunque el paquete lo haya
+           mandado así alguna vez: el | es el separador de CAMPOS, y aceptarlo
+           aquí sería partir en dos cualquier valor que llegue a contener uno
+           -el nombre de una oficina, un motivo-. Un separador que vale para
+           dos cosas distintas no separa nada.
 
-           Las claves se guardan en minúsculas: así 'FechaInicio', 'fechaInicio'
-           y 'FECHAINICIO' son la misma, que es una discusión que no merece un
-           error en pantalla. */
+           Lo que sí se hace es NOTARLO: si viene un solo par y dentro hay más
+           de un '=', el separador no era el que se espera, y eso se dice en
+           vez de dejar la pantalla a medias sin explicación.
+
+           Las claves se guardan en minúsculas: así 'FechaInicio',
+           'fechaInicio' y 'FECHAINICIO' son la misma, que es una discusión
+           que no merece un error en pantalla. */
         function porClave(crudo) {
-            var pares = crudo.split(/[¦|]/);
+            var pares = crudo.split("¦");
             var mapa = {}, i, corte, clave;
 
+            if (pares.length === 1 && crudo.split("=").length > 2) {
+                Ventana.registrar("Los valores por defecto de " + TABLA + " no vienen separados " +
+                                  "por ¦ sino por otro carácter; solo se pudo leer el primero.");
+            }
             for (i = 0; i < pares.length; i++) {
                 corte = pares[i].indexOf("=");
                 if (corte < 1) continue;
@@ -850,18 +859,6 @@ var Sistema = (function () {
 
         function hoy() { return enIso(new Date()); }
 
-        /* El rango con que se abre el filtro. Solo se pone lo que venga: si
-           el paquete no manda fechas, el usuario las elige. */
-        function aplicarFiltro() {
-            ponerFecha("datFechaInicio", enIsoTexto(ajustes.fechaInicio));
-            ponerFecha("datFechaFin", enIsoTexto(ajustes.fechaFin));
-        }
-
-        function ponerFecha(id, valor) {
-            var caja = document.getElementById(id);
-            if (caja && valor !== "") caja.value = valor;
-        }
-
         /* El plazo, puesto sobre el calendario de la ventana. Los dos
            extremos llegan como CANTIDAD DE DÍAS hacia atrás desde hoy, no
            como fechas: 'cantidadMinimaRegistro' es el día más antiguo que se
@@ -921,26 +918,27 @@ var Sistema = (function () {
            cuenta, y hacerla dos veces solo sirve para que un día no
            coincidan.
 
-           Si es un número pelado es una CANTIDAD DE DÍAS, y el 'sentido' dice
-           hacia dónde se cuentan desde hoy: -1 hacia atrás para el extremo
-           más antiguo, +1 hacia adelante para el más reciente.
+           Si es un número pelado es una CANTIDAD DE DÍAS CONTANDO HOY, y el
+           'sentido' dice hacia dónde: -1 hacia atrás para el extremo más
+           antiguo, +1 hacia adelante para el más reciente.
 
-           Que el máximo se cuente hacia ADELANTE no es una suposición
-           cómoda: con 'cantidadMaximaRegistro=1' contado hacia atrás el
-           plazo terminaría AYER, y el propio paquete manda
-           'FechaInicioPop=hoy' como fecha con la que abrir el alta. Un rango
-           que no contiene la fecha que propone quien lo manda no puede ser el
-           rango que quiso. Si la regla es otra, es cambiar este signo. */
+           Que cuente desde uno y no desde cero es la clave: el 1 es HOY.
+           'cantidadMinimaRegistro=1' deja solo el día de hoy y 26 llega
+           veinticinco días atrás; 'cantidadMaximaRegistro=1' termina hoy y 2
+           alcanza mañana. De ahí el 'menos uno': tratarlas como desplazamientos
+           corría los dos extremos un día, y en un plazo un día es la
+           diferencia entre poder registrar y no poder. */
         function comoFecha(valor, sentido) {
             var texto = String(valor || "").replace(/^\s+|\s+$/g, "");
-            var f;
+            var dias, f;
 
             if (texto === "") return "";
             if (texto.indexOf("/") >= 0 || texto.indexOf("-") >= 0) return enIsoTexto(texto);
             if (!/^\d+$/.test(texto)) return "";
 
+            dias = Math.max(0, Number(texto) - 1);
             f = new Date();
-            f.setDate(f.getDate() + (sentido < 0 ? -1 : 1) * Number(texto));
+            f.setDate(f.getDate() + (sentido < 0 ? -dias : dias));
             return enIso(f);
         }
 
@@ -1117,7 +1115,12 @@ var Sistema = (function () {
             leerAjustes();
             corregirAyuda();
             llenarTiempos();
-            aplicarFiltro();
+            /* El rango del filtro no se pone aquí: sus claves -'FechaInicio'
+               y 'FechaFin'- son los ids de los controles, así que la librería
+               ya los aplicó al repartir, y los vuelve a aplicar en cada alta
+               cuando 'Ventana.nuevo' limpia la pantalla. Ponerlos otra vez
+               sería hacer dos veces lo mismo y, peor, solo una de las dos
+               sobreviviría a abrir la ventana. */
             pintarResumen(lectura, "carga");
         }
 

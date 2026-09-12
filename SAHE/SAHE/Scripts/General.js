@@ -3441,6 +3441,14 @@ var Ventana = (function () {
             if (campo.tipo === "adjunto") { elemento.value = Grilla.adjunto.deTrama(texto); return; }
             if (campo.tipo === "hora") { elemento.value = Grilla.hora.normalizar(texto); return; }
             if (campo.tipo === "multi") { MultiCombo.poner(campo.id, texto); return; }
+            /* Una fecha se muestra 'dd/mm/aaaa' en toda la aplicación -así la
+               manda el paquete y así la pinta la grilla- pero un
+               <input type="date"> solo entiende 'aaaa-mm-dd': cualquier otra
+               cosa la rechaza SIN DECIR NADA y el campo se queda en blanco.
+               Se traduce aquí, que es por donde pasan todas las asignaciones;
+               lo que ya venga en ISO o en cualquier otra forma sigue de
+               largo. */
+            if (campo.tipo === "fecha") { elemento.value = enIsoLocal(texto); return; }
 
             /* Un desplegable sin valor queda en selectedIndex -1, es decir en
                blanco: ninguna de sus opciones vale "". Vaciarlo es volver a la
@@ -3460,6 +3468,14 @@ var Ventana = (function () {
                     return;
                 }
             }
+        }
+
+        /* 'dd/mm/aaaa' a 'aaaa-mm-dd'. Solo cuando el texto es exactamente
+           eso: así un valor que ya venga en ISO, o vacío, o con cualquier
+           otra forma, no se toca. */
+        function enIsoLocal(texto) {
+            var p = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
+            return p ? p[3] + "-" + p[2] + "-" + p[1] : texto;
         }
 
         function poner(tabla, datos) {
