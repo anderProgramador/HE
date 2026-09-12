@@ -545,6 +545,12 @@ accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
 #            escondidos: un campo que no se puede tocar igual se lee del
 #            control, así que el registro llega completo.
 #   eliminar la acción, la pk y quién la hace.
+#
+# LAS FECHAS VIAJAN 'dd/mm/aaaa' EN LOS DOS SENTIDOS, que es como las escriben
+# la grilla y los paquetes. Que el control las guarde como 'aaaa-mm-dd' es
+# asunto suyo -un <input type="date"> no admite otra cosa- y la librería
+# traduce en los dos bordes, al poner y al leer. Ningún paquete tiene que
+# saber que ese campo es distinto.
 # ---------------------------------------------------------------------------
 mapeo|origen=cargar|campos=Id,Trabajador,NombreOficina,Secuencia,FechaPop,Tiempo,TipoCobro,Modalidad,Estado
 mapeo|origen=obtener|campos=CodigoAccion,Id,TrabajadorPop,FechaPop,Secuencia,OficinaPop,NombreOficina,Tiempo,TipoCobro,Modalidad,EstadoPop,Motivo,MotivoRechazo,CreadoPor,FechaCreacion,ActualizadoPor
