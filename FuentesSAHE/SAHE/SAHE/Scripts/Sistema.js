@@ -270,20 +270,47 @@ var Sistema = (function () {
        nada.
 
        Lo usan las dos pantallas de cuotas, que tienen la misma regla. */
-    function motivoSegunAccion() {
-        var bloque = document.querySelector("[data-campo='Motivo']");
+    /* Un campo que aparece o desaparece según con qué acción se abrió la
+       ventana. Hay más de una pantalla que lo necesita -el motivo del cambio
+       en las cuotas, el estado y el motivo del rechazo en las horas extras-,
+       así que la maniobra está una sola vez y aquí.
+
+       Se esconden el BLOQUE y el CONTROL. El bloque para que no deje su hueco
+       ni su etiqueta; el control porque es lo que mira 'revisarCampo' a través
+       de 'seVe', y con eso un 'requerido=si' del txt deja de estorbar en las
+       acciones donde el campo no está: pedir que se llene algo que no se ve
+       dejaría al usuario sin forma de continuar.
+
+       Escondido y no deshabilitado, además, porque un campo deshabilitado
+       igual se ve, y el contador de caracteres seguiría contando.
+
+       Lo que NO hace es borrar lo escrito, y eso es a propósito: un campo
+       escondido sigue viajando en la trama, y el valor que le puso Obtener es
+       el que el paquete espera de vuelta. Se probó al revés -escondo y borro-
+       y el resultado fue que abrir una solicitud para modificarla le vaciaba
+       el estado, porque el estado se esconde en esa acción. Quien quiera
+       además dejarlo en blanco lo dice donde sabe que corresponde, como hace
+       'motivoSegunAccion'. */
+    function mostrarCampo(id, visible) {
+        var bloque = document.querySelector("[data-campo='" + id + "']");
         /* El control se busca dentro de su bloque y no por id: el prefijo
            depende del tipo -'txt' en una caja, 'txa' en un área de texto-, y
            cambiar el tipo en el txt no tiene por qué romper esto. */
         var caja = bloque ? bloque.querySelector(".control") : null;
-        var modificando = Ventana.valorDe("hdnCodigoAccion") === "U";
 
         if (!bloque || !caja) return;
-        bloque.hidden = !modificando;
-        /* Escondido y no deshabilitado: así 'revisarCampo' lo salta y el
-           contador de caracteres no queda contando lo que no se ve. */
-        caja.hidden = !modificando;
-        if (!modificando) caja.value = "";
+        bloque.hidden = !visible;
+        caja.hidden = !visible;
+        return caja;
+    }
+
+    /* El motivo del cambio de las cuotas: solo al modificar. Aquí sí se borra
+       al esconderlo, porque en un alta no hay ningún cambio que explicar y lo
+       que quedara escrito sería del registro anterior. */
+    function motivoSegunAccion() {
+        var modificando = Ventana.valorDe("hdnCodigoAccion") === "U";
+        var caja = mostrarCampo("Motivo", modificando);
+        if (caja && !modificando) caja.value = "";
     }
 
     /* ========================================================================
@@ -620,6 +647,22 @@ var Sistema = (function () {
            pasa a configurarse llegará en la trama y esta línea se cambia por
            el dato que venga. */
         var TOPE = 17 * 60;
+
+        /* Con qué código se abre la ventana. Los tres primeros son los de la
+           librería y los dos últimos son de esta pantalla:
+
+              I  alta        U  modificar     O  ver
+              A  aprobar     R  rechazar
+
+           Hacen falta porque a T03 la usan DOS perfiles: en el menú,
+           'Solicitar Horas Extras' y 'Autorizar Horas Extras' apuntan las dos
+           a esta misma pantalla. El trabajador la abre con I, U u O; el
+           aprobador, además, con A o R.
+
+           Mientras la opción de autorizar no exista, ningún código llega a
+           ser 'A' ni 'R', y los dos campos del aprobador no aparecen nunca:
+           que es exactamente lo que debe pasarle al trabajador. */
+        var APROBANDO = { A: true, R: true };
 
         var abrirOriginal = null;
         var modeloPantalla = null;
@@ -1015,6 +1058,49 @@ var Sistema = (function () {
             if (caja) caja.value = ajustes ? ajustes.horario : "";
         }
 
+        /* --------------------------------------------- los campos que aparecen
+
+           Dos campos de la ventana no son del trabajador sino de quien
+           autoriza, y por eso no se ven salvo en su acción:
+
+             EstadoPop     lleva la lista de estados de horas extras -la
+                           tercera que manda la carga- y se ve al APROBAR y al
+                           RECHAZAR. Al trabajador no le toca elegirlo: su
+                           solicitud nace solicitada y el estado lo mueve quien
+                           la resuelve.
+             MotivoRechazo se ve solo al RECHAZAR. Es obligatorio en el txt y
+                           eso no estorba en ninguna otra acción, porque un
+                           campo escondido no se valida: rechazar sin decir por
+                           qué deja al trabajador sin saber qué corregir.
+
+           Se esconden y no se quitan de la plantilla porque siguen viajando en
+           la trama: el paquete espera el registro completo, y un estado que no
+           se toca tiene que llegar con el valor que traía. */
+        function camposDelAprobador() {
+            var accion = Ventana.valorDe("hdnCodigoAccion");
+            mostrarCampo("EstadoPop", APROBANDO[accion] === true);
+            mostrarCampo("MotivoRechazo", accion === "R");
+        }
+
+        /* El código del trabajador. No hay ningún control que lo pida -no es
+           un dato que se elija- sino que está en la sesión, y viaja oculto
+           porque el paquete lo guarda en la solicitud.
+
+           Solo se pone en el ALTA. En cualquier otra acción el valor lo trajo
+           Obtener, y pisarlo con el de la sesión le cambiaría el dueño al
+           registro en cuanto lo abriera un aprobador. El 'o está vacío' es
+           para el paquete que todavía no lo mande de vuelta: así una
+           modificación no lo pierde. */
+        function ponerTrabajador() {
+            var caja = document.getElementById("hdnTrabajadorPop");
+            var accion = Ventana.valorDe("hdnCodigoAccion");
+
+            if (!caja) return;
+            if (accion === "I" || caja.value === "") {
+                caja.value = ubicacionDeSesion().cTrabajador;
+            }
+        }
+
         /* --------------------------------------------------------- la tarjeta
            Cuatro cifras, que son las cuatro que manda el paquete:
 
@@ -1097,6 +1183,15 @@ var Sistema = (function () {
             abrirOriginal = Ventana.abrirPopup;
             Ventana.abrirPopup = function (t, titulo) {
                 var salida = abrirOriginal.call(Ventana, t, titulo);
+                if (t === TABLA) {
+                    /* Estos dos no dependen del [4]: quién es se sabe por la
+                       sesión y qué se ve, por la acción. Van fuera del 'si hay
+                       ajustes' para que una carga sin valores por defecto no
+                       deje además la ventana sin dueño y con los campos del
+                       aprobador a la vista. */
+                    ponerTrabajador();
+                    camposDelAprobador();
+                }
                 if (t === TABLA && ajustes) {
                     recortarFecha();
                     fechaPorOmision();
@@ -1115,6 +1210,11 @@ var Sistema = (function () {
             leerAjustes();
             corregirAyuda();
             llenarTiempos();
+            /* Los dos campos del aprobador nacen escondidos: al cargar no hay
+               ninguna acción en curso, y la ventana no se abre hasta que
+               alguien pulsa algo. Así no dependen de que el primer 'abrir'
+               llegue a ocurrir. */
+            camposDelAprobador();
             /* El rango del filtro no se pone aquí: sus claves -'FechaInicio'
                y 'FechaFin'- son los ids de los controles, así que la librería
                ya los aplicó al repartir, y los vuelve a aplicar en cada alta
