@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:intf="http://service.seguridad" xmlns:wsi="http://ws-i.org/profiles/basic/1.1/xsd" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:impl="http://service.seguridad" targetNamespace="http://service.seguridad" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <xsd:schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:intf="http://service.seguridad" targetNamespace="http://service.seguridad">
+      <xsd:element name="claveHostResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="claveHostReturn" nillable="true" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="claveHost">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="info1" nillable="true" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="claveHostRequest">
+    <wsdl:part name="parameters" element="impl:claveHost" />
+  </wsdl:message>
+  <wsdl:message name="claveHostResponse">
+    <wsdl:part name="parameters" element="impl:claveHostResponse" />
+  </wsdl:message>
+  <wsdl:portType name="AutenticaReg">
+    <wsdl:operation name="claveHost">
+      <wsdl:input name="claveHostRequest" message="impl:claveHostRequest" />
+      <wsdl:output name="claveHostResponse" message="impl:claveHostResponse" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="AutenticaRegSoapBinding" type="impl:AutenticaReg">
+    <wsdlsoap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="claveHost">
+      <wsdlsoap:operation soapAction="" />
+      <wsdl:input name="claveHostRequest">
+        <wsdlsoap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="claveHostResponse">
+        <wsdlsoap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="AutenticaRegService">
+    <wsdl:port name="AutenticaReg" binding="impl:AutenticaRegSoapBinding">
+      <wsdlsoap:address location="http://10.7.12.123:80/WSClaveHost/services/AutenticaReg" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

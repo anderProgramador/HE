@@ -1,0 +1,396 @@
+# ============================================================================
+# T03 - Solicitud de Horas Extras (trabajador)
+#
+# Con esta pantalla el trabajador pide que le reconozcan el tiempo que trabajó
+# fuera de su jornada. Autorizar es otra pantalla y otro perfil: aquí solo se
+# pide.
+#
+# El controlador arma el nombre del archivo y el del paquete con el mismo
+# texto, así que basta con que el menú diga 'T03¦...' para que todo apunte
+# aquí: esta plantilla y dvpkg_spT03.
+#
+# Quién entra y qué puede hacer no se decide aquí. El menú declara la opción
+# -'21NSA100|Solicitar Horas Extras'- y sus acciones, y el perfil del
+# Web.config -'pTrabajador'- dice cuáles de ellas quedan en 'S'. El
+# controlador manda ya filtrado lo que el perfil permite y la librería apaga
+# el resto, así que el txt puede declarar lo que la pantalla ADMITE sin
+# preocuparse de quién lo va a ver.
+#
+# ----------------------------------------------------------------------------
+# LO QUE DEFINE UNA SOLICITUD
+#
+#     la FECHA        dentro del plazo que deja la configuración
+#     la UBICACIÓN    la oficina a cuya cuota se carga, elegida con la lupa
+#     el TIEMPO       una CANTIDAD, en múltiplos del parámetro
+#     y el COBRO, la MODALIDAD y el MOTIVO
+#
+# El tiempo es una cantidad y no dos horas del reloj. La ubicación NO es la
+# del trabajador: se elige, y por eso cada oficina trae su propio tiempo
+# asignado. El estado no se pregunta: toda solicitud nace 'Solicitado' y la
+# mueve la jefatura desde la pantalla de autorización.
+#
+# ----------------------------------------------------------------------------
+# LOS DOS PARÁMETROS QUE MANDAN SOBRE ESTA PANTALLA
+#
+# Están en T07 -Parámetros Generales- y llegan con la carga:
+#
+#     Multiplo   de cuánto en cuánto sube el tiempo que se pide. Con 15, una
+#                solicitud es de 0:15, 0:30, 0:45, 1:00... y 2:20 no existe.
+#     Plazo      cuántos días hacia atrás se puede registrar, CONTANDO hoy.
+#                Con 26 se llega hasta 25 días antes; puesto a 1, solo queda
+#                el día de hoy. Hacia adelante no hay nada que elegir: una
+#                hora extra se pide después de haberla hecho.
+#
+# El múltiplo no se revisa: se DIBUJA. El tiempo es un desplegable y la lista
+# la manda el paquete ya hecha -lista 0-, así que una cantidad fuera de
+# múltiplo no se puede ni teclear. El plazo tampoco: Sistema.js lo convierte
+# en el mínimo y el máximo del campo de fecha, que se abre ya recortado.
+#
+# ----------------------------------------------------------------------------
+# LO QUE SE LE PIDE A CARGAR
+#
+#     T03|C|<cTrabajador>|<cUbicacion>
+#
+# El trabajador y su ubicación NO salen de la pantalla: salen de la sesión
+# -Escritorio los deja al ingresar y los cambia el desplegable de la cabecera-.
+# Que viajen desde el navegador es solo comodidad de lectura para el paquete;
+# la palabra final sobre qué puede ver y grabar la tiene la base, no esta
+# trama.
+#
+# Esto es propio de T03 y por eso lo registra Sistema.js
+# ('Ventana.datosDeCarga.T03'), no la librería.
+#
+# ----------------------------------------------------------------------------
+# LO QUE DEVUELVE CARGAR, por segmentos separados por ~ :
+#
+#   [0]  listas de los combos, separadas por ¦ y con sus registros por ¬
+#
+#          0  tipo de cobro     00001|Pago¬00002|Compensación
+#          1  modalidad         00001|Presencial¬00002|Teletrabajo
+#          2  estados           00001|Solicitado|S¬00002|Aprobado|A
+#
+#        EL ORDEN ES UN CONTRATO, y por eso importa más que el contenido: el
+#        txt no pide una lista por su nombre sino por su NÚMERO -'lista=1' es
+#        la modalidad-, así que el que ocupa cada puesto no puede moverse.
+#
+#        Una pantalla que no necesite una de estas listas la recibe IGUAL,
+#        vacía, para no correr de sitio a las que van detrás. Un hueco entre
+#        dos ¦ no molesta -la librería no toca un desplegable al que no le
+#        llegan datos- y en cambio quitarlo le cambiaría la lista a todos los
+#        que vinieran después. Es más barato mandar un vacío que acordarse de
+#        renumerar cada txt.
+#
+#        Aquí se usan la 0 y la 1. La 2 llega y NO se consume, y es a
+#        propósito: el trabajador no elige el estado -toda solicitud nace
+#        Solicitado y la mueve la jefatura-, así que no hay desplegable donde
+#        ponerla; viene porque el paquete sirve también a la pantalla que
+#        autoriza, donde sí es un filtro. Sin campo que la pida, la librería
+#        la ignora sin ruido.
+#
+#        Si algún día se quisiera aquí -un filtro 'ver solo las rechazadas'-
+#        haría falta agregar el campo Y su valor a la trama de consultar, que
+#        hoy son dos fechas.
+#
+#        El tercer dato de cada estado -S, A, SA, P, PF- es la letra con que
+#        el paquete lo agrupa; la pantalla solo muestra el texto.
+#
+#   [1]  filas de la grilla, campos por | y en el orden de
+#        'mapeo|origen=cargar':
+#
+#          677680|0347159|SECCIÓN SISTEMAS ADMINISTRATIVOS|2|02/09/2026|
+#          04:00|Compensación|Presencial|Aprobado
+#
+#        El código del trabajador y la secuencia vienen en la fila pero no se
+#        muestran -columna de ancho 0-: el primero es siempre el mismo, el de
+#        quien está mirando, y la segunda es la versión del registro.
+#
+#        El cobro, la modalidad y el estado llegan YA EN TEXTO, no en código:
+#        la grilla los pinta tal cual y no tiene que ir a buscarlos a las
+#        listas.
+#
+#   [2]  el RESUMEN, cuatro cantidades en hh:mm:
+#
+#          totalHoras|horasAprobadas|horasSolicitadas|horasPendientes
+#
+#        Es lo que pinta la tarjeta, y es la de SU SECCIÓN y solo esa: las
+#        oficinas de la lupa son varias, pero la cuenta que este trabajador
+#        rinde es una; una ficha por cada oficina llenaría la pantalla de
+#        cuentas ajenas.
+#
+#        Las cuatro se pintan con su rótulo y sin interpretarlas; la barra
+#        mide lo aprobado sobre el total, que es lo único que se puede
+#        afirmar sin saber qué cuenta cada una.
+#
+#        Se manda calculado desde la base y no se recalcula aquí: la pantalla
+#        solo ve las filas del rango consultado, y una cuenta armada con lo
+#        que está a la vista miente en cuanto algo queda fuera de la vista.
+#
+#   [3]  la AYUDA de la lupa: las oficinas, en registros separados por ¬ y con
+#        sus dos campos por | :
+#
+#          0398|AGENCIA 3 MACMYPE JUNIN¬9005|OFICINA ESPECIAL RENIEC - CIENEGUILLA
+#
+#   [4]  los valores POR DEFECTO, y son POSICIONALES -no 'clave=valor'-:
+#
+#          codigoTrabajador|fechaInicio|fechaFin|fechaInicioPop|
+#          cantidadMinimaRegistro|cantidadMaximaRegistro|multiploMinutos|
+#          descripcionHorarioPop
+#
+#        Vienen los de las DOS pantallas en la misma trama, y se distinguen
+#        por el sufijo: lo que lleva 'Pop' es de la ventana y el resto de la
+#        pantalla principal. De la principal son solo dos:
+#
+#          fechaInicio, fechaFin   el rango con que se abre el filtro
+#
+#        Y de la ventana:
+#
+#          fechaInicioPop          la fecha con que se abre un ALTA. Al
+#                                  modificar no se toca: ahí el valor lo trajo
+#                                  Obtener, y pisarlo sería cambiarle el
+#                                  registro al usuario por haber abierto la
+#                                  ventana.
+#          cantidadMinimaRegistro  los dos extremos del plazo: el día más
+#          cantidadMaximaRegistro  antiguo que se puede registrar y el más
+#                                  reciente. NO son cantidades de tiempo.
+#
+#                                  Se aceptan de las dos maneras en que pueden
+#                                  venir: ya como FECHA -'15/08/2026' o
+#                                  '2026-08-15'-, que es lo preferible porque
+#                                  la cuenta la hace el paquete una sola vez,
+#                                  o como una CANTIDAD DE DÍAS hacia atrás
+#                                  desde hoy -'26'-, que es como venían antes.
+#                                  Aceptar las dos no es indecisión: el
+#                                  paquete y la pantalla se despliegan por
+#                                  separado, y así el día que la trama cambie
+#                                  no hace falta que las dos salgan a la vez.
+#
+#                                  Se convierten en el min y el max del
+#                                  calendario, así que un día fuera de plazo
+#                                  no se puede ni elegir. El que falte se
+#                                  queda en hoy, que es el límite que no
+#                                  depende de ninguna configuración.
+#
+#                                  Se resuelven al ABRIR la ventana y no al
+#                                  cargar: un plazo contado al cargar deja de
+#                                  ser el plazo al día siguiente, y esta
+#                                  pantalla se queda abierta.
+#          multiploMinutos         el paso del desplegable de tiempo. Se
+#                                  acepta en minutos -'15'- o en hh:mm
+#                                  -'00:15'-. El techo son 17 horas por
+#                                  solicitud, que es regla del negocio y está
+#                                  escrita en Sistema.js; si algún día se
+#                                  configura, llegará por aquí.
+#          descripcionHorarioPop   el horario, que se MUESTRA en la ventana y
+#                                  no limita nada
+#
+# ----------------------------------------------------------------------------
+# EL ORDEN DEL [2] EN ADELANTE NO IMPORTA
+#
+# Los tres últimos -resumen, ayuda y valores por defecto- se reconocen por su
+# FORMA y no por el puesto que ocupan, así que pueden venir en cualquier
+# orden, y pueden no venir.
+#
+# No es un lujo: la trama ha ido cambiando mientras se armaba la pantalla -ha
+# llegado con la ayuda sola en el [2], y también con resumen, ayuda y
+# defectos- y cada vez que se fijó un número de segmento la pantalla acabó
+# pintando una cosa en el sitio de otra: la tarjeta llegó a mostrar nombres de
+# oficinas donde van las horas. Contar segmentos obliga a que el paquete y la
+# pantalla cambien a la vez; reconocerlos, no.
+#
+# Las tres son inconfundibles:
+#
+#   resumen   un solo registro y TODOS sus campos son horas
+#             10:00|06:00|04:00|30:00
+#   defectos  un solo registro con seis campos o más, y alguno es una fecha
+#             0347159|01/09/2026|...|15|OFAD - OFIC.ADMINISTRATIVAS...
+#   ayuda     lo demás: varios registros separados por ¬, o uno de dos campos
+#             0398|AGENCIA 3 MACMYPE JUNIN¬9005|OFICINA ESPECIAL...
+#
+# El que no venga no se reconoce, y quien dependa de él se comporta como si no
+# existiera -la tarjeta se esconde, el filtro nace vacío, la lupa sale sin
+# filas- en vez de quedarse con la basura del vecino. Los tres casos quedan
+# anotados en la consola.
+#
+# Esto es del [2] en adelante. El [0] y el [1] sí son fijos: las listas y la
+# grilla las coloca la librería, no esta pantalla.
+#
+# Es la misma idea que la librería ya usa para los valores por omisión, que
+# busca 'el primer segmento que contenga un =' en vez de un número.
+#
+# ----------------------------------------------------------------------------
+# LO QUE DEVUELVE CONSULTAR:
+#
+#     <datosGrilla> ~ <datosResumen>
+#
+# es decir, las filas del rango que se pidió y detrás su resumen. Sin combos,
+# sin ayuda y sin valores por omisión: eso ya quedó puesto en la carga y
+# volver a pisarlo con cada consulta le movería al usuario los filtros que
+# acaba de elegir. Por eso Consultar declara 'devuelve=grilla' y no
+# 'devuelve=todo': con eso último la pantalla esperaría los cinco segmentos de
+# una carga y leería las filas como si fueran las listas de los combos.
+#
+# ----------------------------------------------------------------------------
+# LO QUE DEVUELVE GESTIONAR -grabar, modificar y eliminar-:
+#
+#     <mensaje> ~ <datosGrilla> ~ <datosResumen>
+#
+# el mensaje de siempre y detrás lo que acaba de cambiar. Cada solicitud que
+# entra o sale mueve la cuenta, así que la tarjeta y la grilla se rehacen
+# juntas, con la misma respuesta y sin un viaje más.
+#
+# Ojo con los índices: el resumen es el segmento [2] en un grabado, el [1] en
+# una consulta y el [4] en la carga, porque delante de las filas no siempre va
+# lo mismo -el mensaje, nada, o los combos-. La pantalla no lo adivina
+# contando: se le dice de dónde viene la respuesta.
+# ============================================================================
+
+pantalla|tabla=T03|titulo=Solicitud de Horas Extras|subtitulo=Pida que le reconozcan el tiempo que trabajó fuera de su jornada.
+
+# ---------------------------------------------------------------------------
+# Con qué se pide la lista: un rango de fechas, como en la pantalla que ya
+# usa el trabajador. El rango de CONSULTA no se recorta con el plazo: mirar
+# lo de hace tres meses es legítimo -y es lo que hace falta para reclamar-;
+# lo que el plazo cierra es REGISTRAR, y eso pasa en la ventana.
+# ---------------------------------------------------------------------------
+seccion|id=busqueda
+campo|tipo=fecha|id=FechaInicio|etiqueta=Fecha Inicio|ancho=corto
+campo|tipo=fecha|id=FechaFin|etiqueta=Fecha Fin|ancho=corto
+accion|id=Consultar|etiqueta=Consultar|estilo=primario|accion=consultar|ubicacion=busqueda|devuelve=grilla
+
+# ---------------------------------------------------------------------------
+# La tarjeta de su sección. Una sección sin campos: el txt dice DÓNDE va
+# -entre el filtro y la grilla- y Sistema.js la pinta con el segmento del
+# resumen, porque las tres cifras no son controles que el usuario llene sino
+# el estado de su cuenta.
+#
+# Va a la DERECHA del filtro y no debajo: a la izquierda se elige el rango y
+# al lado se lee la cuenta. Quien las empareja es Sistema.js, igual que en
+# T01FUN.
+# ---------------------------------------------------------------------------
+seccion|id=resumen
+
+# ---------------------------------------------------------------------------
+# La grilla: lo pedido en el rango elegido, con los campos que interesan al
+# trabajador. El motivo no está: es un texto largo que desalinea la fila y se
+# lee entero al abrir el registro.
+#   filtro  las dos fechas, las dos obligatorias -el '!'-: sin rango la
+#           consulta traería todo el histórico y el resumen de al lado no
+#           tendría de qué hablar.
+#   pk      con qué se pide un registro a Obtener y con qué se da de baja. El
+#           Id solo: es lo que identifica una solicitud.
+#   acciones sin 'eliminarMultiple' a propósito: el menú no lo concede a esta
+#           opción -declara RE, EX, MO, EL y VE- y declarar aquí una acción
+#           que el perfil nunca va a habilitar es prometer un botón que no
+#           existe. Lo que el perfil permite manda igual, pero el txt no tiene
+#           por qué pedir de más.
+#
+# Sin 'uk'. La llave única compara lo que hay en la ventana contra lo que hay
+# en las filas, y aquí los dos no hablan el mismo idioma: la fila trae la
+# fecha como '02/09/2026' y el campo de la ventana, que es un <input
+# type=date>, la guarda como '2026-09-02'. Una comparación que nunca coincide
+# no evita ningún duplicado; deja que los evite el paquete, que sí ve las dos
+# en el mismo formato.
+# ---------------------------------------------------------------------------
+grilla|columnas=Id:0:numero,Trabajador:0,Ubicación:320,Secuencia:0:numero,Fecha de Solicitud:160,Tiempo Solicitado:160:hora,Tipo de Cobro:150,Modalidad:140,Estado:130|porPagina=10|filtros=si|filtro=!FechaInicio,!FechaFin|pk=Id|rotulo=NombreOficina|archivo=SolicitudHorasExtras.xlsx|acciones=nuevo,excel,editar,eliminar,ver
+
+# ---------------------------------------------------------------------------
+# La lupa: las oficinas a las que este trabajador puede cargar horas. Dos
+# columnas, que son las dos que manda el paquete.
+#
+# Aquí llevaba también lo asignado y lo que queda de cada oficina -se elige
+# sabiendo contra qué presupuesto se carga, en vez de enterarse al grabar-,
+# pero eso es un dato que el paquete no envía en el [2]. Se quita en vez de
+# dejar dos columnas en blanco: una tabla con huecos se lee como un error del
+# aplicativo. Si algún día el segmento crece a
+# 'codigo|nombre|asignado|queda', volver a ponerlas es esta línea.
+#
+# 'destino' llena dos campos con las dos columnas.
+# ---------------------------------------------------------------------------
+ayuda|titulo=Búsqueda de oficinas|ancho=640|porPagina=10|columnas=Código:120,Oficina:460|destino=OficinaPop,NombreOficina
+
+# ---------------------------------------------------------------------------
+# La ventana de mantenimiento.
+#
+# 'deshabilitar' admite grupos separados por ; : el primero, sin prefijo, vale
+# para todas las acciones. Ni el horario ni el nombre de la oficina se
+# escriben nunca -el primero lo pone la carga y el segundo lo trae la lupa-; y al MODIFICAR se apagan además la fecha y el código de oficina,
+# porque cambiarlos sería otra solicitud y no una corrección de esta. Se
+# apagan y no se esconden: siguen haciendo falta para saber de qué registro se
+# está hablando. La librería esconde la lupa junto con su campo, así que al
+# modificar no queda un botón que invite a pulsarlo.
+#
+# Modificar deja abiertos exactamente cuatro: tiempo, tipo de cobro, modalidad
+# y motivo.
+# ---------------------------------------------------------------------------
+popup|titulo=Solicitud de horas extras|ancho=760|deshabilitar=HorarioPop,NombreOficina;editar:FechaPop,OficinaPop
+
+seccion|id=datos
+campo|tipo=oculto|id=CodigoAccion
+campo|tipo=oculto|id=Id|valor=0
+
+# La secuencia es la versión del registro: la tabla guarda histórico, así que
+# cada modificación cierra la fila vigente e inserta la siguiente.
+campo|tipo=oculto|id=Secuencia|valor=0
+
+# Primera fila: la fecha y el tiempo.
+#
+# El mínimo y el máximo de la fecha los pone Sistema.js con el 'Plazo' que
+# manda la carga, no el txt: escribirlos aquí los dejaría congelados y el
+# plazo es una cuenta que se mueve todos los días.
+campo|tipo=fecha|id=FechaPop|etiqueta=Fecha a solicitar|ancho=corto|requerido=si|ayuda=Se completa al cargar la pantalla.
+
+# El tiempo es un DESPLEGABLE y no una caja: sus opciones son los múltiplos
+# del parámetro, así que una cantidad que no cuadre no se puede ni teclear y
+# el reparo que la rechazaría no le aparece a nadie.
+#
+# Lleva 'opciones=' y no 'lista=': ese 'Elija el tiempo' es un cartel para que
+# la librería NO lo cuente entre los desplegables que llena el paquete -las
+# tres listas del [0] son cobro, modalidad y estados- y lo deje en manos de
+# Sistema.js, que lo arma con el múltiplo. El valor de cada opción es el mismo
+# hh:mm con que el paquete escribe el tiempo en la grilla, para que la ida y
+# la vuelta hablen igual.
+campo|tipo=select|id=Tiempo|etiqueta=Tiempo solicitado|opciones=-:Elija el tiempo|ancho=corto|requerido=si|ayuda=Sube de múltiplo en múltiplo.
+
+# El horario, que llega en el último dato del [4]. Es de REFERENCIA: se
+# muestra para que la persona se ubique y no limita lo que puede pedir. Va
+# aquí porque el paquete se toma el trabajo de mandarlo, y un dato que se
+# manda y no se enseña es un viaje perdido.
+campo|tipo=text|id=HorarioPop|etiqueta=Su horario|largo=100|ancho=medio|soloLectura=si
+
+# Segunda fila: la oficina. El código con lupa y el nombre al lado, de solo
+# lectura: un código de cuatro cifras no le dice nada a nadie.
+campo|tipo=text|id=OficinaPop|etiqueta=Ubicación|largo=4|ancho=corto|requerido=si|lupa=0|marcador=0000
+campo|tipo=text|id=NombreOficina|etiqueta=Oficina|largo=100|ancho=largo|soloLectura=si|marcador=Se completa al elegir con la lupa
+
+# Tercera fila: cómo se cobra y cómo se trabajó.
+campo|tipo=select|id=TipoCobro|etiqueta=Tipo de cobro|lista=0|ancho=medio|requerido=si
+campo|tipo=select|id=Modalidad|etiqueta=Modalidad de trabajo|lista=1|ancho=medio|requerido=si
+
+# El motivo es lo que va a leer la jefatura para autorizar: obligatorio
+# siempre, también al dar de alta. Aquí no es como en las cuotas -donde solo
+# explica un cambio-: aquí es la razón de la solicitud.
+campo|tipo=textarea|id=Motivo|etiqueta=Motivo de la solicitud|filas=3|largo=250|requerido=si|ancho=total|contador=250|marcador=Qué hizo en ese tiempo
+
+# Auditoría. No se escriben ni se muestran: la pantalla los recibe y los
+# devuelve para que el paquete no tenga que volver a buscarlos.
+campo|tipo=oculto|id=CreadoPor
+campo|tipo=oculto|id=FechaCreacion
+campo|tipo=oculto|id=ActualizadoPor
+
+accion|id=Grabar|etiqueta=Solicitar|estilo=primario|accion=grabar
+accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
+
+# ---------------------------------------------------------------------------
+# Los órdenes de la trama.
+#   cargar   cómo llega cada fila de la grilla. El Id va primero y oculto -su
+#            columna mide 0- porque es la pk y no un dato que mirar.
+#   obtener  se le pide con 'U|<id>' al modificar y 'O|<id>' al ver.
+#   grabar   qué espera el paquete y en qué orden; la acción va primero. La
+#            fecha y la oficina viajan también al modificar aunque estén
+#            apagadas: un campo deshabilitado igual se lee del control.
+#   eliminar la acción, la pk y quién la hace.
+# ---------------------------------------------------------------------------
+mapeo|origen=cargar|campos=Id,Trabajador,NombreOficina,Secuencia,FechaPop,Tiempo,TipoCobro,Modalidad,Estado
+mapeo|origen=obtener|campos=CodigoAccion,Id,Secuencia,FechaPop,OficinaPop,NombreOficina,Tiempo,TipoCobro,Modalidad,Motivo,CreadoPor,FechaCreacion,ActualizadoPor
+mapeo|origen=grabar|campos=CodigoAccion,Id,Secuencia,FechaPop,OficinaPop,Tiempo,TipoCobro,Modalidad,Motivo,CreadoPor,ActualizadoPor
+mapeo|origen=eliminar|campos=Id,ActualizadoPor

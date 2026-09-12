@@ -1,0 +1,143 @@
+@charset "utf-8";
+/* ============================================================================
+   SAHE - Sistema Administrativo de Horas Extra
+   Mensaje.css  -  diálogo de mensajes y confirmaciones (divPantMensaje).
+
+   El marcado vive UNA sola vez, en Escritorio.cshtml: así el velo cubre toda
+   la ventana -cabecera y menú incluidos- y no solo el rectángulo del marco.
+   Las pantallas que corren dentro del iframe le piden el diálogo al padre.
+
+   CSS nativo, Chrome 49: sin Grid, sin gap en flexbox, sin :focus-visible.
+   ========================================================================== */
+
+/* ============================================= mensajes emergentes (divPM) */
+/* Mensaje.mostrarMensaje fija display en línea; aquí queda oculto de inicio. */
+.popupMensaje-overlay {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 18, 18, .5);
+    z-index: 2000;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+}
+.popupMensaje-window {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 16px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    -webkit-box-shadow: 0 16px 40px rgba(0, 0, 0, .28);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .28);
+    overflow: hidden;
+}
+.popupMensaje-header {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #EDEAE5;
+    background: #F7F6F3;
+}
+.popupMensaje-title {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #221F1F;
+}
+.popupMensaje-title-icon {
+    margin-right: 8px;
+    font-size: 15px;
+    color: #8A8781;
+}
+.popupMensaje-window.confirmacion .popupMensaje-title-icon { color: #1F7A4D; }
+.popupMensaje-window.advertencia .popupMensaje-title-icon { color: #96660C; }
+.popupMensaje-window.error .popupMensaje-title-icon { color: #B3261E; }
+.popupMensaje-window.confirmacion .popupMensaje-header { border-bottom-color: #1F7A4D; }
+.popupMensaje-window.advertencia .popupMensaje-header { border-bottom-color: #96660C; }
+.popupMensaje-window.error .popupMensaje-header { border-bottom-color: #B3261E; }
+
+.popupMensaje-close {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: #8A8781;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.popupMensaje-close:hover { background: #EDEAE5; color: #C8102E; }
+
+.popupMensaje-body { padding: 18px 16px; }
+.popupMensaje-message {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: start;
+    -ms-flex-align: start;
+    align-items: flex-start;
+    font-size: 14px;
+    color: #5F5C58;
+}
+.popupMensaje-message-icon {
+    -ms-flex-negative: 0;
+    flex-shrink: 0;
+    margin-right: 10px;
+    font-size: 16px;
+    color: #8A8781;
+}
+
+.popupMensaje-footer {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: end;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    padding: 12px 16px;
+    border-top: 1px solid #EDEAE5;
+    background: #FFFFFF;
+}
+.btnMensaje {
+    height: 34px;
+    margin-left: 8px;
+    padding: 0 16px;
+    border: 1px solid #C8102E;
+    border-radius: 6px;
+    background: #C8102E;
+    color: #FFFFFF;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btnMensaje:hover { background: #A32D2D; }
+.btnMensaje:focus { outline: 2px solid #7A0E1F; outline-offset: 2px; }
+.btnMensaje-cancel {
+    background: #FFFFFF;
+    color: #5F5C58;
+    border-color: #D5D0C9;
+}
+.btnMensaje-cancel:hover { background: #F7F6F3; color: #C8102E; }
+

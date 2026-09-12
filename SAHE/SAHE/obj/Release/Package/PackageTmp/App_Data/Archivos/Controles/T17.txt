@@ -1,0 +1,152 @@
+# ============================================================================
+# SAHE - T17 - Concepto por Trabajador
+#
+# La grilla trae el CONSOLIDADO: una fila por trabajador -4 403- en vez de las
+# 35 218 del detalle, así que se carga de una sola vez como las demás
+# pantallas: con 'bloque=5000' entran los 4 403 en un solo viaje. El mecanismo
+# de tandas queda igual y no hay que tocar nada para usarlo: el día que la
+# tabla crezca, se baja ese número y la pantalla pide los viajes que hagan
+# falta, mostrando el avance en el contador -"2000 de 6500…"-.
+#
+# OJO: el paquete acota el bloque entre 100 y 5000. Quitar 'bloque=' NO trae
+# todo: la carga inicial cae al bloque por omisión del paquete, que son 1 000
+# filas, y la pantalla se quedaría corta sin avisar.
+#
+# Lo que devuelve dvpkg_spT17.cargar, en segmentos separados por ~ :
+#   [0] combos   lista0 = conceptos vigentes, con el T16_ID como valor y
+#                'código - descripción' como texto; lista1 = estados
+#   [1] datos    la tanda pedida
+#   [2] ayudas   vacío: el catálogo tiene 21 932 trabajadores y no se manda
+#                por adelantado
+#   [3] total    cuántas filas activas hay, para saber cuántos viajes faltan
+# ============================================================================
+
+pantalla|tabla=T17|titulo=Concepto por Trabajador|subtitulo=Importe de cada concepto asignado a un trabajador.
+
+grilla|columnas=Código:120,Trabajador:340,Importe:140:decimal,Importe Anterior:140:decimal|porPagina=10|filtros=si|bloque=5000|pk=TrabajadorPop|rotulo=NombreTrabajador|archivo=ConceptoPorTrabajador.xlsx|acciones=nuevo,eliminarMultiple,excel,editar,eliminar,ver
+
+# ---------------------------------------------------------------------------
+# Ayuda 0: los trabajadores. Es la que pide 'lupa=0' del campo Código del
+# trabajador. Llega en el segmento 2 de la carga.
+# destino: a qué campo va cada columna, por posición.
+# ---------------------------------------------------------------------------
+ayuda|titulo=Búsqueda de trabajadores|ancho=720|porPagina=10|columnas=Código:130,Apellidos y Nombres:420|destino=TrabajadorPop,NombreTrabajador
+
+# ---------------------------------------------------------------------------
+# Ventana de mantenimiento
+#
+# deshabilitar: trabajador y concepto son la llave del negocio; lo que se
+# modifica es el importe y el estado.
+# ---------------------------------------------------------------------------
+popup|titulo=Conceptos del trabajador|ancho=880|deshabilitar=editar:TrabajadorPop,NombreTrabajador
+
+seccion|id=datos
+
+# ---------------------------------------------------------------------------
+# El orden es el que devuelve dvpkg_spT17.obtener:
+# La ventana ya no edita UN concepto: edita la cabecera -quién y cuándo- y
+# debajo el detalle completo. Los importes por concepto viven en la grilla
+# 'detalle', no en campos sueltos.
+#
+#   1 accion          -> CodigoAccion     (oculto)
+#   2 id              -> Id               (oculto)
+#   3 ctrabajador     -> TrabajadorPop
+#   4 secuencia       -> Secuencia        (oculto)
+#   5 dtrabajador     -> NombreTrabajador
+#   7 creadopor       -> CreadoPor        (oculto)
+#   8 fcreacion       -> FechaCreacion    (oculto)
+#   9 actualizadopor  -> ActualizadoPor   (oculto)
+#
+# El campo se llama TrabajadorPop por lo que fue el filtro de la pantalla
+# principal; se conserva el nombre porque es el que usan 'uk' y el mapeo.
+# ---------------------------------------------------------------------------
+
+campo|tipo=oculto|id=CodigoAccion
+campo|tipo=oculto|id=Id|valor=0
+
+campo|tipo=text|id=TrabajadorPop|etiqueta=Código del trabajador|largo=10|ancho=medio|requerido=si|lupa=0|marcador=0332933
+
+campo|tipo=oculto|id=Secuencia|valor=0
+
+campo|tipo=text|id=NombreTrabajador|etiqueta=Apellidos y Nombres|largo=80|ancho=total|soloLectura=si|marcador=Se completa al elegir el código
+
+campo|tipo=oculto|id=CreadoPor
+campo|tipo=oculto|id=FechaCreacion
+campo|tipo=oculto|id=ActualizadoPor
+
+# ---------------------------------------------------------------------------
+# El detalle: los conceptos del trabajador, que se editan de a varios dentro
+# de la misma ventana. Las columnas van en el ORDEN DE LA TRAMA que espera el
+# paquete, con las que no se muestran en ancho 0:
+#
+#   Id | Concepto | Secuencia | Importe | ImporteAnterior | FechaCambio |
+#   CreadoPor | ActualizadoPor
+#
+# uk:     el concepto no se puede repetir en el detalle. Se revisa al elegirlo
+#         y otra vez al grabar, con los rótulos de la pantalla en vez del
+#         nombre del índice de la base.
+# enviar: qué campos viajan al grabar. Los demás se ven en la grilla pero NO
+#         se mandan, porque el paquete ya los tiene:
+#           ImporteAnterior  lo calcula 'cerrarVigente' leyendo el importe
+#                            vigente antes de cerrarlo -si el concepto vale
+#                            100 y pasa a 120, el 100 sale de la base, no del
+#                            navegador, así que dos usuarios a la vez no
+#                            pueden guardar un anterior desactualizado-
+#           Secuencia        la lee de la fila que cierra
+#           CreadoPor        idem, junto con la fecha de creación
+#           ActualizadoPor   lo pone el controlador con el loginId
+#
+# editables: qué columnas se escriben y con qué control -índice de columna +
+#            tipo, igual que los combos-. num entero, dec con decimales,
+#            txt texto, fec fecha. Lo que no se declara es de solo lectura.
+# totales:   qué columnas suman al pie. Se declara aparte del tipo porque no
+#            toda columna numérica se suma.
+# acciones:  el tope de lo que esta grilla admite. El detalle tiene sus PROPIOS
+#            códigos de menú, distintos de los de la pantalla:
+#              RD  Agregar Detalle   -> nuevoDetalle
+#              ED  Eliminar Detalle  -> eliminarDetalle
+#            Así se puede dejar modificar la cabecera sin dejar tocar los
+#            conceptos. Sin RD no hay botón Agregar; sin ED no hay tacho.
+# editables: '1cbo0' pone en la columna 1 un desplegable con la lista 0 -los
+#            conceptos vigentes-, así el concepto se elige en la propia fila y
+#            no hace falta un popup encima del popup.
+# ---------------------------------------------------------------------------
+detalle|titulo=Detalle de Conceptos|columnas=Id:0:numero,Concepto:340,Secuencia:0:numero,Importe:130:decimal,Anterior:130:decimal,Fecha de cambio:150:fecha,CreadoPor:0,ActualizadoPor:0|editables=1cbo0,3dec,5fec|totales=3,4|uk=1|enviar=Id,Concepto,Importe,FechaCambio|acciones=nuevoDetalle,eliminarDetalle|campos=Id,Concepto,Secuencia,Importe,ImporteAnterior,FechaCambio,CreadoPor,ActualizadoPor
+
+accion|id=Grabar|etiqueta=Grabar|estilo=primario|accion=grabar
+accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
+
+# 'Concepto' lleva el T16_ID y va oculta: es la llave con la que se compara y
+# se graba. El código del concepto viaja aparte, en 'CodigoConcepto', que es lo
+# que el usuario ve.
+# La grilla ahora es el CONSOLIDADO: una fila por trabajador con la suma de
+# sus conceptos, que es lo que devuelve dvpkg_spT17.listar. El detalle se ve
+# y se registra en la ventana de mantenimiento.
+mapeo|origen=cargar|campos=TrabajadorPop,NombreTrabajador,Importe,ImporteAnterior
+
+# Lo que devuelve dvpkg_spT17.obtener en su segmento 0: la cabecera. El
+# segmento 1 son las líneas del detalle, en el orden de 'campos=' de la línea
+# detalle.
+mapeo|origen=obtener|campos=CodigoAccion,TrabajadorPop,NombreTrabajador
+# La cabecera. Las filas del detalle van detrás, separadas por ¬, que es lo
+# que dvpkg_spT17.gestionar ya sabe recorrer.
+# La cabecera viaja en Request.Form["data"] y es mínima: la acción y el
+# trabajador. Lo demás -id, secuencia, auditoría- lo pone el paquete, que es
+# quien sabe qué versión está cerrando.
+#
+#   T17 ¬ <accion>|<ctrabajador>|<computerid>|<loginid>
+#
+# El detalle viaja aparte, en Request.Form["dataDetalle"], una línea por
+# registro, con su acción adelante y solo con los campos de 'enviar=':
+#
+#   I|<id>|<cconcepto>|<importe>|<fcambio>
+#   ¬ U|<id>|<cconcepto>|<importe>|<fcambio>
+#
+# Solo van las líneas nuevas y las modificadas. Las bajas no viajan aquí: se
+# eliminan en el momento, desde la grilla, con su propia llamada.
+# El controlador engancha el detalle detrás del ¯, así que al paquete le llega
+#   <cabecera>|<computerid>|<loginid> ¯ <detalle>
+#
+# 'obtener' devuelve las dos cosas en un solo CLOB: dataPadre ~ dataDetalle.
+# El segmento 0 es la cabecera y el 1 son las líneas, separadas por ¬.
+mapeo|origen=grabar|campos=CodigoAccion,TrabajadorPop

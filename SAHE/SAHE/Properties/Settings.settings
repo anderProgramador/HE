@@ -1,0 +1,9 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SAHE.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="SAHE_ws_ClaveHost_AutenticaRegService" Type="(Web Service URL)" Scope="Application">
+      <Value Profile="(Default)">http://10.7.12.123:80/WSClaveHost/services/AutenticaReg</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
