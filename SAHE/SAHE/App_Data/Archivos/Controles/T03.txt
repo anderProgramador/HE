@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 # T03 - Solicitud de Horas Extras (trabajador)
 #
 # Con esta pantalla el trabajador pide que le reconozcan el tiempo que trabajó

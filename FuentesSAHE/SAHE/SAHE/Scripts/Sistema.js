@@ -705,6 +705,12 @@ var Sistema = (function () {
            de la grilla, y una fecha suelta la tiene cualquiera. */
         function esAjustes(crudo) {
             var c, i;
+            /* Un '=' no lo tiene ningún otro segmento: ni las cifras del
+               resumen ni los códigos de la lupa. Es la señal más limpia de
+               que esto es una lista de 'clave=valor'. */
+            if (crudo.indexOf("=") >= 0) return true;
+            /* Y si no lo trae, puede ser la lista posicional de antes: un
+               registro con seis campos o más y alguno con pinta de fecha. */
             if (crudo.indexOf("¬") >= 0) return false;
             c = crudo.split("|");
             if (c.length < 6) return false;
@@ -720,33 +726,69 @@ var Sistema = (function () {
            si no existiera, en vez de inventarse un valor. */
         function leerAjustes() {
             var crudo = ajustesCrudos;
-            var c = crudo.split("|");
+            var mapa;
 
-            ajustes = {
-                trabajador: c[0] || "",
-                fechaInicio: c[1] || "",
-                fechaFin: c[2] || "",
-                fechaInicioPop: c[3] || "",
-                /* Los dos extremos del plazo: el día más antiguo que se
-                   puede registrar y el más reciente. Se aceptan de las DOS
-                   maneras en que pueden venir -ya como fecha, o como una
-                   cantidad de días hacia atrás desde hoy- y por eso se
-                   guardan crudos: quien los usa decide.
-
-                   Aceptar las dos no es indecisión: es que el paquete y la
-                   pantalla se despliegan por separado, y así el día que la
-                   trama pase de mandar '26' a mandar '15/08/2026' no hace
-                   falta que las dos cosas salgan a la vez. */
-                desdePop: c[4] || "",
-                hastaPop: c[5] || "",
-                multiplo: enMinutos(c[6]),
-                horario: c[7] || ""
-            };
             if (crudo === "") {
+                ajustes = null;
                 Ventana.registrar("La carga de " + TABLA + " no trajo los valores por defecto; " +
                                   "el filtro nace vacío, la fecha sin recortar y el tiempo " +
                                   "sin paso.");
+                return;
             }
+
+            mapa = (crudo.indexOf("=") >= 0) ? porClave(crudo) : porOrden(crudo);
+            ajustes = {
+                fechaInicio: mapa.fechainicio || "",
+                fechaFin: mapa.fechafin || "",
+                /* La clave del paquete es 'FechaInicioPop' y el campo del txt
+                   se llama 'FechaPop'. Se aceptan las dos para no obligar a
+                   renombrar nada de un lado ni del otro. */
+                fechaInicioPop: mapa.fechainiciopop || mapa.fechapop || "",
+                diasAtras: mapa.cantidadminimaregistro,
+                diasAdelante: mapa.cantidadmaximaregistro,
+                multiplo: enMinutos(mapa.multiplominutos),
+                horario: mapa.descripcionhorariopop || mapa.horariotrabajador || ""
+            };
+        }
+
+        /* 'clave=valor', que es como llega ahora.
+
+           El separador se acepta en las dos formas: el ¦ que usa la librería
+           para sus listas y el | con que lo manda hoy el paquete. Ninguno de
+           los dos puede aparecer dentro de una clave ni de estos valores
+           -fechas, números y un horario-, así que partir por los dos es
+           seguro y evita que un despliegue tenga que esperar al otro.
+
+           Las claves se guardan en minúsculas: así 'FechaInicio', 'fechaInicio'
+           y 'FECHAINICIO' son la misma, que es una discusión que no merece un
+           error en pantalla. */
+        function porClave(crudo) {
+            var pares = crudo.split(/[¦|]/);
+            var mapa = {}, i, corte, clave;
+
+            for (i = 0; i < pares.length; i++) {
+                corte = pares[i].indexOf("=");
+                if (corte < 1) continue;
+                clave = pares[i].substring(0, corte).replace(/^\s+|\s+$/g, "").toLowerCase();
+                if (clave !== "") mapa[clave] = pares[i].substring(corte + 1).replace(/^\s+|\s+$/g, "");
+            }
+            return mapa;
+        }
+
+        /* La lista posicional de antes, traducida a las mismas claves para
+           que de aquí en adelante todo lea por nombre. Se queda por si algún
+           paquete todavía manda así. */
+        function porOrden(crudo) {
+            var c = crudo.split("|");
+            return {
+                fechainicio: c[1] || "",
+                fechafin: c[2] || "",
+                fechainiciopop: c[3] || "",
+                cantidadminimaregistro: c[4] || "",
+                cantidadmaximaregistro: c[5] || "",
+                multiplominutos: c[6] || "",
+                descripcionhorariopop: c[7] || ""
+            };
         }
 
         /* Una cantidad puede venir en minutos -'15'- o en hh:mm -'00:15'-.
@@ -841,8 +883,8 @@ var Sistema = (function () {
             var uno, otro, desde, hasta;
 
             if (!caja || !ajustes) return;
-            uno = comoFecha(ajustes.desdePop);
-            otro = comoFecha(ajustes.hastaPop);
+            uno = comoFecha(ajustes.diasAtras, -1);
+            otro = comoFecha(ajustes.diasAdelante, 1);
 
             if (uno === "" && otro === "") {
                 if (ayuda) ayuda.textContent = "";
@@ -879,9 +921,17 @@ var Sistema = (function () {
            cuenta, y hacerla dos veces solo sirve para que un día no
            coincidan.
 
-           Si es un número pelado es una CANTIDAD DE DÍAS hacia atrás desde
-           hoy, y se convierte aquí. */
-        function comoFecha(valor) {
+           Si es un número pelado es una CANTIDAD DE DÍAS, y el 'sentido' dice
+           hacia dónde se cuentan desde hoy: -1 hacia atrás para el extremo
+           más antiguo, +1 hacia adelante para el más reciente.
+
+           Que el máximo se cuente hacia ADELANTE no es una suposición
+           cómoda: con 'cantidadMaximaRegistro=1' contado hacia atrás el
+           plazo terminaría AYER, y el propio paquete manda
+           'FechaInicioPop=hoy' como fecha con la que abrir el alta. Un rango
+           que no contiene la fecha que propone quien lo manda no puede ser el
+           rango que quiso. Si la regla es otra, es cambiar este signo. */
+        function comoFecha(valor, sentido) {
             var texto = String(valor || "").replace(/^\s+|\s+$/g, "");
             var f;
 
@@ -890,7 +940,7 @@ var Sistema = (function () {
             if (!/^\d+$/.test(texto)) return "";
 
             f = new Date();
-            f.setDate(f.getDate() - Number(texto));
+            f.setDate(f.getDate() + (sentido < 0 ? -1 : 1) * Number(texto));
             return enIso(f);
         }
 
