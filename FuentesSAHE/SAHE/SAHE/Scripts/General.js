@@ -3346,6 +3346,16 @@ var Ventana = (function () {
             /* '8:5' o '8' se mandan como '8:05': el paquete recibe siempre la
                misma forma, escriba el usuario como escriba. */
             if (campo.tipo === "hora") return Grilla.hora.normalizar(crudo);
+            /* Una fecha viaja 'dd/mm/aaaa', que es como la escriben la grilla
+               y los paquetes. El control la guarda en 'aaaa-mm-dd' porque un
+               <input type="date"> no admite otra cosa, así que se traduce
+               aquí, al salir, igual que 'asignar' la traduce al entrar.
+
+               Faltaba esta mitad: la de entrada se agregó cuando el filtro se
+               borraba al abrir la ventana, y sin la de salida el control
+               mandaba su formato interno. El paquete recibía '2026-09-12'
+               donde espera '12/09/2026' y la fecha se le partía. */
+            if (campo.tipo === "fecha") return enTextoLocal(crudo);
             return crudo;
         }
 
@@ -3476,6 +3486,21 @@ var Ventana = (function () {
         function enIsoLocal(texto) {
             var p = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
             return p ? p[3] + "-" + p[2] + "-" + p[1] : texto;
+        }
+
+        /* El camino de vuelta del anterior, y tiene que existir por la misma
+           razón por la que existe aquel: un <input type="date"> solo habla
+           'aaaa-mm-dd', y el resto del aplicativo -la grilla, los valores por
+           omisión, los paquetes- habla 'dd/mm/aaaa'. La traducción se hace en
+           los dos bordes del control y en ningún otro sitio, para que nadie
+           más tenga que saber que ese campo es distinto.
+
+           Lo que no reconoce lo devuelve tal cual: una fecha ya escrita en
+           'dd/mm/aaaa' -o un campo vacío- pasa de largo sin que se le invente
+           nada. */
+        function enTextoLocal(texto) {
+            var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+            return p ? p[3] + "/" + p[2] + "/" + p[1] : texto;
         }
 
         function poner(tabla, datos) {
