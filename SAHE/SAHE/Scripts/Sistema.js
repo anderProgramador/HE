@@ -789,8 +789,11 @@ var Sistema = (function () {
                 fechaInicioPop: mapa.fechainiciopop || mapa.fechapop || "",
                 diasAtras: mapa.cantidadminimaregistro,
                 diasAdelante: mapa.cantidadmaximaregistro,
-                multiplo: enMinutos(mapa.multiplominutos),
-                horario: mapa.descripcionhorariopop || mapa.horariotrabajador || ""
+                multiplo: enMinutos(mapa.multiplominutos)
+                /* El horario NO está aquí a propósito: su clave es el id de un
+                   control -'HorarioPop'-, así que es de las que aplica la
+                   librería. Leerlo también aquí era tener dos dueños para el
+                   mismo dato, y el segundo lo borraba. */
             };
         }
 
@@ -1051,11 +1054,34 @@ var Sistema = (function () {
             return dos(Math.floor(minutos / 60)) + ":" + dos(minutos % 60);
         }
 
-        /* El horario, que es de referencia: se muestra para que la persona se
-           ubique y no limita lo que puede pedir. */
+        /* El horario, que es de REFERENCIA: se muestra para que la persona se
+           ubique y no limita lo que puede pedir.
+
+           Su valor NO se lee aquí. 'HorarioPop' es el id de un control, así
+           que es de la primera clase de valores por defecto: los aplica la
+           librería sola, en cuanto llegan, sin que esta pantalla se entere.
+
+           Esto de aquí solo los VUELVE A PONER, y es por una razón concreta:
+           al MODIFICAR, la librería limpia la ventana y la llena con el mapeo
+           de Obtener, donde el horario no está -no es un dato de la solicitud
+           sino del trabajador-, así que se quedaría en blanco. En un alta no
+           haría falta.
+
+           Se toma de 'modelo.porDefecto', que es donde la librería dejó la
+           lista ya partida por clave. Volver a leerla del segmento sería
+           tener dos sitios donde se decide el mismo dato, y es exactamente lo
+           que lo estaba borrando: esta función ponía lo que había leído
+           'leerAjustes' buscando la clave 'descripcionHorarioPop', y cuando
+           el paquete pasó a mandarla como 'HorarioPop' -bien mandada, con el
+           nombre del control- lo que se ponía encima del valor correcto era
+           una cadena vacía. Es el mismo tropiezo que el del filtro de fechas,
+           y se arregla igual: el dueño del dato es uno solo. */
         function ponerHorario() {
             var caja = document.getElementById("txtHorarioPop");
-            if (caja) caja.value = ajustes ? ajustes.horario : "";
+            var defectos = modeloPantalla ? modeloPantalla.porDefecto : null;
+
+            if (!caja || !defectos) return;
+            if (defectos.HorarioPop !== undefined) caja.value = defectos.HorarioPop;
         }
 
         /* --------------------------------------------- los campos que aparecen
@@ -1191,11 +1217,13 @@ var Sistema = (function () {
                        aprobador a la vista. */
                     ponerTrabajador();
                     camposDelAprobador();
+                    /* El horario tampoco depende del [4] que lee esta
+                       pantalla: sale de la lista que ya aplicó la librería. */
+                    ponerHorario();
                 }
                 if (t === TABLA && ajustes) {
                     recortarFecha();
                     fechaPorOmision();
-                    ponerHorario();
                 }
                 return salida;
             };

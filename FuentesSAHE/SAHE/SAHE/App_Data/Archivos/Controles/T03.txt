@@ -143,9 +143,11 @@
 #   [4]  los valores POR DEFECTO, como 'clave=valor' separados por ¦ -el
 #        mismo separador de listas que usa toda la librería-:
 #
-#          FechaInicio=12/09/2026¦FechaFin=12/09/2026¦
-#          FechaInicioPop=12/09/2026¦cantidadMinimaRegistro=26¦
-#          cantidadMaximaRegistro=1¦multiploMinutos=15
+#          FechaInicio=01/09/2026¦FechaFin=12/09/2026¦
+#          fechaInicioPop=12/09/2026¦
+#          HorarioPop=OFAD - OFIC.ADMINISTRATIVAS L-V 08:30 17:30¦
+#          cantidadMinimaRegistro=26¦cantidadMaximaRegistro=1¦
+#          multiploMinutos=15
 #
 #        POR CLAVE Y NO POR POSICIÓN, que es lo que permite agregar una regla
 #        mañana sin renumerar nada y que la que falte simplemente no se
@@ -155,15 +157,28 @@
 #        Y hay dos clases de clave, que se distinguen por lo que nombran:
 #
 #          las que son el ID DE UN CONTROL del txt -'FechaInicio',
-#          'FechaFin'- las aplica la LIBRERÍA sola, sin una línea de código
-#          aquí, y además las vuelve a aplicar en cada alta cuando
-#          'Ventana.nuevo' limpia la pantalla. Por eso el rango del filtro
-#          sobrevive a abrir y cerrar la ventana.
+#          'FechaFin', 'HorarioPop'- las aplica la LIBRERÍA sola, sin una
+#          línea de código aquí, y además las vuelve a aplicar en cada alta
+#          cuando 'Ventana.nuevo' limpia la pantalla. Por eso el rango del
+#          filtro sobrevive a abrir y cerrar la ventana.
+#
+#          ESTAS SE ESCRIBEN IGUAL QUE EL CONTROL, respetando mayúsculas: la
+#          librería busca el campo cuyo id sea exactamente esa clave, así que
+#          'HorarioPop' encuentra el control y 'horariopop' no encuentra nada
+#          -y no se queja: devuelve que no lo halló y sigue-.
 #
 #          las que son una REGLA -'multiploMinutos',
-#          'cantidadMinimaRegistro'- no corresponden a ningún control, así que
-#          la librería las ignora en silencio y las lee esta pantalla por
-#          nombre.
+#          'cantidadMinimaRegistro', 'fechaInicioPop'- no corresponden a
+#          ningún control, así que la librería las ignora en silencio y las lee
+#          esta pantalla por nombre. Estas sí dan igual en mayúsculas o
+#          minúsculas: Sistema.js las pasa a minúsculas antes de buscarlas.
+#
+#        NINGÚN DATO TIENE DOS DUEÑOS. Lo que aplica la librería no lo vuelve a
+#        poner esta pantalla, y al revés. Parece de cajón y no lo es: se
+#        perdieron dos tardes con esto -el filtro de fechas y el horario-,
+#        las dos veces porque Sistema.js releía por su cuenta una clave que la
+#        librería ya había aplicado bien, y la pisaba con el vacío de una
+#        clave que ya no existía.
 #
 #        Una fecha viaja como 'dd/mm/aaaa', igual que en la grilla; la
 #        librería la traduce al 'aaaa-mm-dd' que exige un <input type="date">.
@@ -178,6 +193,10 @@
 #          codigoTrabajador|fechaInicio|fechaFin|fechaInicioPop|
 #          cantidadMinimaRegistro|cantidadMaximaRegistro|multiploMinutos|
 #          descripcionHorarioPop
+#
+#        Ojo: por esa vía el horario NO se pone, porque el que lo aplica es la
+#        librería y la librería solo mira las claves. Es una razón más para
+#        mandar 'clave=valor'.
 #
 #        Vienen los de las DOS pantallas en la misma trama, y se distinguen
 #        por el sufijo: lo que lleva 'Pop' es de la ventana y el resto de la
@@ -223,8 +242,22 @@
 #                                  solicitud, que es regla del negocio y está
 #                                  escrita en Sistema.js; si algún día se
 #                                  configura, llegará por aquí.
-#          descripcionHorarioPop   el horario, que se MUESTRA en la ventana y
-#                                  no limita nada
+#        Y de la ventana, del lado de los CONTROLES:
+#
+#          HorarioPop              el horario, que se MUESTRA en la ventana y
+#                                  no limita nada. Lo aplica la librería, que
+#                                  para eso la clave es el id del control.
+#                                  Sistema.js solo lo vuelve a poner al
+#                                  MODIFICAR, porque ahí la librería llena la
+#                                  ventana con el mapeo de Obtener -donde el
+#                                  horario no está, que no es un dato de la
+#                                  solicitud sino del trabajador- y se
+#                                  quedaría en blanco.
+#
+#                                  Antes se llamaba 'descripcionHorarioPop' y
+#                                  la leía Sistema.js. Con el nombre del
+#                                  control es más simple: una clave menos que
+#                                  traducir.
 #
 # ----------------------------------------------------------------------------
 # EL ORDEN DEL [2] EN ADELANTE NO IMPORTA
@@ -419,11 +452,17 @@ campo|tipo=fecha|id=FechaPop|etiqueta=Fecha a solicitar|ancho=corto|requerido=si
 # la vuelta hablen igual.
 campo|tipo=select|id=Tiempo|etiqueta=Tiempo solicitado|opciones=-:Elija el tiempo|ancho=corto|requerido=si|ayuda=Sube de múltiplo en múltiplo.
 
-# El horario, que llega en el último dato del [4]. Es de REFERENCIA: se
+# El horario, que llega en el [4] con la clave 'HorarioPop' -el id de este
+# mismo campo-, así que lo pone la librería sin que esta plantilla ni
+# Sistema.js tengan que hacer nada. Es de REFERENCIA: se
 # muestra para que la persona se ubique y no limita lo que puede pedir. Va
 # aquí porque el paquete se toma el trabajo de mandarlo, y un dato que se
 # manda y no se enseña es un viaje perdido.
-campo|tipo=text|id=HorarioPop|etiqueta=Su horario|largo=100|ancho=medio|soloLectura=si
+# 'ancho=largo' y no medio: el horario que manda el paquete -'OFAD -
+# OFIC.ADMINISTRATIVAS L-V 08:30 17:30'- no entra en un tercio de la ventana
+# y se cortaba a media palabra. Un campo de solo lectura recortado no informa
+# de nada. Con 50% la primera fila cierra justo: corto + corto + largo.
+campo|tipo=text|id=HorarioPop|etiqueta=Su horario|largo=100|ancho=largo|soloLectura=si
 
 # Segunda fila: la oficina. El código con lupa y el nombre al lado, de solo
 # lectura: un código de cuatro cifras no le dice nada a nadie.
