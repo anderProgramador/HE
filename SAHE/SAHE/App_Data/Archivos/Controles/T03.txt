@@ -2,16 +2,23 @@
 # T03 - Solicitud de Horas Extras (trabajador)
 #
 # Con esta pantalla el trabajador pide que le reconozcan el tiempo que trabajó
-# fuera de su jornada. Autorizar es otra pantalla y otro perfil: aquí solo se
-# pide.
+# fuera de su jornada.
+#
+# Y también se autoriza: el menú apunta a T03 las DOS opciones -'21NSA100
+# Solicitar Horas Extras' y '27NSA100 Autorizar Horas Extras'-, así que la
+# misma pantalla sirve a dos perfiles. Lo que cambia entre uno y otro no es la
+# pantalla sino QUÉ ACCIONES le deja el perfil y, con ellas, qué campos de la
+# ventana aparecen: el estado y el motivo del rechazo son del aprobador y el
+# trabajador no los ve nunca.
 #
 # El controlador arma el nombre del archivo y el del paquete con el mismo
 # texto, así que basta con que el menú diga 'T03¦...' para que todo apunte
 # aquí: esta plantilla y dvpkg_spT03.
 #
 # Quién entra y qué puede hacer no se decide aquí. El menú declara la opción
-# -'21NSA100|Solicitar Horas Extras'- y sus acciones, y el perfil del
-# Web.config -'pTrabajador'- dice cuáles de ellas quedan en 'S'. El
+# -'21NSA100|Solicitar Horas Extras', '27NSA100|Autorizar Horas Extras'- y sus
+# acciones, y el perfil del Web.config -'pTrabajador' en un caso, el del
+# aprobador en el otro- dice cuáles de ellas quedan en 'S'. El
 # controlador manda ya filtrado lo que el perfil permite y la librería apaga
 # el resto, así que el txt puede declarar lo que la pantalla ADMITE sin
 # preocuparse de quién lo va a ver.
@@ -26,8 +33,9 @@
 #
 # El tiempo es una cantidad y no dos horas del reloj. La ubicación NO es la
 # del trabajador: se elige, y por eso cada oficina trae su propio tiempo
-# asignado. El estado no se pregunta: toda solicitud nace 'Solicitado' y la
-# mueve la jefatura desde la pantalla de autorización.
+# asignado. El estado no se pregunta: toda solicitud nace 'Solicitado', y
+# quien la mueve es el aprobador -con esta misma ventana, donde entonces sí
+# aparece el desplegable del estado-.
 #
 # ----------------------------------------------------------------------------
 # LOS DOS PARÁMETROS QUE MANDAN SOBRE ESTA PANTALLA
@@ -68,6 +76,8 @@
 #          0  tipo de cobro     00001|Pago¬00002|Compensación
 #          1  modalidad         00001|Presencial¬00002|Teletrabajo
 #          2  estados           00001|Solicitado|S¬00002|Aprobado|A
+#             La usa 'EstadoPop' con 'lista=2'. El tercer campo -'S', 'A'- no
+#             se usa: la librería lee 'valor|texto' e ignora lo que sobre.
 #
 #        EL ORDEN ES UN CONTRATO, y por eso importa más que el contenido: el
 #        txt no pide una lista por su nombre sino por su NÚMERO -'lista=1' es
@@ -354,12 +364,37 @@ ayuda|titulo=Búsqueda de oficinas|ancho=640|porPagina=10|columnas=Código:120,O
 #
 # Modificar deja abiertos exactamente cuatro: tiempo, tipo de cobro, modalidad
 # y motivo.
+#
+# QUÉ CAMPOS APARECEN es otra cosa distinta de cuáles están apagados, y no se
+# declara aquí: la librería sabe deshabilitar por acción pero no esconder, así
+# que lo resuelve Sistema.js con el código de acción. Son dos, los dos del
+# aprobador -a esta pantalla la usan DOS perfiles: en el menú, 'Solicitar
+# Horas Extras' y 'Autorizar Horas Extras' apuntan las dos a T03-:
+#
+#     I  alta        U  modificar     O  ver
+#     A  aprobar     R  rechazar
+#
+#     EstadoPop      se ve con A y con R
+#     MotivoRechazo  se ve solo con R
+#
+# Escondido no es lo mismo que ausente: los dos siguen viajando en la trama de
+# grabar, porque el paquete espera el registro completo y un estado que nadie
+# tocó tiene que llegar con el valor que traía. Y un campo escondido no se
+# valida, así que su 'requerido=si' no estorba en las acciones donde no está.
 # ---------------------------------------------------------------------------
 popup|titulo=Solicitud de horas extras|ancho=760|deshabilitar=HorarioPop,NombreOficina;editar:FechaPop,OficinaPop
 
 seccion|id=datos
 campo|tipo=oculto|id=CodigoAccion
 campo|tipo=oculto|id=Id|valor=0
+
+# De quien es la solicitud. No hay control que lo pida -no es un dato que se
+# elija- sino que sale de la SESION, y Sistema.js lo pone al abrir un alta.
+# Viaja oculto porque el paquete lo guarda en la solicitud, y en una
+# modificacion no se pisa: el registro es de quien lo creo, no de quien lo
+# abre. Se llama 'TrabajadorPop' y no 'Trabajador' para no chocar con la
+# columna de la grilla, igual que FechaPop, OficinaPop y HorarioPop.
+campo|tipo=oculto|id=TrabajadorPop
 
 # La secuencia es la versión del registro: la tabla guarda histórico, así que
 # cada modificación cierra la fila vigente e inserta la siguiente.
@@ -399,10 +434,32 @@ campo|tipo=text|id=NombreOficina|etiqueta=Oficina|largo=100|ancho=largo|soloLect
 campo|tipo=select|id=TipoCobro|etiqueta=Tipo de cobro|lista=0|ancho=medio|requerido=si
 campo|tipo=select|id=Modalidad|etiqueta=Modalidad de trabajo|lista=1|ancho=medio|requerido=si
 
+# El estado de la solicitud. Es la TERCERA lista del [0] -la que el paquete ya
+# manda y hasta ahora nadie consumia-, de ahi el 'lista=2'.
+#
+# No lo ve el trabajador: su solicitud nace solicitada y el estado lo mueve
+# quien la resuelve. Aparece solo cuando la ventana se abre para APROBAR o
+# RECHAZAR, y eso lo decide Sistema.js con el codigo de accion, no el txt: la
+# librería sabe deshabilitar por accion pero no esconder.
+#
+# Se declara escondido y no se omite porque igual viaja en la trama: el
+# paquete espera el registro completo, y un estado que nadie toco tiene que
+# llegar con el valor que traia.
+campo|tipo=select|id=EstadoPop|etiqueta=Estado|lista=2|ancho=medio|requerido=si
+
 # El motivo es lo que va a leer la jefatura para autorizar: obligatorio
 # siempre, también al dar de alta. Aquí no es como en las cuotas -donde solo
 # explica un cambio-: aquí es la razón de la solicitud.
 campo|tipo=textarea|id=Motivo|etiqueta=Motivo de la solicitud|filas=3|largo=250|requerido=si|ancho=total|contador=250|marcador=Qué hizo en ese tiempo
+
+# Por que se rechaza. Aparece SOLO al rechazar, y ahi es obligatorio: un
+# rechazo sin explicacion deja al trabajador sin saber que corregir.
+#
+# Que este marcado 'requerido=si' no estorba en el alta ni al modificar porque
+# un campo ESCONDIDO no se valida -'revisarCampo' lo salta-: es el mismo
+# arreglo con que el motivo del cambio de las cuotas solo se exige al
+# modificar.
+campo|tipo=textarea|id=MotivoRechazo|etiqueta=Motivo del rechazo|filas=3|largo=250|requerido=si|ancho=total|contador=250|marcador=Qué debe corregir el trabajador
 
 # Auditoría. No se escriben ni se muestran: la pantalla los recibe y los
 # devuelve para que el paquete no tenga que volver a buscarlos.
@@ -415,15 +472,42 @@ accion|id=Cancelar|etiqueta=Cancelar|estilo=secundario|accion=cancelar
 
 # ---------------------------------------------------------------------------
 # Los órdenes de la trama.
+#
+# 'obtener' y 'grabar' siguen el orden del REGISTRO de la tabla, campo por
+# campo, para que el paquete no tenga que traducir posiciones:
+#
+#     num_id           Id              dat_fhoraextra   FechaPop
+#     var_ctrabajador  TrabajadorPop   num_secuencia    Secuencia
+#     var_coficina     OficinaPop      num_thoraextra   Tiempo
+#     var_ctiporetrib  TipoCobro       var_cmodtrabajo  Modalidad
+#     var_cestado      EstadoPop       var_motivo       Motivo
+#     var_motivorechazo MotivoRechazo
+#     var_creadopor    CreadoPor       var_actualizadopor ActualizadoPor
+#
+# Que el orden del registro NO sea el de la pantalla es a propósito: arriba los
+# campos están puestos como se leen -la fecha con el tiempo, el código de
+# oficina con su nombre, los dos motivos juntos- y estas líneas son las que
+# traducen una cosa en la otra. Para eso existe el mapeo; ordenar el txt por el
+# registro dejaría la ventana en un orden que no le sirve a nadie.
+#
+# Dos campos de 'obtener' no son del registro y viajan igual: NombreOficina
+# -para poder mostrar la oficina al modificar, que un código de cuatro cifras
+# no lo dice- y FechaCreacion, que es auditoría. Van pegados al campo con el
+# que tienen que ver.
+#
 #   cargar   cómo llega cada fila de la grilla. El Id va primero y oculto -su
-#            columna mide 0- porque es la pk y no un dato que mirar.
-#   obtener  se le pide con 'U|<id>' al modificar y 'O|<id>' al ver.
+#            columna mide 0- porque es la pk y no un dato que mirar. Esta NO
+#            cambia: es la grilla, no la ventana.
+#   obtener  se le pide con 'U|<id>' al modificar y 'O|<id>' al ver; el
+#            aprobador la pedirá con 'A|<id>' y 'R|<id>'.
 #   grabar   qué espera el paquete y en qué orden; la acción va primero. La
 #            fecha y la oficina viajan también al modificar aunque estén
-#            apagadas: un campo deshabilitado igual se lee del control.
+#            apagadas, y el estado y el motivo del rechazo aunque estén
+#            escondidos: un campo que no se puede tocar igual se lee del
+#            control, así que el registro llega completo.
 #   eliminar la acción, la pk y quién la hace.
 # ---------------------------------------------------------------------------
 mapeo|origen=cargar|campos=Id,Trabajador,NombreOficina,Secuencia,FechaPop,Tiempo,TipoCobro,Modalidad,Estado
-mapeo|origen=obtener|campos=CodigoAccion,Id,Secuencia,FechaPop,OficinaPop,NombreOficina,Tiempo,TipoCobro,Modalidad,Motivo,CreadoPor,FechaCreacion,ActualizadoPor
-mapeo|origen=grabar|campos=CodigoAccion,Id,Secuencia,FechaPop,OficinaPop,Tiempo,TipoCobro,Modalidad,Motivo,CreadoPor,ActualizadoPor
+mapeo|origen=obtener|campos=CodigoAccion,Id,TrabajadorPop,FechaPop,Secuencia,OficinaPop,NombreOficina,Tiempo,TipoCobro,Modalidad,EstadoPop,Motivo,MotivoRechazo,CreadoPor,FechaCreacion,ActualizadoPor
+mapeo|origen=grabar|campos=CodigoAccion,Id,TrabajadorPop,FechaPop,Secuencia,OficinaPop,Tiempo,TipoCobro,Modalidad,EstadoPop,Motivo,MotivoRechazo,CreadoPor,ActualizadoPor
 mapeo|origen=eliminar|campos=Id,ActualizadoPor
