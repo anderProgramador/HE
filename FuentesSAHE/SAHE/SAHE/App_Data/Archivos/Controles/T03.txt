@@ -83,6 +83,24 @@
 #        txt no pide una lista por su nombre sino por su NÚMERO -'lista=1' es
 #        la modalidad-, así que el que ocupa cada puesto no puede moverse.
 #
+#        Y DENTRO DE CADA REGISTRO, EL PRIMER CAMPO ES EL CÓDIGO. Lo que
+#        viaja al grabar es el código, no lo que se lee en pantalla: si el
+#        primer campo trae la descripción, es la descripción la que termina
+#        guardada -'Solicitud' donde debía ir '0002'- y no hay manera de que
+#        la pantalla lo note, porque para ella una cadena es tan válida como
+#        otra.
+#
+#        Si alguna lista viniera al revés, se dice en el campo en vez de
+#        pedirle al paquete que la dé vuelta:
+#
+#          lista=2        'codigo|descripcion', que es lo de siempre
+#          lista=2:1,0    el código está en el campo 1 y la descripción en el 0
+#
+#        No se adivina: un registro de dos campos es ambiguo por naturaleza
+#        -'00001|Solicitado' y 'Solicitado|S' tienen la misma forma-, así que
+#        una regla automática acertaría en unos casos y rompería otros en
+#        silencio. Quien sabe cómo viene la lista es quien escribe la pantalla.
+#
 #        Una pantalla que no necesite una de estas listas la recibe IGUAL,
 #        vacía, para no correr de sitio a las que van detrás. Un hueco entre
 #        dos ¦ no molesta -la librería no toca un desplegable al que no le
@@ -475,6 +493,11 @@ campo|tipo=select|id=Modalidad|etiqueta=Modalidad de trabajo|lista=1|ancho=medio
 
 # El estado de la solicitud. Es la TERCERA lista del [0] -la que el paquete ya
 # manda y hasta ahora nadie consumia-, de ahi el 'lista=2'.
+#
+# El '2' a secas dice que el registro viene 'codigo|descripcion', que es como
+# lo manda hoy: '00001|Solicitado|S' -el tercer campo no se usa-. Si el dia de
+# manana llegara al reves, esto pasa a 'lista=2:1,0' y nada mas: lo que se
+# graba es el codigo, y de que campo sacarlo se dice aqui.
 #
 # No lo ve el trabajador: su solicitud nace solicitada y el estado lo mueve
 # quien la resuelve. Aparece solo cuando la ventana se abre para APROBAR o

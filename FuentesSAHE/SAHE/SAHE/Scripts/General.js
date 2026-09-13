@@ -3832,8 +3832,47 @@ var Ventana = (function () {
            Cada lista son registros 'valor|texto' separados por ¬, y las listas
            entre sí por ¦. Se reparten en el orden en que la plantilla declara
            los select, salvo que el campo diga 'lista=n'. */
+        /* Qué lista le toca al campo y, dentro de cada registro, qué campo es
+           el CÓDIGO y cuál la DESCRIPCIÓN.
+
+              lista=2        la lista 2, 'codigo|descripcion' -lo de siempre-
+              lista=2:1,0    la lista 2, pero el código está en el campo 1 y la
+                             descripción en el 0
+
+           La segunda forma existe porque no todos los paquetes arman la lista
+           igual. Lo que viaja al grabar es el VALOR de la opción, es decir el
+           primer campo del registro; si ahí viene la descripción, es la
+           descripción la que termina guardada -'Solicitud' donde debía ir
+           '0002'- y la pantalla no tiene manera de notarlo: para ella una
+           cadena es tan válida como otra.
+
+           Se declara en el txt y no se adivina aquí a propósito. Un registro
+           de dos campos es ambiguo por naturaleza -'00001|Solicitado' y
+           'Solicitado|S' tienen la misma forma-, así que cualquier regla
+           automática acertaría en unos casos y rompería otros en silencio.
+           Quien sabe cómo viene la lista es quien escribe la pantalla. */
+        function repartoDeLista(campo, orden) {
+            var crudo = campo.lista === undefined ? "" : String(campo.lista);
+            var corte = crudo.indexOf(":");
+            var columnas;
+            var reparto = { indice: orden, valor: 0, texto: 1 };
+
+            if (crudo === "") return reparto;
+            if (corte === -1) {
+                reparto.indice = Number(crudo);
+                return reparto;
+            }
+            reparto.indice = Number(crudo.substring(0, corte));
+            columnas = crudo.substring(corte + 1).split(",");
+            if (columnas.length > 0 && columnas[0] !== "") reparto.valor = Number(columnas[0]);
+            if (columnas.length > 1 && columnas[1] !== "") reparto.texto = Number(columnas[1]);
+            if (isNaN(reparto.valor)) reparto.valor = 0;
+            if (isNaN(reparto.texto)) reparto.texto = 1;
+            return reparto;
+        }
+
         function llenarListas(tabla, listas) {
-            var lista = campos(tabla), i, campo, orden = 0;
+            var lista = campos(tabla), i, campo, orden = 0, reparto;
 
             if (!listas || listas.length === 0) return;
 
@@ -3844,7 +3883,8 @@ var Ventana = (function () {
                    orden ni se rellena: si contara, correría un lugar a todos
                    los que sí vienen del paquete. */
                 if (campo.opciones) continue;
-                llenarUnaLista(campo, listas[campo.lista !== undefined ? Number(campo.lista) : orden]);
+                reparto = repartoDeLista(campo, orden);
+                llenarUnaLista(campo, listas[reparto.indice], reparto);
                 orden++;
                 /* El panel de casillas se rehace con las opciones recién
                    llegadas; hasta ahora estaba vacío. */
@@ -3852,9 +3892,11 @@ var Ventana = (function () {
             }
         }
 
-        function llenarUnaLista(campo, datos) {
+        function llenarUnaLista(campo, datos, reparto) {
             var elemento = control(campo);
             var registros, i, partes, opcion, seleccionado;
+            var deValor = reparto ? reparto.valor : 0;
+            var deTexto = reparto ? reparto.texto : 1;
 
             if (!elemento || !datos) return;
             seleccionado = elemento.value;
@@ -3875,9 +3917,14 @@ var Ventana = (function () {
                 if (registros[i] === "") continue;
                 partes = String(registros[i]).split("|");
                 opcion = document.createElement("option");
-                opcion.value = partes[0];
+                /* El VALOR es lo que viaja al grabar, así que sale del campo
+                   que el txt señale como código -el 0 salvo que diga otra
+                   cosa-. Un registro de un solo campo se usa entero para las
+                   dos cosas: es una lista sin descripción, y el código es lo
+                   único que hay. */
+                opcion.value = partes.length > deValor ? partes[deValor] : partes[0];
                 /* textContent y no innerHTML: los rótulos vienen de la base. */
-                opcion.textContent = partes.length > 1 ? partes[1] : partes[0];
+                opcion.textContent = partes.length > deTexto ? partes[deTexto] : opcion.value;
                 elemento.appendChild(opcion);
             }
             if (seleccionado && campo.tipo !== "multi") elemento.value = seleccionado;
